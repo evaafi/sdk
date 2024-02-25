@@ -1,0 +1,33 @@
+{
+  "name": "@evaafi/sdk",
+  "version": "0.0.1",
+  "description": "SDK for EVAA contracts",
+  "main": "dist/index.js",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc --declaration"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/evaafi/sdk.git"
+  },
+  "author": "EVAA Finance",
+  "license": "MIT",
+  "homepage": "https://github.com/evaafi/sdk#readme",
+  "devDependencies": {
+    "@types/node": "^20.10.4",
+    "prettier": "^3.2.4",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.3.3"
+  },
+  "peerDependencies": {
+    "@ton/core": "^0.56.0",
+    "@tonconnect/sdk": "^3.0.0",
+    "ethereumjs-util": "7.0.10",
+    "ethers": "5.6.9",
+    "sort-deep-object-arrays": "^1.1.2"
+  }
+}
