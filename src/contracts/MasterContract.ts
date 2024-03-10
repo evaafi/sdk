@@ -15,18 +15,34 @@ import { MasterData } from '../types/Master';
 import { JettonWallet } from './JettonWallet';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
 
+/**
+ * Parameters for the Evaa contract
+ * @property testnet - true for testnet, false for mainnet
+ * @property debug - true to enable debug mode (optional)
+ */
 export type EvaaParameters = {
     testnet: boolean;
-    syncInterval?: number;
-    provider?: ContractProvider;
     debug?: boolean;
 };
 
+/**
+ * Parameters for the Jetton message
+ * @property responseAddress - address to send excesses
+ * @property forwardAmount - amount to forward to the destination address
+ */
 export type JettonMessageParameters = {
     responseAddress?: Address;
     forwardAmount?: bigint;
 };
 
+/**
+ * Base parameters for supply
+ * @property queryID - unique query ID
+ * @property includeUserCode - true to include user code for update (needed when user contract code version is outdated)
+ * @property amount - amount to supply
+ * @property userAddress - user address
+ * @property assetID - asset ID
+ */
 export type SupplyBaseParameters = {
     queryID: number;
     includeUserCode: boolean;
@@ -34,14 +50,31 @@ export type SupplyBaseParameters = {
     userAddress: Address;
     assetID: bigint;
 };
+/**
+ * Parameters for the TON supply message
+ * @property type - 'ton'
+ */
 export type TonSupplyParameters = SupplyBaseParameters & {
     type: 'ton';
 };
+/**
+ * Parameters for the jetton supply message
+ * @property type - 'jetton'
+ */
 export type JettonSupplyParameters = SupplyBaseParameters &
     JettonMessageParameters & {
         type: 'jetton';
     };
 
+/**
+ * Parameters for the withdraw message
+ * @property queryID - unique query ID
+ * @property assetID - asset ID
+ * @property amount - amount to withdraw
+ * @property userAddress - user address
+ * @property includeUserCode - true to include user code for update (needed when user contract code version is outdated)
+ * @property priceData - price data cell. Can be obtained from the getPrices function
+ */
 export type WithdrawParameters = {
     queryID: number;
     assetID: bigint;
@@ -51,6 +84,15 @@ export type WithdrawParameters = {
     priceData: Cell;
 };
 
+/**
+ * Base data for liquidation. Can be obtained from the user contract liquidationParameters getter
+ * @property borrowerAddress - borrower address (user address that is being liquidated)
+ * @property loanAsset - loan asset ID
+ * @property collateralAsset - collateral asset ID
+ * @property minCollateralAmount - minimal amount to receive from the liquidation
+ * @property liquidationAmount - amount to liquidate
+ * @property tonLiquidation - true if the loan asset is TON
+ */
 export type LiquidationBaseData = {
     borrowerAddress: Address;
     loanAsset: bigint;
@@ -60,6 +102,13 @@ export type LiquidationBaseData = {
     tonLiquidation: boolean;
 };
 
+/**
+ * Base parameters for liquidation
+ * @property queryID - unique query ID
+ * @property liquidatorAddress - liquidator address, where and collateral will be sent
+ * @property includeUserCode - true to include user code for update (needed when user contract code version is outdated)
+ * @property priceData - price data cell. Can be obtained from the getPrices function
+ */
 export type LiquidationBaseParameters = LiquidationBaseData & {
     queryID: number;
     liquidatorAddress: Address;
@@ -67,14 +116,25 @@ export type LiquidationBaseParameters = LiquidationBaseData & {
     priceData: Cell;
 };
 
+/**
+ * Parameters for the TON liquidation message
+ * @property type - 'ton'
+ */
 export type TonLiquidationParameters = LiquidationBaseParameters & {
     type: 'ton';
 };
+/**
+ * Parameters for the jetton liquidation message
+ * @property type - 'jetton'
+ */
 export type JettonLiquidationParameters = LiquidationBaseParameters &
     JettonMessageParameters & {
         type: 'jetton';
     };
 
+/**
+ * Evaa master contract wrapper
+ */
 export class Evaa implements Contract {
     readonly address: Address = EVAA_MASTER_MAINNET;
     readonly network: 'mainnet' | 'testnet' = 'mainnet';
@@ -82,6 +142,10 @@ export class Evaa implements Contract {
     private _data?: MasterData;
     private lastSync = 0;
 
+    /**
+     * Create Evaa contract wrapper
+     * @param parameters Evaa contract parameters
+     */
     constructor(parameters?: EvaaParameters) {
         if (parameters?.testnet) {
             this.network = 'testnet';
@@ -90,6 +154,10 @@ export class Evaa implements Contract {
         this.debug = parameters?.debug;
     }
 
+    /**
+     * Create supply message
+     * @returns supply message as a cell
+     */
     createSupplyMessage(parameters: TonSupplyParameters | JettonSupplyParameters): Cell {
         if (parameters.type === 'jetton') {
             return beginCell()
@@ -120,6 +188,10 @@ export class Evaa implements Contract {
         }
     }
 
+    /**
+     * Create withdraw message
+     * @returns withdraw message as a cell
+     */
     createWithdrawMessage(parameters: WithdrawParameters): Cell {
         return beginCell()
             .storeUint(OPCODES.WITHDRAW, 32)
@@ -132,6 +204,10 @@ export class Evaa implements Contract {
             .endCell();
     }
 
+    /**
+     * Create liquidation message
+     * @returns liquidation message as a cell
+     */
     createLiquidationMessage(parameters: TonLiquidationParameters | JettonLiquidationParameters): Cell {
         if (parameters.type === 'jetton') {
             return beginCell()
@@ -173,6 +249,11 @@ export class Evaa implements Contract {
         }
     }
 
+    /**
+     * Calculate user contract address
+     * @param userAddress
+     * @returns user contract address
+     */
     calculateUserSCAddr(userAddress: Address): Address {
         const lendingData = beginCell()
             .storeAddress(this.address)
@@ -192,14 +273,29 @@ export class Evaa implements Contract {
         return new Address(0, stateInit.hash());
     }
 
+    /**
+     * Open user contract wrapper
+     * @param userAddress
+     * @returns user contract
+     */
     openUserContract(userAddress: Address): EvaaUser {
         return EvaaUser.createFromAddress(this.calculateUserSCAddr(userAddress));
     }
 
+    /**
+     * Get master contract data
+     */
     get data(): Maybe<MasterData> {
         return this._data;
     }
 
+    /**
+     * Send supply message
+     * @param provider contract provider. Passed automatically when opened by client
+     * @param via sender
+     * @param value amount of TON to send
+     * @param parameters supply parameters
+     */
     async sendSupply(
         provider: ContractProvider,
         via: Sender,
@@ -208,7 +304,7 @@ export class Evaa implements Contract {
     ) {
         const message = this.createSupplyMessage(parameters);
 
-        if ('forwardAmount' in parameters) {
+        if (parameters.type === 'jetton') {
             if (!via.address) {
                 throw Error('Via address is required for jetton supply');
             }
@@ -225,6 +321,13 @@ export class Evaa implements Contract {
         }
     }
 
+    /**
+     * Send withdraw message
+     * @param provider contract provider. Passed automatically when opened by client
+     * @param via sender
+     * @param value amount of TON to send
+     * @param parameters withdraw parameters
+     */
     async sendWithdraw(provider: ContractProvider, via: Sender, value: bigint, parameters: WithdrawParameters) {
         const message = this.createWithdrawMessage(parameters);
         await provider.internal(via, {
@@ -234,6 +337,13 @@ export class Evaa implements Contract {
         });
     }
 
+    /**
+     * Send liquidation message
+     * @param provider contract provider. Passed automatically when opened by client
+     * @param via sender
+     * @param value amount of TON to send
+     * @param parameters liquidation parameters
+     */
     async sendLiquidation(
         provider: ContractProvider,
         via: Sender,
@@ -242,7 +352,7 @@ export class Evaa implements Contract {
     ) {
         const message = this.createLiquidationMessage(parameters);
 
-        if ('forwardAmount' in parameters) {
+        if (parameters.type === 'jetton') {
             if (!via.address) {
                 throw Error('Via address is required for jetton liquidation');
             }
@@ -259,6 +369,9 @@ export class Evaa implements Contract {
         }
     }
 
+    /**
+     * Sync master contract data
+     */
     async getSync(provider: ContractProvider) {
         const state = (await provider.getState()).state;
         if (state.type === 'active') {

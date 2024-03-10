@@ -6,11 +6,12 @@ import {
     bigIntMin,
     calculateAssetData,
     calculateLiquidationData,
+    calculatePresentValue,
     getAvailableToBorrow,
     presentValue,
 } from './math';
 import { loadMaybeMyRef, loadMyRef } from './helpers';
-import { BalanceType, UserBalance, UserData } from '../types/User';
+import { BalanceType, UserBalance, UserData, UserLiteData } from '../types/User';
 
 export function createAssetData(): DictionaryValue<AssetData> {
     return {
@@ -108,6 +109,7 @@ export function parseMasterData(masterDataBOC: string): MasterData {
     const assetsConfigDict = masterConfigSlice.loadDict(Dictionary.Keys.BigUint(256), createAssetConfig());
     const assetsDataDict = masterSlice.loadDict(Dictionary.Keys.BigUint(256), createAssetData());
     const assetsExtendedData = Dictionary.empty<bigint, ExtendedAssetData>();
+    const assetsReserves = Dictionary.empty<bigint, bigint>();
 
     for (const [tokenSymbol, assetID] of Object.entries(ASSET_ID)) {
         const assetData = calculateAssetData(assetsConfigDict, assetsDataDict, assetID);
@@ -124,21 +126,28 @@ export function parseMasterData(masterDataBOC: string): MasterData {
 
     masterConfigSlice.endParse();
 
+    for (const [_, assetID] of Object.entries(ASSET_ID)) {
+        const assetData = assetsExtendedData.get(assetID) as ExtendedAssetData;
+        const totalSupply = calculatePresentValue(assetData.sRate, assetData.totalSupply);
+        const totalBorrow = calculatePresentValue(assetData.bRate, assetData.totalBorrow);
+        assetsReserves.set(assetID, assetData.balance - totalSupply + totalBorrow);
+    }
+
     return {
         meta: meta,
         upgradeConfig: upgradeConfig,
         masterConfig: masterConfig,
         assetsConfig: assetsConfigDict,
         assetsData: assetsExtendedData,
+        assetsReserves: assetsReserves,
     };
 }
 
-export function parseUserData(
+export function parseUserLiteData(
     userDataBOC: string,
     assetsData: Dictionary<bigint, ExtendedAssetData>,
     assetsConfig: Dictionary<bigint, AssetConfig>,
-    prices: Dictionary<bigint, bigint>,
-): UserData {
+): UserLiteData {
     const userSlice = Cell.fromBase64(userDataBOC).beginParse();
 
     const codeVersion = userSlice.loadCoins();
@@ -153,6 +162,35 @@ export function parseUserData(
     userSlice.endParse();
 
     const userBalances = Dictionary.empty<bigint, UserBalance>();
+
+    for (const [_, assetID] of Object.entries(ASSET_ID)) {
+        const assetData = assetsData.get(assetID) as ExtendedAssetData;
+        const assetConfig = assetsConfig.get(assetID) as AssetConfig;
+        const balance = presentValue(assetData.sRate, assetData.bRate, principalsDict.get(assetID) || 0n);
+        userBalances.set(assetID, balance);
+    }
+
+    return {
+        type: 'active',
+        codeVersion: Number(codeVersion),
+        masterAddress: masterAddress,
+        ownerAddress: userAddress,
+        principals: principalsDict,
+        state: userState,
+        balances: userBalances,
+        trackingSupplyIndex: trackingSupplyIndex,
+        trackingBorrowIndex: trackingBorrowIndex,
+        dutchAuctionStart: dutchAuctionStart,
+        backupCell: backupCell,
+    };
+}
+
+export function parseUserData(
+    userLiteData: UserLiteData,
+    assetsData: Dictionary<bigint, ExtendedAssetData>,
+    assetsConfig: Dictionary<bigint, AssetConfig>,
+    prices: Dictionary<bigint, bigint>,
+): UserData {
     const withdrawalLimits = Dictionary.empty<bigint, bigint>();
     const borrowLimits = Dictionary.empty<bigint, bigint>();
     const apy = {
@@ -162,11 +200,16 @@ export function parseUserData(
 
     let supplyBalance = 0n;
     let borrowBalance = 0n;
-    for (const [tokenSymbol, assetID] of Object.entries(ASSET_ID)) {
+    for (const [_, assetID] of Object.entries(ASSET_ID)) {
         const assetData = assetsData.get(assetID) as ExtendedAssetData;
         const assetConfig = assetsConfig.get(assetID) as AssetConfig;
-        const balance = presentValue(assetData.sRate, assetData.bRate, principalsDict.get(assetID) || 0n);
-        userBalances.set(assetID, balance);
+        const balance = presentValue(assetData.sRate, assetData.bRate, userLiteData.principals.get(assetID) || 0n);
+        userLiteData.balances.set(assetID, balance);
+    }
+
+    for (const [_, assetID] of Object.entries(ASSET_ID)) {
+        const assetConfig = assetsConfig.get(assetID) as AssetConfig;
+        const balance = userLiteData.balances.get(assetID) as UserBalance;
 
         if (balance.type === BalanceType.supply) {
             supplyBalance += (balance.amount * prices.get(assetID)!) / 10n ** assetConfig.decimals;
@@ -176,11 +219,11 @@ export function parseUserData(
         }
     }
 
-    const availableToBorrow = getAvailableToBorrow(assetsConfig, assetsData, principalsDict, prices);
-    for (const [tokenSymbol, assetID] of Object.entries(ASSET_ID)) {
+    const availableToBorrow = getAvailableToBorrow(assetsConfig, assetsData, userLiteData.principals, prices);
+    for (const [_, assetID] of Object.entries(ASSET_ID)) {
         const assetConfig = assetsConfig.get(assetID) as AssetConfig;
         const assetData = assetsData.get(assetID) as ExtendedAssetData;
-        const balance = userBalances.get(assetID) as UserBalance;
+        const balance = userLiteData.balances.get(assetID) as UserBalance;
 
         if (balance.type === BalanceType.supply) {
             withdrawalLimits.set(
@@ -216,13 +259,7 @@ export function parseUserData(
             : Number(BigInt(1e9) - (availableToBorrow * BigInt(1e9)) / (borrowBalance + availableToBorrow)) / 1e7;
 
     return {
-        type: 'active',
-        codeVersion: Number(codeVersion),
-        masterAddress: masterAddress,
-        ownerAddress: userAddress,
-        principals: principalsDict,
-        state: userState,
-        balances: userBalances,
+        ...userLiteData,
         withdrawalLimits: withdrawalLimits,
         borrowLimits: borrowLimits,
         apy: apy,
@@ -230,11 +267,7 @@ export function parseUserData(
         borrowBalance: borrowBalance,
         availableToBorrow: availableToBorrow,
         limitUsedPercent: limitUsedPercent,
-        limitUsed: Number(limitUsed),
-        trackingSupplyIndex: trackingSupplyIndex,
-        trackingBorrowIndex: trackingBorrowIndex,
-        dutchAuctionStart: dutchAuctionStart,
-        backupCell: backupCell,
-        liquidationData: calculateLiquidationData(assetsConfig, assetsData, principalsDict, prices),
+        limitUsed: limitUsed,
+        liquidationData: calculateLiquidationData(assetsConfig, assetsData, userLiteData.principals, prices),
     };
 }

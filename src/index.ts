@@ -49,7 +49,7 @@ export {
 export {
     BalanceType,
     UserBalance,
-    BaseLiquidationData,
+    UserLiqudationData,
     LiquidableData,
     NonLiquidableData,
     LiquidationData,

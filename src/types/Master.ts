@@ -62,4 +62,5 @@ export type MasterData = {
     masterConfig: MasterConfig;
     assetsConfig: Dictionary<bigint, AssetConfig>;
     assetsData: Dictionary<bigint, ExtendedAssetData>;
+    assetsReserves: Dictionary<bigint, bigint>;
 };

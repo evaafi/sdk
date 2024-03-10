@@ -3,8 +3,8 @@ import { sha256Hash } from './utils/sha256BigInt';
 
 export const EVAA_MASTER_MAINNET = Address.parse('EQC8rUZqR_pWV1BylWUlPNBzyiTYVoBEmQkMIQDZXICfnuRr');
 export const MAINNET_VERSION = 2;
-export const EVAA_MASTER_TESTNET = Address.parse('kQBi2jDaq_-Oi62V7u_j_Vr1We8EqC3h0jkhB4Gf4JW741vX');
-export const TESTNET_VERSION = 1;
+export const EVAA_MASTER_TESTNET = Address.parse('kQBYUYkFuN16rqVmMSrwW5yBXWCYsBzTklubh9x7M8BuAsmx');
+export const TESTNET_VERSION = 2;
 
 export const ASSET_ID = {
     TON: sha256Hash('TON'),
@@ -13,10 +13,10 @@ export const ASSET_ID = {
 };
 
 export const JETTON_MASTER_ADDRESSES = {
-    jUSDT_MAINNET: Address.parse('EQBynBO23ywHy_CgarY9NK9FTz0yDsG82PtcbSTQgGoXwiuA'),
-    jUSDT_TESTNET: Address.parse('kQBe4gtSQMxM5RpMYLr4ydNY72F8JkY-icZXG1NJcsju8XM7'),
-    jUSDC_MAINNET: Address.parse('EQB-MPwrd1G6WKNkLz_VnV6WqBDd142KMQv-g1O-8QUA3728'),
-    jUSDC_TESTNET: Address.parse('kQDaY5yUatYnHei73HBqRX_Ox9LK2XnR7XuCY9MFC2INbfYI'),
+    jUSDT_MAINNET: Address.parse('EQBwbF0otxLyA3VrRjjC1q7i3G7LtoEpdyBjZEuNtrhC4drm'),
+    jUSDT_TESTNET: Address.parse('kQAGvWIETv29VRXLBL3lugxdLeCZ3r7jcuUvqKeZpbcwiQo0'),
+    jUSDC_MAINNET: Address.parse('EQCEHZi-CLX2ghdsNbY35umR1OFODG5ySHrtK6GItMdWv7dS'),
+    jUSDC_TESTNET: Address.parse('kQCwj7zrRnBIYUhM7BShqupouNgubrdJUmmA3AAuPH9CK0Kj'),
 };
 
 export const MASTER_CONSTANTS = {

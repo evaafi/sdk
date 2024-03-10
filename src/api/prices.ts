@@ -1,22 +1,20 @@
 import { beginCell, Cell, Dictionary } from '@ton/core';
 import { ethers } from 'ethers';
-import sortDeepObjectArrays from 'sort-deep-object-arrays';
 import { CoinData } from '../types/Redstone';
 import { ASSET_ID } from '../constants';
 import { PriceData } from '../types/Common';
 
-type PricePackage = {
-    prices: {
-        symbol: string;
-        value: number;
-    }[];
+type SerializedPrice = {
+    symbol: string;
+    value: number;
     timestamp: number;
 };
 
-type SerializedPricePackage = {
-    symbols: string[];
-    values: string[];
-    timestamp: number;
+type PriceRawData = {
+    data: Buffer;
+    signature: Buffer;
+    dictKey: bigint;
+    dictValue: bigint;
 };
 
 function hexToArrayBuffer(input: any) {
@@ -50,79 +48,66 @@ function convertStringToBytes32String(str: string) {
     }
 }
 
-function sortDeepObjects<T>(arr: T[]): T[] {
-    return sortDeepObjectArrays(arr);
-}
+export function getLiteDataBytesString(priceData: SerializedPrice): string {
+    let data = priceData.symbol.substr(2) + priceData.value.toString(16).padStart(64, '0');
 
-function serializeToMessage(pricePackage: PricePackage): SerializedPricePackage {
-    const cleanPricesData = pricePackage.prices.map((p: any) => ({
-        symbol: convertStringToBytes32String(p.symbol),
-        value: Math.round(p.value * 10 ** 8),
-    }));
-    const sortedPrices = sortDeepObjects(cleanPricesData);
-    const symbols: string[] = [];
-    const values: string[] = [];
-    sortedPrices.forEach((p: any) => {
-        symbols.push(p.symbol);
-        values.push(p.value);
-    });
-
-    return {
-        symbols,
-        values,
-        timestamp: pricePackage.timestamp,
-    };
-}
-function getLiteDataBytesString(priceData: any): string {
-    let data = '';
-    for (let i = 0; i < priceData.symbols.length; i++) {
-        const symbol = priceData.symbols[i];
-        const value = priceData.values[i];
-        data += symbol.substr(2) + value.toString(16).padStart(64, '0');
-    }
     data += Math.ceil(priceData.timestamp / 1000)
         .toString(16)
         .padStart(64, '0');
     return data;
 }
 
+async function getPrice(symbol: string): Promise<PriceRawData> {
+    const res = await fetch(`https://api.redstone.finance/prices?symbol=${symbol}&provider=redstone&limit=1`);
+    const data = (await res.json()) as CoinData[];
+    const price = data[0];
+
+    const message = {
+        symbol: convertStringToBytes32String(price.symbol),
+        value: Math.round(price.value * 10 ** 8),
+        timestamp: price.timestamp,
+    };
+
+    let dictKey: bigint;
+    const dictValue = BigInt(message.value) * 10n;
+    switch (message.symbol) {
+        case '0x544f4e0000000000000000000000000000000000000000000000000000000000':
+            dictKey = ASSET_ID.TON;
+            break;
+        case '0x5553445400000000000000000000000000000000000000000000000000000000':
+            dictKey = ASSET_ID.jUSDT;
+            break;
+        case '0x5553444300000000000000000000000000000000000000000000000000000000':
+            dictKey = ASSET_ID.jUSDC;
+            break;
+        default:
+            throw new Error('Unknown symbol');
+    }
+
+    const signature = hexToArrayBuffer(price.liteEvmSignature);
+
+    return {
+        data: Buffer.from(getLiteDataBytesString(message), 'hex'),
+        signature: signature,
+        dictKey: dictKey,
+        dictValue: dictValue,
+    };
+}
+
 export async function getPrices(): Promise<PriceData | undefined> {
     try {
-        const symbols = ['TON', 'USDT', 'USDC']; // , "USDT", "USDC"
-        const rawPriceData: { data: Buffer; signature: Buffer }[] = [];
+        const symbols = ['TON', 'USDT', 'USDC'];
+        const rawPriceData: {
+            data: Buffer;
+            signature: Buffer;
+        }[] = [];
         const priceDict = Dictionary.empty(Dictionary.Keys.BigUint(256), Dictionary.Values.BigUint(64));
-        for (const symbol of symbols) {
-            const res = await fetch(`https://api.redstone.finance/prices?symbol=${symbol}&provider=redstone&limit=1`);
-            const data = (await res.json()) as CoinData[];
-            const price = data[0];
-            const serializedPriceData = serializeToMessage({
-                prices: [
-                    {
-                        symbol: price.symbol,
-                        value: price.value,
-                    },
-                ],
-                timestamp: price.timestamp,
-            });
-
-            switch (serializedPriceData.symbols[0]) {
-                case '0x544f4e0000000000000000000000000000000000000000000000000000000000':
-                    priceDict.set(ASSET_ID.TON, BigInt(serializedPriceData.values[0]) * 10n);
-                    break;
-                case '0x5553445400000000000000000000000000000000000000000000000000000000':
-                    priceDict.set(ASSET_ID.jUSDT, BigInt(serializedPriceData.values[0]) * 10n);
-                    break;
-                case '0x5553444300000000000000000000000000000000000000000000000000000000':
-                    priceDict.set(ASSET_ID.jUSDC, BigInt(serializedPriceData.values[0]) * 10n);
-                    break;
-            }
-
-            const signature = hexToArrayBuffer(price.liteEvmSignature);
-            rawPriceData.push({
-                data: Buffer.from(getLiteDataBytesString(serializedPriceData), 'hex'),
-                signature: signature,
-            });
-        }
+        const pricePromises = symbols.map(async (symbol) => {
+            const price = await getPrice(symbol);
+            priceDict.set(price.dictKey, price.dictValue);
+            rawPriceData.push(price);
+        });
+        await Promise.all(pricePromises);
 
         const rawPricesDict = Dictionary.empty<Buffer, Cell>();
         for (const data of rawPriceData) {

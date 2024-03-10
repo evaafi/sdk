@@ -5,10 +5,18 @@ export function getUserJettonWallet(ownerAddress: Address, assetID: bigint, netw
     const builder = beginCell().storeCoins(0).storeAddress(ownerAddress);
     switch (assetID) {
         case ASSET_ID.jUSDT:
-            builder.storeAddress(JETTON_MASTER_ADDRESSES.jUSDT_TESTNET);
+            if (network === 'mainnet') {
+                builder.storeAddress(JETTON_MASTER_ADDRESSES.jUSDT_MAINNET);
+            } else {
+                builder.storeAddress(JETTON_MASTER_ADDRESSES.jUSDT_TESTNET);
+            }
             break;
         case ASSET_ID.jUSDC:
-            builder.storeAddress(JETTON_MASTER_ADDRESSES.jUSDC_TESTNET);
+            if (network === 'mainnet') {
+                builder.storeAddress(JETTON_MASTER_ADDRESSES.jUSDC_MAINNET);
+            } else {
+                builder.storeAddress(JETTON_MASTER_ADDRESSES.jUSDC_TESTNET);
+            }
             break;
         default:
             throw new Error('Unsupported asset');

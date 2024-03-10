@@ -10,7 +10,7 @@ export type UserBalance = {
     type?: BalanceType;
 };
 
-export type BaseLiquidationData = {
+export type UserLiqudationData = {
     greatestCollateralValue: bigint;
     greatestCollateralAsset: bigint;
     greatestLoanValue: bigint;
@@ -19,19 +19,19 @@ export type BaseLiquidationData = {
     totalLimit: bigint;
 };
 
-export type LiquidableData = BaseLiquidationData & {
+export type LiquidableData = UserLiqudationData & {
     liquidable: true;
     liquidationAmount: bigint;
     minCollateralAmount: bigint;
 };
 
-export type NonLiquidableData = BaseLiquidationData & {
+export type NonLiquidableData = UserLiqudationData & {
     liquidable: false;
 };
 
 export type LiquidationData = LiquidableData | NonLiquidableData;
 
-export type UserDataActive = {
+export type UserLiteData = {
     type: 'active';
     codeVersion: number;
     masterAddress: Address;
@@ -39,6 +39,13 @@ export type UserDataActive = {
     principals: Dictionary<bigint, bigint>;
     state: number;
     balances: Dictionary<bigint, UserBalance>;
+    trackingSupplyIndex: bigint;
+    trackingBorrowIndex: bigint;
+    dutchAuctionStart: number;
+    backupCell: Cell;
+};
+
+export type UserDataActive = UserLiteData & {
     withdrawalLimits: Dictionary<bigint, bigint>;
     borrowLimits: Dictionary<bigint, bigint>;
     repayLimits?: Dictionary<bigint, bigint>;
@@ -50,12 +57,7 @@ export type UserDataActive = {
     borrowBalance: bigint;
     availableToBorrow: bigint;
     limitUsedPercent: number;
-    limitUsed: number;
-
-    trackingSupplyIndex: bigint;
-    trackingBorrowIndex: bigint;
-    dutchAuctionStart: number;
-    backupCell: Cell;
+    limitUsed: bigint;
 
     liquidationData: LiquidationData;
 };

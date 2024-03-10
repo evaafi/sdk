@@ -1,9 +1,7 @@
-import crypto from 'crypto';
+import sha256 from 'crypto-js/sha256';
 
 export function sha256Hash(input: string): bigint {
-    const hash = crypto.createHash('sha256');
-    hash.update(input);
-    const hashBuffer = hash.digest();
-    const hashHex = hashBuffer.toString('hex');
+    const hash = sha256(input);
+    const hashHex = hash.toString();
     return BigInt('0x' + hashHex);
 }
