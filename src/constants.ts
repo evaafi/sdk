@@ -3,8 +3,8 @@ import { sha256Hash } from './utils/sha256BigInt';
 
 export const EVAA_MASTER_MAINNET = Address.parse('EQC8rUZqR_pWV1BylWUlPNBzyiTYVoBEmQkMIQDZXICfnuRr');
 export const MAINNET_VERSION = 2;
-export const EVAA_MASTER_TESTNET = Address.parse('kQBYUYkFuN16rqVmMSrwW5yBXWCYsBzTklubh9x7M8BuAsmx');
-export const TESTNET_VERSION = 2;
+export const EVAA_MASTER_TESTNET = Address.parse('kQBi2jDaq_-Oi62V7u_j_Vr1We8EqC3h0jkhB4Gf4JW741vX');
+export const TESTNET_VERSION = 1;
 
 export const ASSET_ID = {
     TON: sha256Hash('TON'),
@@ -43,7 +43,7 @@ export const OPCODES = {
 };
 
 export const FEES = {
-    SUPPLY: toNano('0.5'),
+    SUPPLY: toNano('0.3'),
     WITHDRAW: toNano('0.5'),
     SUPPLY_JETTON: toNano('0.8'),
     SUPPLY_JETTON_FWD: toNano('0.5'),

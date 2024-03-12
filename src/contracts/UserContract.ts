@@ -26,12 +26,6 @@ export class EvaaUser implements Contract {
         this.address = address;
     }
 
-    /**
-     * Get user contract lite data, when prices are not available
-     * @param provider contract provider. Passed automatically when opened by client
-     * @param assetsData assets data
-     * @param assetsConfig assets config
-     */
     async getSyncLite(
         provider: ContractProvider,
         assetsData: Dictionary<bigint, ExtendedAssetData>,
@@ -66,13 +60,6 @@ export class EvaaUser implements Contract {
         return false;
     }
 
-    /**
-     * Get full user data
-     * @param provider contract provider. Passed automatically when opened by client
-     * @param assetsData assets data
-     * @param assetsConfig assets config
-     * @param prices prices
-     */
     async getSync(
         provider: ContractProvider,
         assetsData: Dictionary<bigint, ExtendedAssetData>,

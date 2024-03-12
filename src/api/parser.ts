@@ -110,6 +110,10 @@ export function parseMasterData(masterDataBOC: string): MasterData {
     const assetsDataDict = masterSlice.loadDict(Dictionary.Keys.BigUint(256), createAssetData());
     const assetsExtendedData = Dictionary.empty<bigint, ExtendedAssetData>();
     const assetsReserves = Dictionary.empty<bigint, bigint>();
+    const apy = {
+        supply: Dictionary.empty<bigint, number>(),
+        borrow: Dictionary.empty<bigint, number>(),
+    };
 
     for (const [tokenSymbol, assetID] of Object.entries(ASSET_ID)) {
         const assetData = calculateAssetData(assetsConfigDict, assetsDataDict, assetID);
@@ -131,6 +135,9 @@ export function parseMasterData(masterDataBOC: string): MasterData {
         const totalSupply = calculatePresentValue(assetData.sRate, assetData.totalSupply);
         const totalBorrow = calculatePresentValue(assetData.bRate, assetData.totalBorrow);
         assetsReserves.set(assetID, assetData.balance - totalSupply + totalBorrow);
+
+        apy.supply.set(assetID, (1 + (Number(assetData.supplyInterest) / 1e12) * 24 * 3600) ** 365 - 1);
+        apy.borrow.set(assetID, (1 + (Number(assetData.borrowInterest) / 1e12) * 24 * 3600) ** 365 - 1);
     }
 
     return {
@@ -140,6 +147,7 @@ export function parseMasterData(masterDataBOC: string): MasterData {
         assetsConfig: assetsConfigDict,
         assetsData: assetsExtendedData,
         assetsReserves: assetsReserves,
+        apy: apy,
     };
 }
 
@@ -193,10 +201,6 @@ export function parseUserData(
 ): UserData {
     const withdrawalLimits = Dictionary.empty<bigint, bigint>();
     const borrowLimits = Dictionary.empty<bigint, bigint>();
-    const apy = {
-        supply: Dictionary.empty<bigint, number>(),
-        borrow: Dictionary.empty<bigint, number>(),
-    };
 
     let supplyBalance = 0n;
     let borrowBalance = 0n;
@@ -241,15 +245,12 @@ export function parseUserData(
                     0n,
                 ),
             );
+        } else {
+            borrowLimits.set(
+                assetID,
+                bigIntMin((availableToBorrow * 10n ** assetConfig.decimals) / prices.get(assetID)!, assetData.balance),
+            );
         }
-
-        borrowLimits.set(
-            assetID,
-            bigIntMin((availableToBorrow * 10n ** assetConfig.decimals) / prices.get(assetID)!, assetData.balance),
-        );
-
-        apy.supply.set(assetID, (1 + (Number(assetData.supplyInterest) / 1e12) * 24 * 3600) ** 365 - 1);
-        apy.borrow.set(assetID, (1 + (Number(assetData.borrowInterest) / 1e12) * 24 * 3600) ** 365 - 1);
     }
 
     const limitUsed = borrowBalance + availableToBorrow;
@@ -258,16 +259,19 @@ export function parseUserData(
             ? 0
             : Number(BigInt(1e9) - (availableToBorrow * BigInt(1e9)) / (borrowBalance + availableToBorrow)) / 1e7;
 
+    const liquidationData = calculateLiquidationData(assetsConfig, assetsData, userLiteData.principals, prices);
+    const healthFactor = 1 - Number(liquidationData.totalDebt) / Number(liquidationData.totalLimit);
+
     return {
         ...userLiteData,
         withdrawalLimits: withdrawalLimits,
         borrowLimits: borrowLimits,
-        apy: apy,
         supplyBalance: supplyBalance,
         borrowBalance: borrowBalance,
         availableToBorrow: availableToBorrow,
         limitUsedPercent: limitUsedPercent,
         limitUsed: limitUsed,
-        liquidationData: calculateLiquidationData(assetsConfig, assetsData, userLiteData.principals, prices),
+        liquidationData: liquidationData,
+        healthFactor: healthFactor,
     };
 }

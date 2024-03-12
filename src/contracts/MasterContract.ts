@@ -1,4 +1,14 @@
-import { Address, beginCell, Cell, Contract, ContractProvider, Sender, SendMode, storeStateInit } from '@ton/core';
+import {
+    Address,
+    beginCell,
+    Cell,
+    Contract,
+    ContractProvider,
+    OpenedContract,
+    Sender,
+    SendMode,
+    storeStateInit,
+} from '@ton/core';
 import {
     EVAA_MASTER_MAINNET,
     EVAA_MASTER_TESTNET,
@@ -44,7 +54,7 @@ export type JettonMessageParameters = {
  * @property assetID - asset ID
  */
 export type SupplyBaseParameters = {
-    queryID: number;
+    queryID: bigint;
     includeUserCode: boolean;
     amount: bigint;
     userAddress: Address;
@@ -76,7 +86,7 @@ export type JettonSupplyParameters = SupplyBaseParameters &
  * @property priceData - price data cell. Can be obtained from the getPrices function
  */
 export type WithdrawParameters = {
-    queryID: number;
+    queryID: bigint;
     assetID: bigint;
     amount: bigint;
     userAddress: Address;
@@ -110,7 +120,7 @@ export type LiquidationBaseData = {
  * @property priceData - price data cell. Can be obtained from the getPrices function
  */
 export type LiquidationBaseParameters = LiquidationBaseData & {
-    queryID: number;
+    queryID: bigint;
     liquidatorAddress: Address;
     includeUserCode: boolean;
     priceData: Cell;
@@ -282,6 +292,10 @@ export class Evaa implements Contract {
         return EvaaUser.createFromAddress(this.calculateUserSCAddr(userAddress));
     }
 
+    getOpenedUserContract(provider: ContractProvider, userAddress: Address): OpenedContract<EvaaUser> {
+        return provider.open(this.openUserContract(userAddress));
+    }
+
     /**
      * Get master contract data
      */
@@ -289,13 +303,6 @@ export class Evaa implements Contract {
         return this._data;
     }
 
-    /**
-     * Send supply message
-     * @param provider contract provider. Passed automatically when opened by client
-     * @param via sender
-     * @param value amount of TON to send
-     * @param parameters supply parameters
-     */
     async sendSupply(
         provider: ContractProvider,
         via: Sender,
@@ -321,13 +328,6 @@ export class Evaa implements Contract {
         }
     }
 
-    /**
-     * Send withdraw message
-     * @param provider contract provider. Passed automatically when opened by client
-     * @param via sender
-     * @param value amount of TON to send
-     * @param parameters withdraw parameters
-     */
     async sendWithdraw(provider: ContractProvider, via: Sender, value: bigint, parameters: WithdrawParameters) {
         const message = this.createWithdrawMessage(parameters);
         await provider.internal(via, {
@@ -337,13 +337,6 @@ export class Evaa implements Contract {
         });
     }
 
-    /**
-     * Send liquidation message
-     * @param provider contract provider. Passed automatically when opened by client
-     * @param via sender
-     * @param value amount of TON to send
-     * @param parameters liquidation parameters
-     */
     async sendLiquidation(
         provider: ContractProvider,
         via: Sender,

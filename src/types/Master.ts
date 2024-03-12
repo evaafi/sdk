@@ -63,4 +63,8 @@ export type MasterData = {
     assetsConfig: Dictionary<bigint, AssetConfig>;
     assetsData: Dictionary<bigint, ExtendedAssetData>;
     assetsReserves: Dictionary<bigint, bigint>;
+    apy: {
+        supply: Dictionary<bigint, number>;
+        borrow: Dictionary<bigint, number>;
+    };
 };

@@ -74,5 +74,5 @@ export {
 } from './constants';
 
 // Utils
-export { getTonConnectSender } from './utils/tonConnectSender';
+export { getLastSentBoc, getTonConnectSender } from './utils/tonConnectSender';
 export { getUserJettonWallet } from './utils/userJettonWallet';

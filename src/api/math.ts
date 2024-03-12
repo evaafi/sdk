@@ -185,7 +185,7 @@ export function calculateLiquidationData(
             principal > 0 ? (principal * assetData.sRate) / BigInt(1e12) : (principal * assetData.bRate) / BigInt(1e12);
         if (balance > 0) {
             const assetWorth = (balance * prices.get(key)!) / 10n ** assetConfig.decimals;
-            totalLimit += (assetWorth * assetConfig.liquidationThreshold) / BigInt(10000);
+            totalLimit += (assetWorth * assetConfig.liquidationThreshold) / MASTER_CONSTANTS.ASSET_COEFFICIENT_SCALE;
             if (assetWorth > gCollateralValue) {
                 gCollateralValue = assetWorth;
                 gCollateralAsset = key;
@@ -208,7 +208,9 @@ export function calculateLiquidationData(
         const liquidationBonus = gLoanAssetConfig.liquidationBonus;
         const loanDecimal = 10n ** gLoanAssetConfig.decimals;
         values.push(
-            (bigIntMax(gCollateralValue / 2n, bigIntMin(gCollateralValue, 10_000_000_000n)) * loanDecimal * 10000n) /
+            (bigIntMax(gCollateralValue / 2n, bigIntMin(gCollateralValue, 10_000_000_000n)) *
+                loanDecimal *
+                MASTER_CONSTANTS.ASSET_COEFFICIENT_SCALE) /
                 liquidationBonus /
                 gLoanAssetPrice,
         );

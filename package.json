@@ -32,7 +32,7 @@
     "@ton/core": ">=0.56.0",
     "@tonconnect/sdk": ">=3.0.0",
     "crypto-js": ">=4.2.0",
-    "ethereumjs-util": ">=7.0.10",
-    "ethers": ">=5.6.9"
+    "ethereumjs-util": "7.0.10",
+    "ethers": "5.6.9"
   }
 }
