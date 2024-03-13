@@ -2,6 +2,5 @@
 node_modules
 build
 temp
-*.tgz
 *.log
 .env

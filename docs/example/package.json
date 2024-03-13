@@ -1,0 +1,29 @@
+{
+  "name": "example",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "supply": "ts-node src/supply/index.ts",
+    "withdraw": "ts-node src/withdraw/index.ts",
+    "liquidation": "ts-node src/liquidation/index.ts",
+    "supply:tonconnect": "ts-node src/tonconnect/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@evaafi/sdk": "./evaafi-sdk-0.2.0.tgz",
+    "@ton/crypto": "^3.2.0",
+    "@ton/ton": "^13.11.1",
+    "@types/qrcode-terminal": "^0.12.2",
+    "dotenv": "^16.4.5",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.25",
+    "nodemon": "^3.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.2"
+  }
+}
