@@ -1,6 +1,15 @@
 # EVAA SDK Documentation
 
-In this documentation you can find explanation of SDK work and code examples, which you can run immediately:
+In this documentation you will find an explanation of how the SDK works and code samples.
+
+## Code Examples
+
+First of all, the environment variables must be set (see .env.example):
+
+- WALLET_MNEMONIC
+- RPC_API_KEY
+
+Then you can run the following commands:
 
 - Supply
 ```shell
@@ -22,10 +31,6 @@ npm run withdraw
 npm run liquidation
 ```
 
-Before running the examples, you need to set the environment variables (see .env.example):
-
-- WALLET_MNEMONIC
-- RPC_API_KEY
 
 ## Getting Started
 
@@ -44,7 +49,7 @@ const evaa = client.open(
 );
 ```
 
-Thus, the methods that require ContractProvider as an argument will automatically get it and be able to make network requests.
+Thus, the methods that require ContractProvider as an argument automatically gets it enabling network requests.
 
 Then you need to synchronize the data:
 
@@ -52,11 +57,11 @@ Then you need to synchronize the data:
 await evaa.getSync();
 ```
 
-At this point, `evaa` has all the necessary information for further work. Mostly we will need `AssetsConfig` and `AssetsData`.
+At this point, `evaa` has all the necessary information for further work. Mostly we need `AssetsConfig` and `AssetsData`.
 
 ## User Contract
 
-With the help of the master contract wrapper, we can get the user contract using two methods:
+With the master contract wrapper, we can get the user contract using two methods:
 
 - getOpenedUserContract: A contract that will be opened by the same client and use the same provider as the master contract.
 - openUserContract: Getting a user contract class without opening it, which will allow it to be opened later by another client.
@@ -64,7 +69,7 @@ With the help of the master contract wrapper, we can get the user contract using
 If there is no need for a separate provider, it is recommended to use `getOpenedUserContract` for convenience. After that, we need to [get the current prices](./extended.md#pricedata). There are 2 possible scenarios:
 
 
-- Very rare case when prices are not available: `getSyncLite` - a method that can get only the token balances on the user contract without calculating other values. This will allow you to interact with the contract at a minimum level even if prices are not available.
+- Very rare case when prices are not available: `getSyncLite` - a method that can get only the token balances on the user contract without calculating other values. This allows you to interact with the contract at a minimum level even if prices are not available.
 - Main case: `getSync` - a method that takes **AssetsData**, **AssetsConfig** and **PriceData**. Using these values, it calculates all the necessary limits and useful values for the user.
 
 ## Available Operations
@@ -82,7 +87,7 @@ Short summary of examples:
 
 ### Supply
 
-In the [code](./example/src/supply/index.ts) you can see an example of sending a message to top up the balance using Wallet V4. An important point in this example is that here we get the builded message and send it manually:
+In the [code](./example/src/supply/index.ts) you can see an example of sending a message to top up the balance using Wallet V4. An important point in this example is that here we get prebuilt message and send it manually:
 
 ```typescript
 // create signed transfer for out wallet with internal message to EVAA Master Contract
@@ -104,7 +109,7 @@ const signedMessage = wallet.createTransfer({
 await wallet.send(signedMessage);
 ```
 
-We do all this to get the external message, using the hash of which, we can easily find our transaction using TonViewer:
+This was required for getting the external message, using the hash of which, we can easily find our transaction using TonViewer:
 
 ```typescript
 // create external message manually
@@ -130,7 +135,7 @@ In the [other example](./example/src/tonconnect/index.ts) regarding the same ope
 const connector = await getConnector();
 ```
 
-The next step is to use the `getTonConnectSender` function to get the `Sender` implementation for TonConnect. This allows us to send our messages immediately inside the class method without the need to write extra code:
+The next step is to use the `getTonConnectSender` function to get the `Sender` implementation for TonConnect. This allows us to send our messages immediately inside the class method without writing extra code:
 
 ```typescript
 await evaa.sendSupply(getTonConnectSender(connector), toNano(1) + FEES.SUPPLY, {
@@ -150,7 +155,7 @@ console.log(
 );
 ```
 
-**Important:** To get the external message hash, you need to use the `getLastSentBoc` function. At the moment, this is the only way to get the last sent message. Value of `lastSentBoc` will contain only the last sent message.
+**Important:** To get the external message hash, you want to use the `getLastSentBoc` function. At the moment, this is the only way to get the last sent message. Value of `lastSentBoc` containd only the last sent message.
 
 ### Withdraw
 
@@ -180,7 +185,7 @@ const user = evaa.getOpenedUserContract(wallet.address);
 await user.getSync(evaa.data!.assetsData, evaa.data!.assetsConfig, priceData!.dict);
 ```
 
-Now we can calculate all the necessary data and check if the user is liquidable using the `isLuqidable` field. If yes, we can get the necessary information (`liquidationBaseData`). Using these values, we can liquidate the user:
+Now we can calculate all the necessary data and check if the user is liquidable using the `isLiqidable` field. If yes, we can get the necessary information (`liquidationBaseData`). Using these values, we can liquidate the user:
 
 ```typescript
 if (user.isLiquidable) {
@@ -213,9 +218,9 @@ if (user.isLiquidable) {
 
 ## Additional
 
-In the `supply` and `liquidation` operations, jettons can be involved, which means that the first message should be sent not to the master contract, but to the jetton wallet.
+In the `supply` and `liquidation` operations may involve jettons, which means that the first message must be sent to the jetton's wallet rather than to the master contract.
 
-In this case, the SDK will calculate the jetton wallet address and send the message to it, so no additional actions are required from the developer. The only change is to add optional fields `responseDestination` and `forwardAmount`.
+In this case, the SDK will calculate the jetton wallet address and send the message to it, so no additional actions are required. The only change is to add optional fields `responseDestination` and `forwardAmount`.
 
 ## Extended Documentation
 
