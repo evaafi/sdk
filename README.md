@@ -1,6 +1,6 @@
 # EVAA SDK
 
-The EVAA SDK is designed to easily integrate with EVAA lending protocol.
+The EVAA SDK is designed to easily integrate with the EVAA lending protocol on TON blockchain.
 
 ## Documentation
 
