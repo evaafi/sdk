@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.3.0 - 2024-04-04
+### Added
+- New asset - stTON
+
+### Changed
+- Price fetching from another source
+- Testnet master contract address and version
+- Testnet master contract address
+
+### Removed
+- Ethereum dependencies
+
 ## 0.2.0 - 2024-03-13
 This release contains breaking changes.
 
