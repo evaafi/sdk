@@ -57,16 +57,17 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
             const oracle = src.loadUintBig(256);
             const decimals = BigInt(src.loadUint(8));
             const ref = src.loadRef().beginParse();
-            const collateralFactor = BigInt(ref.loadUint(16));
-            const liquidationThreshold = BigInt(ref.loadUint(16));
-            const liquidationBonus = BigInt(ref.loadUint(16));
-            const baseBorrowRate = BigInt(ref.loadUint(64));
-            const borrowRateSlopeLow = BigInt(ref.loadUint(64));
-            const borrowRateSlopeHigh = BigInt(ref.loadUint(64));
-            const supplyRateSlopeLow = BigInt(ref.loadUint(64));
-            const supplyRateSlopeHigh = BigInt(ref.loadUint(64));
-            const targetUtilization = BigInt(ref.loadUint(64));
-            const originationFee = BigInt(ref.loadUint(64));
+            const collateralFactor = ref.loadUintBig(16);
+            const liquidationThreshold = ref.loadUintBig(16);
+            const liquidationBonus = ref.loadUintBig(16);
+            const baseBorrowRate = ref.loadUintBig(64);
+            const borrowRateSlopeLow = ref.loadUintBig(64);
+            const borrowRateSlopeHigh = ref.loadUintBig(64);
+            const supplyRateSlopeLow = ref.loadUintBig(64);
+            const supplyRateSlopeHigh = ref.loadUintBig(64);
+            const targetUtilization = ref.loadUintBig(64);
+            const originationFee = ref.loadUintBig(64);
+            const dust = ref.loadUintBig(64);
 
             return {
                 oracle,
@@ -81,6 +82,7 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
                 supplyRateSlopeHigh,
                 targetUtilization,
                 originationFee,
+                dust,
             };
         },
     };
@@ -123,7 +125,7 @@ export function parseMasterData(masterDataBOC: string): MasterData {
     const masterConfig = {
         ifActive: masterConfigSlice.loadInt(8),
         admin: masterConfigSlice.loadAddress(),
-        adminPK: masterConfigSlice.loadBuffer(64),
+        adminPK: masterConfigSlice.loadUintBig(256),
         tokenKeys: loadMaybeMyRef(masterConfigSlice),
         walletToMaster: loadMaybeMyRef(masterConfigSlice),
     };

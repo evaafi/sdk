@@ -2,21 +2,26 @@ import { Address, Cell, toNano } from '@ton/core';
 import { sha256Hash } from './utils/sha256BigInt';
 
 export const EVAA_MASTER_MAINNET = Address.parse('EQC8rUZqR_pWV1BylWUlPNBzyiTYVoBEmQkMIQDZXICfnuRr');
-export const MAINNET_VERSION = 2;
-export const EVAA_MASTER_TESTNET = Address.parse('kQBi2jDaq_-Oi62V7u_j_Vr1We8EqC3h0jkhB4Gf4JW741vX');
-export const TESTNET_VERSION = 1;
+export const MAINNET_VERSION = 3;
+export const EVAA_MASTER_TESTNET = Address.parse('kQClWdMebpK90b6imEUreQJ4M3oz8Gqwd3xkVIowR8LDX98-');
+export const TESTNET_VERSION = 3;
+
+export const NFT_ID = '0xfb9874544d76ca49c5db9cc3e5121e4c018bc8a2fb2bfe8f2a38c5b9963492f5';
 
 export const ASSET_ID = {
     TON: sha256Hash('TON'),
     jUSDT: sha256Hash('jUSDT'),
     jUSDC: sha256Hash('jUSDC'),
+    stTON: sha256Hash('stTON'),
 };
 
 export const JETTON_MASTER_ADDRESSES = {
     jUSDT_MAINNET: Address.parse('EQBwbF0otxLyA3VrRjjC1q7i3G7LtoEpdyBjZEuNtrhC4drm'),
-    jUSDT_TESTNET: Address.parse('kQAGvWIETv29VRXLBL3lugxdLeCZ3r7jcuUvqKeZpbcwiQo0'),
+    jUSDT_TESTNET: Address.parse('kQBtFVedUkg9Q7M5eMx_gxAdP5R7QCLR-3RCYQNrm_DZYr6Z'),
     jUSDC_MAINNET: Address.parse('EQCEHZi-CLX2ghdsNbY35umR1OFODG5ySHrtK6GItMdWv7dS'),
-    jUSDC_TESTNET: Address.parse('kQCwj7zrRnBIYUhM7BShqupouNgubrdJUmmA3AAuPH9CK0Kj'),
+    jUSDC_TESTNET: Address.parse('kQCZWZD_rBZ1vrqF22aX4AZrU1a1q-YKZH_R2VlALoVNCvXd'),
+    stTON_MAINNET: Address.parse('EQBOn-1b-315ogeCl5lfPYW0ut6sjA2eq4LTdRv5vJJ1SsxX'),
+    stTON_TESTNET: Address.parse('kQCpm8ixF6STW7aidxn_Qkp4sR73msPlrduCeRZfo-Zu7dxt'),
 };
 
 export const MASTER_CONSTANTS = {

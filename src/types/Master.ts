@@ -25,12 +25,13 @@ export type AssetConfig = {
     supplyRateSlopeHigh: bigint;
     targetUtilization: bigint;
     originationFee: bigint;
+    dust: bigint;
 };
 
 export type MasterConfig = {
     ifActive: number;
     admin: Address;
-    adminPK: Buffer;
+    adminPK: bigint;
     tokenKeys: Cell | null;
     walletToMaster: Cell | null;
 };
