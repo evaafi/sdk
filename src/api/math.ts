@@ -55,7 +55,7 @@ export function calculateAssetData(
     assetsDataDict: Dictionary<bigint, AssetData>,
     assetId: bigint,
 ): ExtendedAssetData {
-    const config = assetsConfigDict.get(assetId); // maybe it's a huge mistake could be
+    const config = assetsConfigDict.get(assetId);
     const data = assetsDataDict.get(assetId);
 
     if (!data || !config) {

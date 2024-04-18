@@ -25,6 +25,13 @@ export function getUserJettonWallet(ownerAddress: Address, assetID: bigint, netw
                 builder.storeAddress(JETTON_MASTER_ADDRESSES.stTON_TESTNET);
             }
             break;
+        case ASSET_ID.tsTON:
+            if (network === 'mainnet') {
+                builder.storeAddress(JETTON_MASTER_ADDRESSES.tsTON_MAINNET);
+            } else {
+                builder.storeAddress(JETTON_MASTER_ADDRESSES.tsTON_TESTNET);
+            }
+            break;
         default:
             throw new Error('Unsupported asset');
     }

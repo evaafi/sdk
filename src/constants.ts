@@ -13,6 +13,7 @@ export const ASSET_ID = {
     jUSDT: sha256Hash('jUSDT'),
     jUSDC: sha256Hash('jUSDC'),
     stTON: sha256Hash('stTON'),
+    tsTON: sha256Hash('tsTON'),
 };
 
 export const JETTON_MASTER_ADDRESSES = {
@@ -22,6 +23,8 @@ export const JETTON_MASTER_ADDRESSES = {
     jUSDC_TESTNET: Address.parse('kQCZWZD_rBZ1vrqF22aX4AZrU1a1q-YKZH_R2VlALoVNCvXd'),
     stTON_MAINNET: Address.parse('EQBOn-1b-315ogeCl5lfPYW0ut6sjA2eq4LTdRv5vJJ1SsxX'),
     stTON_TESTNET: Address.parse('kQCpm8ixF6STW7aidxn_Qkp4sR73msPlrduCeRZfo-Zu7dxt'),
+    tsTON_MAINNET: Address.parse('EQCRC0telhv1QESvTx24nNqUWB72zCysXQ0Bx97lVzucQ3Gr'),
+    tsTON_TESTNET: null,
 };
 
 export const MASTER_CONSTANTS = {
