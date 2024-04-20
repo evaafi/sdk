@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.3.2 - 2024-04-20
+### Added
+- New asset - Tether USD
+
 ## 0.3.1 - 2024-04-19
 ### Added
 - New asset - tsTON
