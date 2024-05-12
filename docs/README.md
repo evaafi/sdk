@@ -202,7 +202,11 @@ if (user.isLiquidable) {
             type: 'ton',
         });
     } else {
-        await evaa.sendLiquidation(wallet.sender(keyPair.secretKey), FEES.LIQUIDATION_JETTON, {
+        const sender: Sender = {
+             address: wallet.address,
+             send: wallet.sender(keyPair.secretKey).send
+        };
+        await evaa.sendLiquidation(sender, FEES.LIQUIDATION_JETTON, {
             queryID: 0n,
             liquidatorAddress: wallet.address,
             includeUserCode: includeUserCode,
