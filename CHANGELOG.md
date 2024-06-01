@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.4.0 - 2024-06-01
+This release contains breaking changes.
+
+### Added
+- Master storage onchain getter
+- User storage onchain getter
+- Testnet flag for `parseMasterData`, `parseUserData` and `parseUserLiteData` functions
+- `maxTotalSupply` field to Assets Config
+- Seperate Assets ID for Mainnet and Testnet
+
+### Changed
+- Master contracts' version
+- Testnet master contract address
+
+### Removed
+- `ASSET_ID` constant
+
+### Fixed
+- Jetton wallets address calculation
+- Field names in Assets Config and Assets Data serialization functions
+
 ## 0.3.2 - 2024-04-20
 ### Added
 - New asset - Tether USD
