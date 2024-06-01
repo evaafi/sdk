@@ -289,7 +289,7 @@ export class Evaa implements Contract {
      * @returns user contract
      */
     openUserContract(userAddress: Address): EvaaUser {
-        return EvaaUser.createFromAddress(this.calculateUserSCAddr(userAddress));
+        return EvaaUser.createFromAddress(this.calculateUserSCAddr(userAddress), this.network === 'testnet');
     }
 
     getOpenedUserContract(provider: ContractProvider, userAddress: Address): OpenedContract<EvaaUser> {
@@ -363,12 +363,34 @@ export class Evaa implements Contract {
     }
 
     /**
+     * Open user contract wrapper
+     * @param forwardPayload - payload that will be forwarded to the address which requested the data
+     */
+    async sendOnchainGetter(
+        provider: ContractProvider,
+        via: Sender,
+        value: bigint,
+        queryID: bigint,
+        forwardPayload: Cell,
+    ) {
+        await provider.internal(via, {
+            value,
+            sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
+            body: beginCell()
+                .storeUint(OPCODES.ONCHAIN_GETTER, 32)
+                .storeUint(queryID, 64)
+                .storeRef(forwardPayload)
+                .endCell(),
+        });
+    }
+
+    /**
      * Sync master contract data
      */
     async getSync(provider: ContractProvider) {
         const state = (await provider.getState()).state;
         if (state.type === 'active') {
-            this._data = parseMasterData(state.data!.toString('base64url'));
+            this._data = parseMasterData(state.data!.toString('base64url'), this.network === 'testnet');
             if (this.network === 'testnet' && this._data.upgradeConfig.masterCodeVersion !== TESTNET_VERSION) {
                 throw Error(
                     `Outdated SDK version. It supports only master code version ${TESTNET_VERSION} on testnet, but the current master code version is ${this._data.upgradeConfig.masterCodeVersion}`,

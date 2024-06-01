@@ -14,7 +14,7 @@ export {
 } from './api/math';
 
 // Parser
-export { createAssetData, createAssetConfig, parseMasterData, parseUserData } from './api/parser';
+export { createAssetData, createAssetConfig, parseMasterData, parseUserData, parseUserLiteData } from './api/parser';
 
 // Prices
 export { getPrices } from './api/prices';
@@ -64,11 +64,9 @@ export {
     MAINNET_VERSION,
     EVAA_MASTER_TESTNET,
     TESTNET_VERSION,
-    ASSET_ID,
     JETTON_MASTER_ADDRESSES,
     MASTER_CONSTANTS,
     LENDING_CODE,
-    JETTON_WALLET_CODE,
     OPCODES,
     FEES,
 } from './constants';

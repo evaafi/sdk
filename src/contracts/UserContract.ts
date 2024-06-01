@@ -1,15 +1,16 @@
-import { Address, Contract, ContractProvider, Dictionary } from '@ton/core';
+import { Address, beginCell, Cell, Contract, ContractProvider, Dictionary, Sender, SendMode } from '@ton/core';
 import { UserData, UserLiteData } from '../types/User';
 import { parseUserData, parseUserLiteData } from '../api/parser';
 import { AssetConfig, ExtendedAssetData } from '../types/Master';
 import { LiquidationBaseData } from './MasterContract';
-import { ASSET_ID } from '../constants';
+import { MAINNET_ASSETS_ID, OPCODES } from '../constants';
 
 /**
  * User contract wrapper
  */
 export class EvaaUser implements Contract {
     readonly address: Address;
+    readonly testnet: boolean = false;
     private lastSync = 0;
     private _liteData?: UserLiteData;
     private _data?: UserData;
@@ -17,13 +18,15 @@ export class EvaaUser implements Contract {
     /**
      * Create user contract wrapper from address
      * @param address user contract address
+     * @param testnet testnet flag
      */
-    static createFromAddress(address: Address) {
-        return new EvaaUser(address);
+    static createFromAddress(address: Address, testnet: boolean = false) {
+        return new EvaaUser(address, testnet);
     }
 
-    private constructor(address: Address) {
+    private constructor(address: Address, testnet: boolean = false) {
         this.address = address;
+        this.testnet = testnet;
     }
 
     async getSyncLite(
@@ -33,7 +36,12 @@ export class EvaaUser implements Contract {
     ) {
         const state = (await provider.getState()).state;
         if (state.type === 'active') {
-            this._liteData = parseUserLiteData(state.data!.toString('base64url'), assetsData, assetsConfig);
+            this._liteData = parseUserLiteData(
+                state.data!.toString('base64url'),
+                assetsData,
+                assetsConfig,
+                this.testnet,
+            );
             this.lastSync = Math.floor(Date.now() / 1000);
         } else {
             this._liteData = undefined;
@@ -54,10 +62,32 @@ export class EvaaUser implements Contract {
         prices: Dictionary<bigint, bigint>,
     ): boolean {
         if (this._liteData) {
-            this._data = parseUserData(this._liteData, assetsData, assetsConfig, prices);
+            this._data = parseUserData(this._liteData, assetsData, assetsConfig, prices, this.testnet);
             return true;
         }
         return false;
+    }
+
+    /**
+     * Open user contract wrapper
+     * @param forwardPayload - payload that will be forwarded to the address which requested the data
+     */
+    async sendOnchainGetter(
+        provider: ContractProvider,
+        via: Sender,
+        value: bigint,
+        queryID: bigint,
+        forwardPayload: Cell,
+    ) {
+        await provider.internal(via, {
+            value,
+            sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
+            body: beginCell()
+                .storeCoins(BigInt(OPCODES.ONCHAIN_GETTER))
+                .storeUint(queryID, 64)
+                .storeRef(forwardPayload)
+                .endCell(),
+        });
     }
 
     async getSync(
@@ -68,8 +98,13 @@ export class EvaaUser implements Contract {
     ) {
         const state = (await provider.getState()).state;
         if (state.type === 'active') {
-            this._liteData = parseUserLiteData(state.data!.toString('base64url'), assetsData, assetsConfig);
-            this._data = parseUserData(this._liteData, assetsData, assetsConfig, prices);
+            this._liteData = parseUserLiteData(
+                state.data!.toString('base64url'),
+                assetsData,
+                assetsConfig,
+                this.testnet,
+            );
+            this._data = parseUserData(this._liteData, assetsData, assetsConfig, prices, this.testnet);
             this.lastSync = Math.floor(Date.now() / 1000);
         } else {
             this._data = { type: 'inactive' };
@@ -119,7 +154,7 @@ export class EvaaUser implements Contract {
             collateralAsset: this._data.liquidationData.greatestCollateralAsset,
             minCollateralAmount: this._data.liquidationData.minCollateralAmount,
             liquidationAmount: this._data.liquidationData.liquidationAmount,
-            tonLiquidation: this._data.liquidationData.greatestLoanAsset === ASSET_ID.TON,
+            tonLiquidation: this._data.liquidationData.greatestLoanAsset === MAINNET_ASSETS_ID.TON,
         };
     }
 }

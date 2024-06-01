@@ -1,6 +1,6 @@
 import { beginCell, Cell, Dictionary, DictionaryValue, Slice } from '@ton/core';
 import { AssetConfig, AssetData, ExtendedAssetData, MasterData } from '../types/Master';
-import { ASSET_ID, MASTER_CONSTANTS } from '../constants';
+import { MAINNET_ASSETS_ID, MASTER_CONSTANTS, TESTNET_ASSETS_ID } from '../constants';
 import {
     bigIntMax,
     bigIntMin,
@@ -16,8 +16,8 @@ import { BalanceType, UserBalance, UserData, UserLiteData } from '../types/User'
 export function createAssetData(): DictionaryValue<AssetData> {
     return {
         serialize: (src: any, buidler: any) => {
-            buidler.storeUint(src.s_rate, 64);
-            buidler.storeUint(src.b_rate, 64);
+            buidler.storeUint(src.sRate, 64);
+            buidler.storeUint(src.bRate, 64);
             buidler.storeUint(src.totalSupply, 64);
             buidler.storeUint(src.totalBorrow, 64);
             buidler.storeUint(src.lastAccural, 32);
@@ -43,7 +43,7 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
             const refBuild = beginCell();
             refBuild.storeUint(src.collateralFactor, 16);
             refBuild.storeUint(src.liquidationThreshold, 16);
-            refBuild.storeUint(src.liquidationPenalty, 16);
+            refBuild.storeUint(src.liquidationBonus, 16);
             refBuild.storeUint(src.baseBorrowRate, 64);
             refBuild.storeUint(src.borrowRateSlopeLow, 64);
             refBuild.storeUint(src.borrowRateSlopeHigh, 64);
@@ -51,6 +51,7 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
             refBuild.storeUint(src.supplyRateSlopeHigh, 64);
             refBuild.storeUint(src.targetUtilization, 64);
             refBuild.storeUint(src.originationFee, 64);
+            refBuild.storeUint(src.maxTotalSupply, 64);
             builder.storeRef(refBuild.endCell());
         },
         parse: (src: Slice) => {
@@ -68,6 +69,7 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
             const targetUtilization = ref.loadUintBig(64);
             const originationFee = ref.loadUintBig(64);
             const dust = ref.loadUintBig(64);
+            const maxTotalSupply = ref.loadUintBig(64);
 
             return {
                 oracle,
@@ -83,12 +85,14 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
                 targetUtilization,
                 originationFee,
                 dust,
+                maxTotalSupply,
             };
         },
     };
 }
 
-export function parseMasterData(masterDataBOC: string): MasterData {
+export function parseMasterData(masterDataBOC: string, testnet: boolean = false): MasterData {
+    const ASSETS_ID = testnet ? TESTNET_ASSETS_ID : MAINNET_ASSETS_ID;
     const masterSlice = Cell.fromBase64(masterDataBOC).beginParse();
     const meta = masterSlice.loadRef().beginParse().loadStringTail();
     const upgradeConfigParser = masterSlice.loadRef().beginParse();
@@ -117,7 +121,7 @@ export function parseMasterData(masterDataBOC: string): MasterData {
         borrow: Dictionary.empty<bigint, number>(),
     };
 
-    for (const [tokenSymbol, assetID] of Object.entries(ASSET_ID)) {
+    for (const [tokenSymbol, assetID] of Object.entries(ASSETS_ID)) {
         const assetData = calculateAssetData(assetsConfigDict, assetsDataDict, assetID);
         assetsExtendedData.set(assetID, assetData);
     }
@@ -132,7 +136,7 @@ export function parseMasterData(masterDataBOC: string): MasterData {
 
     masterConfigSlice.endParse();
 
-    for (const [_, assetID] of Object.entries(ASSET_ID)) {
+    for (const [_, assetID] of Object.entries(ASSETS_ID)) {
         const assetData = assetsExtendedData.get(assetID) as ExtendedAssetData;
         const totalSupply = calculatePresentValue(assetData.sRate, assetData.totalSupply);
         const totalBorrow = calculatePresentValue(assetData.bRate, assetData.totalBorrow);
@@ -157,7 +161,9 @@ export function parseUserLiteData(
     userDataBOC: string,
     assetsData: Dictionary<bigint, ExtendedAssetData>,
     assetsConfig: Dictionary<bigint, AssetConfig>,
+    testnet: boolean = false,
 ): UserLiteData {
+    const ASSETS_ID = testnet ? TESTNET_ASSETS_ID : MAINNET_ASSETS_ID;
     const userSlice = Cell.fromBase64(userDataBOC).beginParse();
 
     const codeVersion = userSlice.loadCoins();
@@ -173,7 +179,7 @@ export function parseUserLiteData(
 
     const userBalances = Dictionary.empty<bigint, UserBalance>();
 
-    for (const [_, assetID] of Object.entries(ASSET_ID)) {
+    for (const [_, assetID] of Object.entries(ASSETS_ID)) {
         const assetData = assetsData.get(assetID) as ExtendedAssetData;
         const assetConfig = assetsConfig.get(assetID) as AssetConfig;
         const balance = presentValue(assetData.sRate, assetData.bRate, principalsDict.get(assetID) || 0n);
@@ -200,20 +206,22 @@ export function parseUserData(
     assetsData: Dictionary<bigint, ExtendedAssetData>,
     assetsConfig: Dictionary<bigint, AssetConfig>,
     prices: Dictionary<bigint, bigint>,
+    testnet: boolean = false,
 ): UserData {
+    const ASSETS_ID = testnet ? TESTNET_ASSETS_ID : MAINNET_ASSETS_ID;
     const withdrawalLimits = Dictionary.empty<bigint, bigint>();
     const borrowLimits = Dictionary.empty<bigint, bigint>();
 
     let supplyBalance = 0n;
     let borrowBalance = 0n;
-    for (const [_, assetID] of Object.entries(ASSET_ID)) {
+    for (const [_, assetID] of Object.entries(ASSETS_ID)) {
         const assetData = assetsData.get(assetID) as ExtendedAssetData;
         const assetConfig = assetsConfig.get(assetID) as AssetConfig;
         const balance = presentValue(assetData.sRate, assetData.bRate, userLiteData.principals.get(assetID) || 0n);
         userLiteData.balances.set(assetID, balance);
     }
 
-    for (const [_, assetID] of Object.entries(ASSET_ID)) {
+    for (const [_, assetID] of Object.entries(ASSETS_ID)) {
         const assetConfig = assetsConfig.get(assetID) as AssetConfig;
         const balance = userLiteData.balances.get(assetID) as UserBalance;
 
@@ -226,7 +234,7 @@ export function parseUserData(
     }
 
     const availableToBorrow = getAvailableToBorrow(assetsConfig, assetsData, userLiteData.principals, prices);
-    for (const [_, assetID] of Object.entries(ASSET_ID)) {
+    for (const [_, assetID] of Object.entries(ASSETS_ID)) {
         const assetConfig = assetsConfig.get(assetID) as AssetConfig;
         const assetData = assetsData.get(assetID) as ExtendedAssetData;
         const balance = userLiteData.balances.get(assetID) as UserBalance;

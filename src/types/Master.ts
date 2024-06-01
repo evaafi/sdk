@@ -26,6 +26,7 @@ export type AssetConfig = {
     targetUtilization: bigint;
     originationFee: bigint;
     dust: bigint;
+    maxTotalSupply: bigint;
 };
 
 export type MasterConfig = {

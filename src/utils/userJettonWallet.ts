@@ -1,52 +1,65 @@
-import { Address, beginCell, storeStateInit } from '@ton/core';
-import { ASSET_ID, JETTON_MASTER_ADDRESSES, JETTON_WALLET_CODE } from '../constants';
+import { Address, beginCell, Cell, storeStateInit } from '@ton/core';
+import { JETTON_MASTER_ADDRESSES, JETTON_WALLETS_CODE, MAINNET_ASSETS_ID } from '../constants';
 
 export function getUserJettonWallet(ownerAddress: Address, assetID: bigint, network: 'mainnet' | 'testnet'): Address {
     const builder = beginCell().storeCoins(0).storeAddress(ownerAddress);
+    let jettonWalletCode: Cell;
     switch (assetID) {
-        case ASSET_ID.jUSDT:
+        case MAINNET_ASSETS_ID.jUSDT:
             if (network === 'mainnet') {
                 builder.storeAddress(JETTON_MASTER_ADDRESSES.jUSDT_MAINNET);
+                jettonWalletCode = JETTON_WALLETS_CODE.jUSDT_MAINNET;
             } else {
                 builder.storeAddress(JETTON_MASTER_ADDRESSES.jUSDT_TESTNET);
+                jettonWalletCode = JETTON_WALLETS_CODE.jUSDT_TESTNET;
             }
             break;
-        case ASSET_ID.jUSDC:
+        case MAINNET_ASSETS_ID.jUSDC:
             if (network === 'mainnet') {
                 builder.storeAddress(JETTON_MASTER_ADDRESSES.jUSDC_MAINNET);
+                jettonWalletCode = JETTON_WALLETS_CODE.jUSDC_MAINNET;
             } else {
                 builder.storeAddress(JETTON_MASTER_ADDRESSES.jUSDC_TESTNET);
+                jettonWalletCode = JETTON_WALLETS_CODE.jUSDC_TESTNET;
             }
             break;
-        case ASSET_ID.stTON:
+        case MAINNET_ASSETS_ID.stTON:
             if (network === 'mainnet') {
                 builder.storeAddress(JETTON_MASTER_ADDRESSES.stTON_MAINNET);
+                jettonWalletCode = JETTON_WALLETS_CODE.stTON_MAINNET;
             } else {
                 builder.storeAddress(JETTON_MASTER_ADDRESSES.stTON_TESTNET);
+                jettonWalletCode = JETTON_WALLETS_CODE.stTON_TESTNET;
             }
             break;
-        case ASSET_ID.tsTON:
+        case MAINNET_ASSETS_ID.tsTON:
             if (network === 'mainnet') {
                 builder.storeAddress(JETTON_MASTER_ADDRESSES.tsTON_MAINNET);
+                jettonWalletCode = JETTON_WALLETS_CODE.tsTON_MAINNET;
             } else {
-                builder.storeAddress(JETTON_MASTER_ADDRESSES.tsTON_TESTNET);
+                // builder.storeAddress(JETTON_MASTER_ADDRESSES.tsTON_TESTNET);
+                // jettonWalletCode = JETTON_WALLETS_CODE.tsTON_TESTNET;
+                throw new Error('tsTON is not supported on testnet');
             }
             break;
-        case ASSET_ID.USDT:
+        case MAINNET_ASSETS_ID.USDT:
             if (network === 'mainnet') {
                 builder.storeAddress(JETTON_MASTER_ADDRESSES.USDT_MAINNET);
+                jettonWalletCode = JETTON_WALLETS_CODE.USDT_MAINNET;
             } else {
-                builder.storeAddress(JETTON_MASTER_ADDRESSES.USDT_TESTNET);
+                // builder.storeAddress(JETTON_MASTER_ADDRESSES.USDT_TESTNET);
+                // jettonWalletCode = JETTON_WALLETS_CODE.USDT_TESTNET;
+                throw new Error('USDT is not supported on testnet');
             }
             break;
         default:
             throw new Error('Unsupported asset');
     }
-    const data = builder.storeRef(JETTON_WALLET_CODE).endCell();
+    const data = builder.storeRef(jettonWalletCode).endCell();
     const stateInit = beginCell()
         .store(
             storeStateInit({
-                code: JETTON_WALLET_CODE,
+                code: jettonWalletCode,
                 data: data,
             }),
         )
