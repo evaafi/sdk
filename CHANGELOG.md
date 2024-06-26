@@ -12,6 +12,9 @@ This release contains breaking changes.
 - Testnet master contract address
 - TODO??
 
+### Added
+- Tests for createAssetConfig
+
 ### Fixed
 - createAssetConfig serializer
 
