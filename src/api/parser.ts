@@ -51,7 +51,10 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
             refBuild.storeUint(src.supplyRateSlopeHigh, 64);
             refBuild.storeUint(src.targetUtilization, 64);
             refBuild.storeUint(src.originationFee, 64);
+            refBuild.storeUint(src.dust, 64);
             refBuild.storeUint(src.maxTotalSupply, 64);
+            refBuild.storeUint(src.reserveFactor, 16);
+            refBuild.storeUint(src.liquidationReserveFactor, 16);
             builder.storeRef(refBuild.endCell());
         },
         parse: (src: Slice) => {
@@ -70,6 +73,8 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
             const originationFee = ref.loadUintBig(64);
             const dust = ref.loadUintBig(64);
             const maxTotalSupply = ref.loadUintBig(64);
+            const reserveFactor = ref.loadUintBig(16);
+            const liquidationReserveFactor = ref.loadUintBig(16);
 
             return {
                 oracle,
@@ -86,6 +91,8 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
                 originationFee,
                 dust,
                 maxTotalSupply,
+                reserveFactor,
+                liquidationReserveFactor
             };
         },
     };

@@ -205,7 +205,7 @@ export function calculateLiquidationData(
         const values: bigint[] = [];
         const gCollateralAssetConfig = assetsConfig.get(gCollateralAsset)!;
         const gLoanAssetConfig = assetsConfig.get(gLoanAsset)!;
-        const liquidationBonus = gLoanAssetConfig.liquidationBonus;
+        const liquidationBonus = gCollateralAssetConfig.liquidationBonus;
         const loanDecimal = 10n ** gLoanAssetConfig.decimals;
         values.push(
             (bigIntMax(gCollateralValue / 2n, bigIntMin(gCollateralValue, 10_000_000_000n)) *

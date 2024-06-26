@@ -5,3 +5,6 @@ dist
 temp
 *.log
 .env
+.vscode/
+src/**/*.js
+tests/**/*.js
