@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 - Added endpoint argument for getPrices, default api.stardust-mainnet.iotaledger.net
+- Added applyDust option in parseUserLiteData and parseUserData
 
 ### Fixed
 - UserBalance calculation was fixed
