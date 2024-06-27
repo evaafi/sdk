@@ -169,6 +169,7 @@ export function parseUserLiteData(
     assetsData: Dictionary<bigint, ExtendedAssetData>,
     assetsConfig: Dictionary<bigint, AssetConfig>,
     testnet: boolean = false,
+    applyDust: boolean = false
 ): UserLiteData {
     const ASSETS_ID = testnet ? TESTNET_ASSETS_ID : MAINNET_ASSETS_ID;
     const userSlice = Cell.fromBase64(userDataBOC).beginParse();
@@ -189,7 +190,7 @@ export function parseUserLiteData(
     for (const [_, assetID] of Object.entries(ASSETS_ID)) {
         const assetData = assetsData.get(assetID) as ExtendedAssetData;
         const assetConfig = assetsConfig.get(assetID) as AssetConfig;
-        const balance = presentValue(assetData.sRate, assetData.bRate, principalsDict.get(assetID) || 0n, assetConfig.dust);
+        const balance = presentValue(assetData.sRate, assetData.bRate, principalsDict.get(assetID) || 0n, applyDust ? assetConfig.dust : BigInt(0));
         userBalances.set(assetID, balance);
     }
 
@@ -214,6 +215,7 @@ export function parseUserData(
     assetsConfig: Dictionary<bigint, AssetConfig>,
     prices: Dictionary<bigint, bigint>,
     testnet: boolean = false,
+    applyDust: boolean = false
 ): UserData {
     const ASSETS_ID = testnet ? TESTNET_ASSETS_ID : MAINNET_ASSETS_ID;
     const withdrawalLimits = Dictionary.empty<bigint, bigint>();
@@ -224,7 +226,7 @@ export function parseUserData(
     for (const [_, assetID] of Object.entries(ASSETS_ID)) {
         const assetData = assetsData.get(assetID) as ExtendedAssetData;
         const assetConfig = assetsConfig.get(assetID) as AssetConfig;
-        const balance = presentValue(assetData.sRate, assetData.bRate, userLiteData.principals.get(assetID) || 0n, assetConfig.dust);
+        const balance = presentValue(assetData.sRate, assetData.bRate, userLiteData.principals.get(assetID) || 0n, applyDust ? assetConfig.dust : BigInt(0));
         userLiteData.balances.set(assetID, balance);
     }
 

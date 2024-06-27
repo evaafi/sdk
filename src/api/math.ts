@@ -145,13 +145,13 @@ export function getAvailableToBorrow(
     return borrowLimit - borrowAmount;
 }
 
-export function presentValue(sRate: bigint, bRate: bigint, principalValue: bigint, dust: bigint): UserBalance {
-    if (principalValue > dust) {
+export function presentValue(sRate: bigint, bRate: bigint, principalValue: bigint, threshold: bigint): UserBalance {
+    if (principalValue > threshold) {
         return {
             amount: calculatePresentValue(sRate, principalValue),
             type: BalanceType.supply,
         };
-    } else if (principalValue < -dust) {
+    } else if (principalValue < -threshold) {
         return {
             amount: calculatePresentValue(bRate, -principalValue),
             type: BalanceType.borrow,
