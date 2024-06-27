@@ -189,7 +189,7 @@ export function parseUserLiteData(
     for (const [_, assetID] of Object.entries(ASSETS_ID)) {
         const assetData = assetsData.get(assetID) as ExtendedAssetData;
         const assetConfig = assetsConfig.get(assetID) as AssetConfig;
-        const balance = presentValue(assetData.sRate, assetData.bRate, principalsDict.get(assetID) || 0n);
+        const balance = presentValue(assetData.sRate, assetData.bRate, principalsDict.get(assetID) || 0n, assetConfig.dust);
         userBalances.set(assetID, balance);
     }
 
@@ -224,7 +224,7 @@ export function parseUserData(
     for (const [_, assetID] of Object.entries(ASSETS_ID)) {
         const assetData = assetsData.get(assetID) as ExtendedAssetData;
         const assetConfig = assetsConfig.get(assetID) as AssetConfig;
-        const balance = presentValue(assetData.sRate, assetData.bRate, userLiteData.principals.get(assetID) || 0n);
+        const balance = presentValue(assetData.sRate, assetData.bRate, userLiteData.principals.get(assetID) || 0n, assetConfig.dust);
         userLiteData.balances.set(assetID, balance);
     }
 

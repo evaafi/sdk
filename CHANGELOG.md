@@ -4,9 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.4.1 - 2024-06-27
+## 0.4.2 - 2024-06-27
 ### Changed
 - reserveFactor and liquidationReserveFactor support in assetConfig
+
+### Fixed
+- userBalance calculation was fixed
 
 ## 0.4.0 - 2024-06-01
 This release contains breaking changes.
