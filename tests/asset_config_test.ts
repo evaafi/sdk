@@ -1,5 +1,5 @@
 import {createAssetConfig, EVAA_MASTER_MAINNET} from '../src';
-import {Builder, Dictionary, TonClient} from '@ton/ton';
+import {beginCell, Dictionary, TonClient} from '@ton/ton';
 import dotenv from 'dotenv';
 
 let client: TonClient;
@@ -14,21 +14,21 @@ beforeAll(async () => {
 });
 
 test('createAssetConfig test', async () => {
-    expect.assertions(1);
+    expect.assertions(2);
 
-    const assetConfig = createAssetConfig();
+    const assetConfigBuilder = createAssetConfig();
     const res = await client.runMethod(EVAA_MASTER_MAINNET, 'getAssetsConfig');
-    const cell = res.stack.readCell();
+    const cellParsing = res.stack.readCell().beginParse();
 
-    const slice = cell.asSlice()
-    const dict = slice.loadDictDirect(Dictionary.Keys.BigUint(256), assetConfig);
-    let builder = new Builder();
-    dict.storeDirect(builder, Dictionary.Keys.BigUint(256), assetConfig);
+    let dictBuilder = beginCell();
+
+    const dict = cellParsing.loadDictDirect(Dictionary.Keys.BigUint(256), assetConfigBuilder);
+    dict.storeDirect(dictBuilder, Dictionary.Keys.BigUint(256), assetConfigBuilder);
     
-    const endCell = builder;
     //console.log(dict);
-    const dictAgain = Dictionary.loadDirect(Dictionary.Keys.BigUint(256), assetConfig, endCell.asSlice());
+    const dictAgain = Dictionary.loadDirect(Dictionary.Keys.BigUint(256), assetConfigBuilder, dictBuilder.asSlice());
     //console.log(dictAgain);
 
+    await expect(cellParsing.remainingBits).toStrictEqual(0);
     await expect(JSON.stringify(dict)).toStrictEqual(JSON.stringify(dictAgain));
 });

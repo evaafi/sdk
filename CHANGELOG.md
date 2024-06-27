@@ -4,19 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.5.0 - 2024-06-01
-This release contains breaking changes.
-
+## 0.4.1 - 2024-06-27
 ### Changed
-- Master contracts' version
-- Testnet master contract address
-- TODO??
-
-### Added
-- Tests for createAssetConfig
-
-### Fixed
-- createAssetConfig serializer
+- reserveFactor and liquidationReserveFactor support in assetConfig
 
 ## 0.4.0 - 2024-06-01
 This release contains breaking changes.
