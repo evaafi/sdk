@@ -6,13 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## 0.4.3 - 2024-06-27
 ### Changed
-- reserveFactor and liquidationReserveFactor support in assetConfig
+- ReserveFactor and liquidationReserveFactor support in assetConfig
 
 ### Changed
 - Added endpoint argument for getPrices, default api.stardust-mainnet.iotaledger.net
 
 ### Fixed
-- userBalance calculation was fixed
+- UserBalance calculation was fixed
+- BorrowLimits calculation in parseUserData
 
 ## 0.4.0 - 2024-06-01
 This release contains breaking changes.
