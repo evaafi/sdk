@@ -27,6 +27,8 @@ export type AssetConfig = {
     originationFee: bigint;
     dust: bigint;
     maxTotalSupply: bigint;
+    reserveFactor: bigint;
+    liquidationReserveFactor: bigint;
 };
 
 export type MasterConfig = {

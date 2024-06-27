@@ -145,13 +145,13 @@ export function getAvailableToBorrow(
     return borrowLimit - borrowAmount;
 }
 
-export function presentValue(sRate: bigint, bRate: bigint, principalValue: bigint): UserBalance {
-    if (principalValue > 0) {
+export function presentValue(sRate: bigint, bRate: bigint, principalValue: bigint, threshold: bigint): UserBalance {
+    if (principalValue > threshold) {
         return {
             amount: calculatePresentValue(sRate, principalValue),
             type: BalanceType.supply,
         };
-    } else if (principalValue < 0) {
+    } else if (principalValue < -threshold) {
         return {
             amount: calculatePresentValue(bRate, -principalValue),
             type: BalanceType.borrow,
@@ -205,7 +205,7 @@ export function calculateLiquidationData(
         const values: bigint[] = [];
         const gCollateralAssetConfig = assetsConfig.get(gCollateralAsset)!;
         const gLoanAssetConfig = assetsConfig.get(gLoanAsset)!;
-        const liquidationBonus = gLoanAssetConfig.liquidationBonus;
+        const liquidationBonus = gCollateralAssetConfig.liquidationBonus;
         const loanDecimal = 10n ** gLoanAssetConfig.decimals;
         values.push(
             (bigIntMax(gCollateralValue / 2n, bigIntMin(gCollateralValue, 10_000_000_000n)) *

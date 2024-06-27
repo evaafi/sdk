@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.4.3 - 2024-06-27
+### Changed
+- ReserveFactor and liquidationReserveFactor support in assetConfig
+
+### Changed
+- Added endpoint argument for getPrices, default api.stardust-mainnet.iotaledger.net
+- Added applyDust option in parseUserLiteData and parseUserData
+
+### Fixed
+- UserBalance calculation was fixed
+- BorrowLimits calculation in parseUserData
+
 ## 0.4.0 - 2024-06-01
 This release contains breaking changes.
 
