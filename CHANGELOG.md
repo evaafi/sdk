@@ -4,9 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.4.2 - 2024-06-27
+## 0.4.3 - 2024-06-27
 ### Changed
 - reserveFactor and liquidationReserveFactor support in assetConfig
+
+### Changed
+- Added endpoint argument for getPrices, default api.stardust-mainnet.iotaledger.net
 
 ### Fixed
 - userBalance calculation was fixed
