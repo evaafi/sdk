@@ -59,6 +59,9 @@ export type SupplyBaseParameters = {
     amount: bigint;
     userAddress: Address;
     assetID: bigint;
+    /* Will be in v6 
+    amountToTransfer: bigint;
+    payload: Cell; */
 };
 /**
  * Parameters for the TON supply message
@@ -92,6 +95,9 @@ export type WithdrawParameters = {
     userAddress: Address;
     includeUserCode: boolean;
     priceData: Cell;
+    /* Will be in v6 
+    amountToTransfer: bigint;
+    payload: Cell; */
 };
 
 /**
@@ -184,6 +190,9 @@ export class Evaa implements Contract {
                         .storeUint(OPCODES.SUPPLY, 32)
                         .storeInt(parameters.includeUserCode ? -1 : 0, 2)
                         .storeAddress(parameters.userAddress)
+                        /* Will be in v6 
+                        .storeUint(parameters.amountToTransfer, 64)
+                        .storeRef(parameters.payload) */
                         .endCell(),
                 )
                 .endCell();
@@ -194,6 +203,9 @@ export class Evaa implements Contract {
                 .storeInt(parameters.includeUserCode ? -1 : 0, 2)
                 .storeUint(parameters.amount, 64)
                 .storeAddress(parameters.userAddress)
+                /* Will be in v6 
+                .storeUint(parameters.amountToTransfer, 64)
+                .storeRef(parameters.payload) */
                 .endCell();
         }
     }
@@ -210,6 +222,9 @@ export class Evaa implements Contract {
             .storeUint(parameters.amount, 64)
             .storeAddress(parameters.userAddress)
             .storeInt(parameters.includeUserCode ? -1 : 0, 2)
+            /* Will be in v6 
+            .storeUint(parameters.amountToTransfer, 64)
+            .storeRef(parameters.payload) */
             .storeRef(parameters.priceData)
             .endCell();
     }

@@ -103,12 +103,10 @@ export function calculateAssetInterest(assetConfig: AssetConfig, assetData: Asse
             );
     }
 
-    const reserveFactor = 10n;
-    const reserveScale = 100n;
     supplyInterest = mulDiv(
         mulDiv(borrowInterest, utilization, MASTER_CONSTANTS.FACTOR_SCALE),
-        reserveScale - reserveFactor,
-        reserveScale,
+        MASTER_CONSTANTS.ASSET_RESERVE_FACTOR_SCALE - assetConfig.reserveFactor,
+        MASTER_CONSTANTS.ASSET_RESERVE_FACTOR_SCALE,
     );
 
     return {
@@ -205,7 +203,7 @@ export function calculateLiquidationData(
         const values: bigint[] = [];
         const gCollateralAssetConfig = assetsConfig.get(gCollateralAsset)!;
         const gLoanAssetConfig = assetsConfig.get(gLoanAsset)!;
-        const liquidationBonus = gLoanAssetConfig.liquidationBonus;
+        const liquidationBonus = gCollateralAssetConfig.liquidationBonus;
         const loanDecimal = 10n ** gLoanAssetConfig.decimals;
         values.push(
             (bigIntMax(gCollateralValue / 2n, bigIntMin(gCollateralValue, 10_000_000_000n)) *
