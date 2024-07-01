@@ -39,14 +39,14 @@ type OutputData = {
     };
 };
 
-export async function getPrices(): Promise<PriceData | undefined> {
+export async function getPrices(endpoint: String = "api.stardust-mainnet.iotaledger.net"): Promise<PriceData | undefined> {
     try {
-        let result = await fetch('https://api.stardust-mainnet.iotaledger.net/api/indexer/v1/outputs/nft/' + NFT_ID, {
+        let result = await fetch(`https://${endpoint}/api/indexer/v1/outputs/nft/${NFT_ID}`, {
             headers: { accept: 'application/json' },
         });
         let outputId = (await result.json()) as NftData;
 
-        result = await fetch('https://api.stardust-mainnet.iotaledger.net/api/core/v2/outputs/' + outputId.items[0], {
+        result = await fetch(`https://${endpoint}/api/core/v2/outputs/${outputId.items[0]}`, {
             headers: { accept: 'application/json' },
         });
 

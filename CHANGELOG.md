@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.5.0 - 2024-06-29
+This release contains breaking changes.  
+
+### Added
+- Reserve variables parsing on user & master sc
+- Added endpoint argument for getPrices, default api.stardust-mainnet.iotaledger.net
+- Added applyDust (default false) option in parseUserLiteData and parseUserData
+
+### Changed
+- Master contracts' version
+- Testnet master contract address
+- Parsers on master sc 
+- Parsers on user sc 
+- Liquidation calculations now counts with reserve factor from master config 
+
+### Fixed
+- UserBalance calculation was fixed
+
 ## 0.4.0 - 2024-06-01
 This release contains breaking changes.
 

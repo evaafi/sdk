@@ -27,6 +27,12 @@ export type AssetConfig = {
     originationFee: bigint;
     dust: bigint;
     maxTotalSupply: bigint;
+    reserveFactor: bigint;
+    liquidationReserveFactor: bigint;
+    /* Will be in v6 
+    minPrincipalForRewards: bigint;
+    baseTrackingSupplySpeed: bigint;
+    baseTrackingBorrowSpeed: bigint; */
 };
 
 export type MasterConfig = {
@@ -44,6 +50,10 @@ export type AssetData = {
     totalBorrow: bigint;
     lastAccural: bigint;
     balance: bigint;
+    /* Will be in v6 
+    trackingSupplyIndex: bigint;
+    trackingBorrowIndex: bigint;
+    lastTrackingAccural: bigint; */
 };
 
 export type AssetInterest = {
