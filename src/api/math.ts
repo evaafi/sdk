@@ -1,7 +1,8 @@
 import { AssetConfig, AssetData, AssetInterest, ExtendedAssetData } from '../types/Master';
 import { MASTER_CONSTANTS } from '../constants';
 import { Dictionary } from '@ton/core';
-import { BalanceType, LiquidationData, UserBalance } from '../types/User';
+import { BalanceChangeType, BalanceType, LiquidationData, PredictHealthFactorArgs, UserBalance } from '../types/User';
+import { sha256Hash } from '../utils/sha256BigInt';
 
 export function mulFactor(decimal: bigint, a: bigint, b: bigint): bigint {
     return (a * b) / decimal;
@@ -247,4 +248,39 @@ export function calculateLiquidationData(
         totalLimit,
         liquidable: false,
     };
+}
+
+export function predictHealthFactor(args: PredictHealthFactorArgs): number {
+    const liquidationData = calculateLiquidationData(args.assetsConfig, args.assetsData, args.balances, args.prices);
+    const tokenHash = sha256Hash(args.tokenSymbol);
+    
+    const assetConfig = args.assetsConfig.get(tokenHash)!;
+    const assetPrice = Number(args.prices.get(tokenHash)!);
+   
+    let totalLimit = Number(liquidationData.totalLimit);
+    let totalBorrow = Number(liquidationData.totalDebt);
+
+    const currentAmount = args.amount;
+
+    const decimals = Number(assetConfig.decimals)
+
+    const currentBalance = assetPrice * Number(currentAmount) / Math.pow(10, decimals);
+    const changeType = args.balanceChangeType;
+
+    if (currentAmount != null && currentAmount != 0n) { 
+        if (changeType == BalanceChangeType.Borrow) {
+            totalBorrow += currentBalance * (1 + Number(assetConfig.originationFee) / Number(MASTER_CONSTANTS.ASSET_ORIGINATION_FEE_SCALE));
+        } else if (changeType == BalanceChangeType.Repay) {
+            totalBorrow -= currentBalance;
+        } else if (changeType == BalanceChangeType.Withdraw) {
+            totalLimit -= currentBalance * Number(assetConfig.liquidationThreshold) / Number(MASTER_CONSTANTS.ASSET_COEFFICIENT_SCALE);
+        } else if (changeType == BalanceChangeType.Supply) {
+            totalLimit += currentBalance * Number(assetConfig.liquidationThreshold) / Number(MASTER_CONSTANTS.ASSET_COEFFICIENT_SCALE);
+        }
+    }
+    if (Number(totalLimit) == 0) {
+        return 1;
+    }
+
+    return Math.min(Math.max(1 - totalBorrow / totalLimit, 0), 1);  // let's limit a result to zero below and one above
 }
