@@ -185,7 +185,7 @@ const user = evaa.getOpenedUserContract(wallet.address);
 await user.getSync(evaa.data!.assetsData, evaa.data!.assetsConfig, priceData!.dict);
 ```
 
-Now we can calculate all the necessary data and check if the user is liquidable using the `isLiqidable` field. If yes, we can get the necessary information (`liquidationBaseData`). Using these values, we can liquidate the user:
+Now we can calculate all the necessary data and check if the user is liquidable using the `isLiquidable` field. If yes, we can get the necessary information (`liquidationBaseData`). Using these values, we can liquidate the user:
 
 ```typescript
 if (user.isLiquidable) {
