@@ -6,31 +6,34 @@ In this documentation you will find an explanation of how the SDK works and code
 
 First of all, the environment variables must be set (see .env.example):
 
-- WALLET_MNEMONIC
-- RPC_API_KEY
+-   WALLET_MNEMONIC
+-   RPC_API_KEY
 
 Then you can run the following commands:
 
-- Supply
+-   Supply
+
 ```shell
 npm run supply
 ```
 
-- Supply - TonConnect
+-   Supply - TonConnect
+
 ```shell
 npm run supply:tonconnect
 ```
 
-- Withdraw
+-   Withdraw
+
 ```shell
 npm run withdraw
 ```
 
-- Liquidation
+-   Liquidation
+
 ```shell
 npm run liquidation
 ```
-
 
 ## Getting Started
 
@@ -63,27 +66,26 @@ At this point, `evaa` has all the necessary information for further work. Mostly
 
 With the master contract wrapper, we can get the user contract using two methods:
 
-- getOpenedUserContract: A contract that will be opened by the same client and use the same provider as the master contract.
-- openUserContract: Getting a user contract class without opening it, which will allow it to be opened later by another client.
+-   getOpenedUserContract: A contract that will be opened by the same client and use the same provider as the master contract.
+-   openUserContract: Getting a user contract class without opening it, which will allow it to be opened later by another client.
 
 If there is no need for a separate provider, it is recommended to use `getOpenedUserContract` for convenience. After that, we need to [get the current prices](./extended.md#pricedata). There are 2 possible scenarios:
 
-
-- Very rare case when prices are not available: `getSyncLite` - a method that can get only the token balances on the user contract without calculating other values. This allows you to interact with the contract at a minimum level even if prices are not available.
-- Main case: `getSync` - a method that takes **AssetsData**, **AssetsConfig** and **PriceData**. Using these values, it calculates all the necessary limits and useful values for the user.
+-   Very rare case when prices are not available: `getSyncLite` - a method that can get only the token balances on the user contract without calculating other values. This allows you to interact with the contract at a minimum level even if prices are not available.
+-   Main case: `getSync` - a method that takes **AssetsData**, **AssetsConfig** and **PriceData**. Using these values, it calculates all the necessary limits and useful values for the user.
 
 ## Available Operations
 
 MasterContract wrapper provides 3 possible operations: **supply**, **withdraw** and **liquidation**. You can either get ready-to-send messages or send them immediately.
 
-It is possible to use `TonConnect` or available wallet contract wrappers from `@ton/ton` for sending messages. 
+It is possible to use `TonConnect` or available wallet contract wrappers from `@ton/ton` for sending messages.
 
 Short summary of examples:
 
-- Supply: Manual sending using `@ton/ton` wrapper to calculate external message hash and find transaction later.
-- Supply - TonConnect: Sending using TonConnect and getting transaction.
-- Withdraw: Simple sending with minimal code.
-- Liquidation: Simple sending with minimal code.
+-   Supply: Manual sending using `@ton/ton` wrapper to calculate external message hash and find transaction later.
+-   Supply - TonConnect: Sending using TonConnect and getting transaction.
+-   Withdraw: Simple sending with minimal code.
+-   Liquidation: Simple sending with minimal code.
 
 ### Supply
 
@@ -150,9 +152,7 @@ await evaa.sendSupply(getTonConnectSender(connector), toNano(1) + FEES.SUPPLY, {
 
 const lastSentBoc = getLastSentBoc();
 console.log(lastSentBoc);
-console.log(
-    `https://testnet.tonviewer.com/transaction/${Cell.fromBase64(lastSentBoc!.boc).hash().toString('hex')}`,
-);
+console.log(`https://testnet.tonviewer.com/transaction/${Cell.fromBase64(lastSentBoc!.boc).hash().toString('hex')}`);
 ```
 
 **Important:** To get the external message hash, you want to use the `getLastSentBoc` function. At the moment, this is the only way to get the last sent message. Value of `lastSentBoc` containd only the last sent message.
@@ -203,8 +203,8 @@ if (user.isLiquidable) {
         });
     } else {
         const sender: Sender = {
-             address: wallet.address,
-             send: wallet.sender(keyPair.secretKey).send
+            address: wallet.address,
+            send: wallet.sender(keyPair.secretKey).send,
         };
         await evaa.sendLiquidation(sender, FEES.LIQUIDATION_JETTON, {
             queryID: 0n,
