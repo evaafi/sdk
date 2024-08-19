@@ -20,7 +20,11 @@
   "devDependencies": {
     "@orbs-network/ton-access": "^2.3.3",
     "@ton/core": "0.56.0",
+<<<<<<< HEAD
     "@tonconnect/sdk": "^3.0.5",
+=======
+    "@tonconnect/sdk": "^3.0.0",
+>>>>>>> abc302e (sdk 6 draft without pools)
     "@types/jest": "^29.5.12",
     "@types/node": "^20.10.4",
     "crypto-js": "^4.2.0",
@@ -36,6 +40,10 @@
   },
   "dependencies": {
     "@ton/ton": "^14.0.0",
+<<<<<<< HEAD
     "dotenv": "^16.4.5"
+=======
+    "promise.any": "^2.0.6"
+>>>>>>> abc302e (sdk 6 draft without pools)
   }
 }

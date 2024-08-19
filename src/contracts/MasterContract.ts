@@ -8,6 +8,7 @@ import {
     Sender,
     SendMode,
     storeStateInit,
+    toNano,
 } from '@ton/core';
 import {
     FEES,
@@ -47,10 +48,10 @@ export type SupplyParameters = {
     userAddress: Address;
     responseAddress?: Address;
     forwardAmount?: bigint;
-    /* Will be in v6 
+    assetID: bigint;
     amountToTransfer: bigint;
-    payload: Cell; */
-}
+    payload: Cell;
+};
 
 /**
  * Parameters for the withdraw message
@@ -67,11 +68,10 @@ export type WithdrawParameters = {
     amount: bigint;
     userAddress: Address;
     includeUserCode: boolean;
-    priceData: Cell;
-    asset: PoolAssetConfig;
-    /* Will be in v6 
+    asset: PoolAssetConfig
+    priceData: Cell; 
     amountToTransfer: bigint;
-    payload: Cell; */
+    payload: Cell;
 };
 
 /**
@@ -90,6 +90,7 @@ export type LiquidationBaseData = {
     minCollateralAmount: bigint;
     liquidationAmount: bigint;
     tonLiquidation: boolean;
+    forwardAmount?: bigint;
 };
 
 /**
@@ -103,10 +104,10 @@ export type LiquidationParameters = LiquidationBaseData & {
     asset: PoolAssetConfig;
     queryID: bigint;
     liquidatorAddress: Address;
+    responseAddress: Address;
     includeUserCode: boolean;
     priceData: Cell;
-    responseAddress?: Address;
-    forwardAmount?: bigint;
+    payload: Cell;
 };
 
 /**
@@ -149,9 +150,8 @@ export class Evaa implements Contract {
                         .storeUint(OPCODES.SUPPLY, 32)
                         .storeInt(parameters.includeUserCode ? -1 : 0, 2)
                         .storeAddress(parameters.userAddress)
-                        /* Will be in v6 
                         .storeUint(parameters.amountToTransfer, 64)
-                        .storeRef(parameters.payload) */
+                        .storeRef(parameters.payload)
                         .endCell(),
                 )
                 .endCell();
@@ -162,9 +162,8 @@ export class Evaa implements Contract {
                 .storeInt(parameters.includeUserCode ? -1 : 0, 2)
                 .storeUint(parameters.amount, 64)
                 .storeAddress(parameters.userAddress)
-                /* Will be in v6 
                 .storeUint(parameters.amountToTransfer, 64)
-                .storeRef(parameters.payload) */
+                .storeRef(parameters.payload)
                 .endCell();
         }
     }
@@ -181,9 +180,8 @@ export class Evaa implements Contract {
             .storeUint(parameters.amount, 64)
             .storeAddress(parameters.userAddress)
             .storeInt(parameters.includeUserCode ? -1 : 0, 2)
-            /* Will be in v6 
             .storeUint(parameters.amountToTransfer, 64)
-            .storeRef(parameters.payload) */
+            .storeRef(parameters.payload)
             .storeRef(parameters.priceData)
             .endCell();
     }
@@ -214,6 +212,10 @@ export class Evaa implements Contract {
                         // do not need liquidationAmount in case of jetton liquidation because
                         // the exact amount of transferred jettons for liquidation is known
                         .storeUint(0, 64)
+                        .storeRef(beginCell()
+                            .storeUint(parameters.forwardAmount ?? 0, 64) // idk .. ) todo check
+                            .storeRef(parameters.payload)
+                        .endCell())
                         .storeRef(parameters.priceData)
                         .endCell(),
                 )
@@ -228,6 +230,10 @@ export class Evaa implements Contract {
                 .storeUint(parameters.minCollateralAmount, 64)
                 .storeInt(parameters.includeUserCode ? -1 : 0, 2)
                 .storeUint(parameters.liquidationAmount, 64)
+                .storeRef(beginCell()
+                    .storeUint(parameters.forwardAmount ?? 0, 64) // idk .. ) todo check
+                    .storeRef(parameters.payload)
+                .endCell())
                 .storeRef(parameters.priceData)
                 .endCell();
         }
