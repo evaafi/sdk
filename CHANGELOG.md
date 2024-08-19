@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.5.2 - 2024-08-19
+
+### Fixed
+- predictHealthFactor argument processing improving
+- getSync fixed parsing contract state, base64url was replaced to base64 encoding which has much higher support
+
+## 0.5.1 - 2024-07-05
+
+### Added
+- predictHealthFactor function to predict a change in a health factor after repay, borrow, supply, withdraw
+
 ## 0.5.0 - 2024-06-29
 This release contains breaking changes.  
 

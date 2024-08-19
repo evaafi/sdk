@@ -405,7 +405,7 @@ export class Evaa implements Contract {
     async getSync(provider: ContractProvider) {
         const state = (await provider.getState()).state;
         if (state.type === 'active') {
-            this._data = parseMasterData(state.data!.toString('base64url'), this.network === 'testnet');
+            this._data = parseMasterData(state.data!.toString('base64'), this.network === 'testnet');
             if (this.network === 'testnet' && this._data.upgradeConfig.masterCodeVersion !== TESTNET_VERSION) {
                 throw Error(
                     `Outdated SDK version. It supports only master code version ${TESTNET_VERSION} on testnet, but the current master code version is ${this._data.upgradeConfig.masterCodeVersion}`,

@@ -1,4 +1,5 @@
 import { Address, Cell, Dictionary } from '@ton/core';
+import { AssetConfig, ExtendedAssetData } from './Master';
 
 export enum BalanceType {
     supply = 'supply',
@@ -72,4 +73,21 @@ export type UserData = UserDataActive | UserDataInactive;
 export type UserRewards = {
     trackingIndex: bigint;
     trackingAccured: bigint;
+};
+
+export enum BalanceChangeType {
+    Borrow = 0,
+    Repay = 1,
+    Supply = 2,
+    Withdraw = 3
+}
+
+export type PredictHealthFactorArgs = {
+    balanceChangeType: BalanceChangeType;
+    amount: bigint;  // always positive
+    tokenSymbol: string;
+    balances: Dictionary<bigint, bigint>;
+    prices: Dictionary<bigint, bigint>;
+    assetsData: Dictionary<bigint, ExtendedAssetData>;
+    assetsConfig: Dictionary<bigint, AssetConfig>;
 };

@@ -56,6 +56,7 @@ export {
     UserDataInactive,
     UserDataActive,
     UserData,
+    BalanceChangeType
 } from './types/User';
 
 // Constants
