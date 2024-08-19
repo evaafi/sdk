@@ -11,6 +11,7 @@ export {
     getAvailableToBorrow,
     presentValue,
     calculateLiquidationData,
+    predictHealthFactor
 } from './api/math';
 
 // Parser
@@ -46,6 +47,7 @@ export {
     ExtendedAssetData,
     MasterData,
 } from './types/Master';
+
 export {
     BalanceType,
     UserBalance,
@@ -56,10 +58,13 @@ export {
     UserDataInactive,
     UserDataActive,
     UserData,
+    BalanceChangeType
 } from './types/User';
 
 // Constants
 export {
+    MAINNET_ASSETS_ID,
+    TESTNET_ASSETS_ID,
     EVAA_MASTER_MAINNET,
     MAINNET_VERSION,
     EVAA_MASTER_TESTNET,

@@ -7,7 +7,7 @@ export type UpgradeConfig = {
     updateTime: number;
     freezeTime: number;
     userCode: Cell;
-    blankCode: Cell;
+    //blankCode: Cell;
     newMasterCode: Cell | null;
     newUserCode: Cell | null;
 };
@@ -29,18 +29,22 @@ export type AssetConfig = {
     maxTotalSupply: bigint;
     reserveFactor: bigint;
     liquidationReserveFactor: bigint;
-    /* Will be in v6 
     minPrincipalForRewards: bigint;
     baseTrackingSupplySpeed: bigint;
-    baseTrackingBorrowSpeed: bigint; */
+    baseTrackingBorrowSpeed: bigint;
 };
 
 export type MasterConfig = {
     ifActive: number;
     admin: Address;
-    adminPK: bigint;
+    oraclesInfo: OraclesInfo
     tokenKeys: Cell | null;
-    walletToMaster: Cell | null;
+};
+
+export type OraclesInfo = {
+    numOracles: number;
+    threshold: number;
+    oracles: Cell | null;
 };
 
 export type AssetData = {
@@ -50,10 +54,9 @@ export type AssetData = {
     totalBorrow: bigint;
     lastAccural: bigint;
     balance: bigint;
-    /* Will be in v6 
     trackingSupplyIndex: bigint;
     trackingBorrowIndex: bigint;
-    lastTrackingAccural: bigint; */
+    //lastTrackingAccural: bigint;
 };
 
 export type AssetInterest = {
@@ -80,3 +83,13 @@ export type MasterData = {
         borrow: Dictionary<bigint, number>;
     };
 };
+
+export type OracleNFT = {
+    id: number,
+    address: string
+}
+
+export type Oracle = {
+    id: number,
+    pubkey: Buffer
+}
