@@ -267,7 +267,8 @@ export function predictHealthFactor(args: PredictHealthFactorArgs): number {
     const currentBalance = assetPrice * Number(currentAmount) / Math.pow(10, decimals);
     const changeType = args.balanceChangeType;
 
-    if (currentAmount != null && currentAmount != 0n) { 
+    if (currentAmount != null && !Number.isNaN(currentAmount) &&
+             Number.isFinite(currentAmount) && currentAmount != 0n) { 
         if (changeType == BalanceChangeType.Borrow) {
             totalBorrow += currentBalance * (1 + Number(assetConfig.originationFee) / Number(MASTER_CONSTANTS.ASSET_ORIGINATION_FEE_SCALE));
         } else if (changeType == BalanceChangeType.Repay) {
