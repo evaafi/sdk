@@ -37,34 +37,33 @@ type OutputData = {
             data: string;
         }[];
     };
-};
+}
 
-export async function getPrices(endpoint: String = "api.stardust-mainnet.iotaledger.net"): Promise<PriceData | undefined> {
-    try {
-        let result = await fetch(`https://${endpoint}/api/indexer/v1/outputs/nft/${NFT_ID}`, {
-            headers: { accept: 'application/json' },
-        });
-        let outputId = (await result.json()) as NftData;
+export async function getPrices(endpoints: string[] = ["api.stardust-mainnet.iotaledger.net"]) {
+    return await Promise.any(endpoints.map(x => loadPrices(x)));
+}
 
-        result = await fetch(`https://${endpoint}/api/core/v2/outputs/${outputId.items[0]}`, {
-            headers: { accept: 'application/json' },
-        });
+async function loadPrices(endpoint: String = "api.stardust-mainnet.iotaledger.net"): Promise<PriceData> {
+    let result = await fetch(`https://${endpoint}/api/indexer/v1/outputs/nft/${NFT_ID}`, {
+        headers: { accept: 'application/json' },
+    });
+    let outputId = (await result.json()) as NftData;
 
-        let resData = (await result.json()) as OutputData;
+    result = await fetch(`https://${endpoint}/api/core/v2/outputs/${outputId.items[0]}`, {
+        headers: { accept: 'application/json' },
+    });
 
-        const data = JSON.parse(
-            decodeURIComponent(resData.output.features[0].data.replace('0x', '').replace(/[0-9a-f]{2}/g, '%$&')),
-        );
+    let resData = (await result.json()) as OutputData;
 
-        const pricesCell = Cell.fromBoc(Buffer.from(data['packedPrices'], 'hex'))[0];
-        const signature = Buffer.from(data['signature'], 'hex');
+    const data = JSON.parse(
+        decodeURIComponent(resData.output.features[0].data.replace('0x', '').replace(/[0-9a-f]{2}/g, '%$&')),
+    );
 
-        return {
-            dict: pricesCell.beginParse().loadDictDirect(Dictionary.Keys.BigUint(256), Dictionary.Values.BigUint(64)),
-            dataCell: beginCell().storeRef(pricesCell).storeBuffer(signature).endCell(),
-        };
-    } catch (error) {
-        console.error(error);
-        return undefined;
-    }
+    const pricesCell = Cell.fromBoc(Buffer.from(data['packedPrices'], 'hex'))[0];
+    const signature = Buffer.from(data['signature'], 'hex');
+
+    return {
+        dict: pricesCell.beginParse().loadDictDirect(Dictionary.Keys.BigUint(256), Dictionary.Values.BigUint(64)),
+        dataCell: beginCell().storeRef(pricesCell).storeBuffer(signature).endCell(),
+    };
 }
