@@ -37,7 +37,7 @@ export class EvaaUser implements Contract {
         const state = (await provider.getState()).state;
         if (state.type === 'active') {
             this._liteData = parseUserLiteData(
-                state.data!.toString('base64url'),
+                state.data!.toString('base64'),
                 assetsData,
                 assetsConfig,
                 this.testnet,
@@ -99,7 +99,7 @@ export class EvaaUser implements Contract {
         const state = (await provider.getState()).state;
         if (state.type === 'active') {
             this._liteData = parseUserLiteData(
-                state.data!.toString('base64url'),
+                state.data!.toString('base64'),
                 assetsData,
                 assetsConfig,
                 this.testnet,
