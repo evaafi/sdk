@@ -53,14 +53,13 @@ export type JettonMessageParameters = {
  * @property includeUserCode - true to include user code for update (needed when user contract code version is outdated)
  * @property amount - amount to supply
  * @property userAddress - user address
- * @property assetID - asset ID
+ * @property asset - asset from asset config
  */
 export type SupplyBaseParameters = {
     queryID: bigint;
     includeUserCode: boolean;
     amount: bigint;
     userAddress: Address;
-    assetID: bigint;
     amountToTransfer: bigint;
     payload: Cell;
 };
@@ -86,8 +85,7 @@ export type SupplyParameters = TonSupplyParameters | JettonSupplyParameters;
 /**
  * Parameters for the withdraw message
  * @property queryID - unique query ID
- *  * @property assetID - asset ID
- * @property assetID - asset ID
+ * @property asset - asset from pool config
  * @property amount - amount to withdraw
  * @property userAddress - user address
  * @property includeUserCode - true to include user code for update (needed when user contract code version is outdated)
@@ -100,7 +98,6 @@ export type WithdrawParameters = {
     includeUserCode: boolean;
     priceData: Cell;
     asset: PoolAssetConfig;
-    /* Will be in v6 
     amountToTransfer: bigint;
     payload: Cell;
 };

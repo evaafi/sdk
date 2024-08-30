@@ -113,7 +113,9 @@ test('Just supply', async () => {
             includeUserCode: true,
             amount: 100_000_000n,
             userAddress: address,
-            asset: TESTNET_POOL_CONFIG.poolAssetsConfig.stTON
+            asset: TESTNET_POOL_CONFIG.poolAssetsConfig.stTON,
+            amountToTransfer: 0n,
+            payload: Cell.EMPTY,
         });
     });
 })
@@ -129,7 +131,9 @@ test('Just withdraw max', async () => {
                 amount: 0xFFFFFFFFFFFFFFFFn,
                 userAddress: address,
                 asset: TESTNET_POOL_CONFIG.poolAssetsConfig.TON,
-                priceData: priceData.dataCell
+                priceData: priceData.dataCell,
+                amountToTransfer: 0n,
+                payload: Cell.EMPTY,
             });
         }
     );
@@ -171,6 +175,8 @@ test('Supply/withdraw all test', async () => {
             forwardAmount: 1_000_000_000n,
             userAddress: address,
             asset: TESTNET_POOL_CONFIG.poolAssetsConfig.stTON,
+            amountToTransfer: 0n,
+            payload: Cell.EMPTY,
         });
     });
 
@@ -182,7 +188,9 @@ test('Supply/withdraw all test', async () => {
                 amount: 0xFFFFFFFFFFFFFFFFn,
                 userAddress: address,
                 asset: TESTNET_POOL_CONFIG.poolAssetsConfig.TON,
-                priceData: Cell.EMPTY
+                priceData: Cell.EMPTY,
+                amountToTransfer: 0n,
+                payload: Cell.EMPTY,
             });
         }
     );
@@ -202,6 +210,8 @@ test('SupplyBorrowRepayMaxWithdrawMax test', async () => {
             amount: 1_000_000_000n,
             userAddress: address,
             asset: TESTNET_POOL_CONFIG.poolAssetsConfig.TON,
+            amountToTransfer: 0n,
+            payload: Cell.EMPTY,
         });
     });
 
@@ -215,7 +225,9 @@ test('SupplyBorrowRepayMaxWithdrawMax test', async () => {
                 amount: 0xFFFFFFFFFFFFFFFFn,
                 userAddress: address,
                 asset: TESTNET_POOL_CONFIG.poolAssetsConfig.jUSDT,
-                priceData: priceData.dataCell
+                priceData: priceData.dataCell,
+                amountToTransfer: 0n,
+                payload: Cell.EMPTY,
             });
         }
     );
@@ -237,6 +249,8 @@ test('SupplyBorrowRepayMaxWithdrawMax test', async () => {
                 amount: amoundToRepay,
                 userAddress: address,
                 asset: TESTNET_POOL_CONFIG.poolAssetsConfig.jUSDT,
+                amountToTransfer: 0n,
+                payload: Cell.EMPTY,
             });
         }
     );
@@ -251,7 +265,9 @@ test('SupplyBorrowRepayMaxWithdrawMax test', async () => {
                 amount: 0xFFFFFFFFFFFFFFFFn,
                 userAddress: address,
                 asset: TESTNET_POOL_CONFIG.poolAssetsConfig.TON,
-                priceData: Cell.EMPTY
+                priceData: Cell.EMPTY,
+                amountToTransfer: 0n,
+                payload: Cell.EMPTY,
             });
         }
     );
@@ -270,6 +286,8 @@ test('Withdraw test', async () => {
         userAddress: address,
         asset: TESTNET_POOL_CONFIG.poolAssetsConfig.TON,
         priceData: priceData?.dataCell!,
+        amountToTransfer: 0n,
+        payload: Cell.EMPTY,
     });
     /*await evaa.sendWithdraw(sender, toNano(1), {
         queryID: 0n,

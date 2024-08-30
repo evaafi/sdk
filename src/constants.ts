@@ -1,6 +1,6 @@
 import { Address, Cell, toNano } from '@ton/core';
 import { sha256Hash } from './utils/sha256BigInt';
-import { PoolConfig } from './types/Master';
+import { OracleNFT, PoolConfig } from './types/Master';
 
 const MASTER_CONSTANTS = {
     FACTOR_SCALE: BigInt(1e12),
