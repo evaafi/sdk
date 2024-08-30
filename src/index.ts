@@ -45,6 +45,11 @@ export {
     AssetApy,
     ExtendedAssetData,
     MasterData,
+    PoolConfig,
+    ExtendedAssetsData,
+    ExtendedAssetsConfig,
+    PoolAssetConfig,
+    PoolAssetsConfig,
 } from './types/Master';
 export {
     BalanceType,
@@ -56,7 +61,7 @@ export {
     UserDataInactive,
     UserDataActive,
     UserData,
-    BalanceChangeType
+    BalanceChangeType,
 } from './types/User';
 
 // Constants
@@ -65,11 +70,13 @@ export {
     MAINNET_VERSION,
     EVAA_MASTER_TESTNET,
     TESTNET_VERSION,
-    JETTON_MASTER_ADDRESSES,
-    MASTER_CONSTANTS,
     LENDING_CODE,
     OPCODES,
     FEES,
+    MAINNET_ASSETS_ID,
+    TESTNET_ASSETS_ID,
+    MAINNET_POOL_CONFIG,
+    TESTNET_POOL_CONFIG
 } from './constants';
 
 // Utils

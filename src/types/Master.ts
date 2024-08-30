@@ -1,5 +1,37 @@
 import { Address, Cell, Dictionary } from '@ton/core';
 
+export type MasterConstants = {
+    FACTOR_SCALE: bigint,
+    ASSET_COEFFICIENT_SCALE: bigint,
+    ASSET_PRICE_SCALE: bigint,
+    ASSET_RESERVE_FACTOR_SCALE: bigint,
+    ASSET_LIQUIDATION_RESERVE_FACTOR_SCALE: bigint,
+    ASSET_ORIGINATION_FEE_SCALE: bigint
+};
+
+export type PoolAssetConfig = (PoolTonAssetConfig | PoolJettonAssetConfig) & {
+    name: string;
+};
+export type PoolAssetsConfig = Record<string, PoolAssetConfig>;
+
+export type PoolTonAssetConfig = {
+    assetId: bigint;
+}
+
+export type PoolJettonAssetConfig = {
+    assetId: bigint;
+    jettonMasterAddress: Address;
+    jettonWalletCode: Cell;
+}
+
+export type PoolConfig = {
+    masterAddress: Address;
+    masterVersion: number;
+    masterConstants: MasterConstants;
+    poolAssetsConfig: PoolAssetsConfig;
+    lendingCode: Cell;
+};
+
 export type UpgradeConfig = {
     masterCodeVersion: number;
     userCodeVersion: number;
@@ -67,13 +99,15 @@ export type AssetApy = {
 };
 
 export type ExtendedAssetData = AssetData & AssetInterest & AssetApy;
+export type ExtendedAssetsData = Dictionary<bigint, ExtendedAssetData>;
+export type ExtendedAssetsConfig = Dictionary<bigint, AssetConfig>;
 
 export type MasterData = {
     meta: string;
     upgradeConfig: UpgradeConfig;
     masterConfig: MasterConfig;
-    assetsConfig: Dictionary<bigint, AssetConfig>;
-    assetsData: Dictionary<bigint, ExtendedAssetData>;
+    assetsConfig: ExtendedAssetsConfig;
+    assetsData: ExtendedAssetsData;
     assetsReserves: Dictionary<bigint, bigint>;
     apy: {
         supply: Dictionary<bigint, number>;

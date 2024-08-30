@@ -1,6 +1,5 @@
 import { beginCell, Cell, Dictionary, DictionaryValue, Slice } from '@ton/core';
-import { AssetConfig, AssetData, ExtendedAssetData, MasterData } from '../types/Master';
-import { MAINNET_ASSETS_ID, MASTER_CONSTANTS, TESTNET_ASSETS_ID } from '../constants';
+import { AssetConfig, AssetData, ExtendedAssetData, ExtendedAssetsConfig, ExtendedAssetsData, MasterConfig, MasterConstants, MasterData, PoolAssetsConfig } from '../types/Master';
 import {
     bigIntMax,
     bigIntMin,
@@ -134,8 +133,7 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
     };
 }
 
-export function parseMasterData(masterDataBOC: string, testnet: boolean = false): MasterData {
-    const ASSETS_ID = testnet ? TESTNET_ASSETS_ID : MAINNET_ASSETS_ID;
+export function parseMasterData(masterDataBOC: string, poolAssetsConfig: PoolAssetsConfig, masterConstants: MasterConstants): MasterData {
     const masterSlice = Cell.fromBase64(masterDataBOC).beginParse();
     const meta = masterSlice.loadRef().beginParse().loadStringTail();
     const upgradeConfigParser = masterSlice.loadRef().beginParse();
@@ -164,9 +162,9 @@ export function parseMasterData(masterDataBOC: string, testnet: boolean = false)
         borrow: Dictionary.empty<bigint, number>(),
     };
 
-    for (const [tokenSymbol, assetID] of Object.entries(ASSETS_ID)) {
-        const assetData = calculateAssetData(assetsConfigDict, assetsDataDict, assetID);
-        assetsExtendedData.set(assetID, assetData);
+    for (const [tokenSymbol, asset] of Object.entries(poolAssetsConfig)) {
+        const assetData = calculateAssetData(assetsConfigDict, assetsDataDict, asset.assetId, masterConstants);
+        assetsExtendedData.set(asset.assetId, assetData);
     }
 
     const masterConfig = {
@@ -179,14 +177,14 @@ export function parseMasterData(masterDataBOC: string, testnet: boolean = false)
 
     masterConfigSlice.endParse();
 
-    for (const [_, assetID] of Object.entries(ASSETS_ID)) {
-        const assetData = assetsExtendedData.get(assetID) as ExtendedAssetData;
-        const totalSupply = calculatePresentValue(assetData.sRate, assetData.totalSupply);
-        const totalBorrow = calculatePresentValue(assetData.bRate, assetData.totalBorrow);
-        assetsReserves.set(assetID, assetData.balance - totalSupply + totalBorrow);
+    for (const [_, asset] of Object.entries(poolAssetsConfig)) {
+        const assetData = assetsExtendedData.get(asset.assetId) as ExtendedAssetData;
+        const totalSupply = calculatePresentValue(assetData.sRate, assetData.totalSupply, masterConstants);
+        const totalBorrow = calculatePresentValue(assetData.bRate, assetData.totalBorrow, masterConstants);
+        assetsReserves.set(asset.assetId, assetData.balance - totalSupply + totalBorrow);
 
-        apy.supply.set(assetID, (1 + (Number(assetData.supplyInterest) / 1e12) * 24 * 3600) ** 365 - 1);
-        apy.borrow.set(assetID, (1 + (Number(assetData.borrowInterest) / 1e12) * 24 * 3600) ** 365 - 1);
+        apy.supply.set(asset.assetId, (1 + (Number(assetData.supplyInterest) / 1e12) * 24 * 3600) ** 365 - 1);
+        apy.borrow.set(asset.assetId, (1 + (Number(assetData.borrowInterest) / 1e12) * 24 * 3600) ** 365 - 1);
     }
 
     return {
@@ -202,12 +200,13 @@ export function parseMasterData(masterDataBOC: string, testnet: boolean = false)
 
 export function parseUserLiteData(
     userDataBOC: string,
-    assetsData: Dictionary<bigint, ExtendedAssetData>,
-    assetsConfig: Dictionary<bigint, AssetConfig>,
+    assetsData: ExtendedAssetsData,
+    assetsConfig: ExtendedAssetsConfig,
+    poolAssetsConfig: PoolAssetsConfig,
+    masterConstants: MasterConstants,
     testnet: boolean = false,
     applyDust: boolean = false
 ): UserLiteData {
-    const ASSETS_ID = testnet ? TESTNET_ASSETS_ID : MAINNET_ASSETS_ID;
     const userSlice = Cell.fromBase64(userDataBOC).beginParse();
 
     const codeVersion = userSlice.loadCoins();
@@ -243,17 +242,17 @@ export function parseUserLiteData(
 
     const userBalances = Dictionary.empty<bigint, UserBalance>();
 
-    for (const [_, assetID] of Object.entries(ASSETS_ID)) {
-        const assetData = assetsData.get(assetID) as ExtendedAssetData;
-        const assetConfig = assetsConfig.get(assetID) as AssetConfig;
-        let principals = principalsDict.get(assetID) || 0n;
+    for (const [_, asset] of Object.entries(poolAssetsConfig)) {
+        const assetData = assetsData.get(asset.assetId) as ExtendedAssetData;
+        const assetConfig = assetsConfig.get(asset.assetId) as AssetConfig;
+        let principals = principalsDict.get(asset.assetId) || 0n;
 
         if (applyDust && (principals > -assetConfig.dust && principals < assetConfig.dust)) {  // abs(principals) < dust
             principals = 0n;
-            principalsDict.set(assetID, 0n);
+            principalsDict.set(asset.assetId, 0n);
         }
-        const balance = presentValue(assetData.sRate, assetData.bRate, principals);
-        userBalances.set(assetID, balance);
+        const balance = presentValue(assetData.sRate, assetData.bRate, principals, masterConstants);
+        userBalances.set(asset.assetId, balance);
     }
 
     return {
@@ -277,60 +276,60 @@ export function parseUserLiteData(
 
 export function parseUserData(
     userLiteData: UserLiteData,
-    assetsData: Dictionary<bigint, ExtendedAssetData>,
-    assetsConfig: Dictionary<bigint, AssetConfig>,
+    assetsData: ExtendedAssetsData,
+    assetsConfig: ExtendedAssetsConfig,
     prices: Dictionary<bigint, bigint>,
-    testnet: boolean = false,
+    poolAssetConfig: PoolAssetsConfig,
+    masterConstants: MasterConstants,
     applyDust: boolean = false
 ): UserData {
-    const ASSETS_ID = testnet ? TESTNET_ASSETS_ID : MAINNET_ASSETS_ID;
     const withdrawalLimits = Dictionary.empty<bigint, bigint>();
     const borrowLimits = Dictionary.empty<bigint, bigint>();
 
     let supplyBalance = 0n;
     let borrowBalance = 0n;
-    for (const [_, assetID] of Object.entries(ASSETS_ID)) {
-        const assetData = assetsData.get(assetID) as ExtendedAssetData;
-        const assetConfig = assetsConfig.get(assetID) as AssetConfig;
-        let principals = userLiteData.principals.get(assetID) || 0n;
+    for (const [_, asset] of Object.entries(poolAssetConfig)) {
+        const assetData = assetsData.get(asset.assetId) as ExtendedAssetData;
+        const assetConfig = assetsConfig.get(asset.assetId) as AssetConfig;
+        let principals = userLiteData.principals.get(asset.assetId) || 0n;
 
         if (applyDust && (principals > -assetConfig.dust && principals < assetConfig.dust )) {  // abs(principals) < dust
             principals = 0n;
-            userLiteData.principals.set(assetID, 0n);
+            userLiteData.principals.set(asset.assetId, 0n);
         }
 
-        const balance = presentValue(assetData.sRate, assetData.bRate, principals);
-        userLiteData.balances.set(assetID, balance);
+        const balance = presentValue(assetData.sRate, assetData.bRate, principals, masterConstants);
+        userLiteData.balances.set(asset.assetId, balance);
     }
 
-    for (const [_, assetID] of Object.entries(ASSETS_ID)) {
-        const assetConfig = assetsConfig.get(assetID) as AssetConfig;
-        const balance = userLiteData.balances.get(assetID) as UserBalance;
+    for (const [_, asset] of Object.entries(poolAssetConfig)) {
+        const assetConfig = assetsConfig.get(asset.assetId) as AssetConfig;
+        const balance = userLiteData.balances.get(asset.assetId) as UserBalance;
 
         if (balance.type === BalanceType.supply) {
-            supplyBalance += (balance.amount * prices.get(assetID)!) / 10n ** assetConfig.decimals;
+            supplyBalance += (balance.amount * prices.get(asset.assetId)!) / 10n ** assetConfig.decimals;
         }
         if (balance.type === BalanceType.borrow) {
-            borrowBalance += (balance.amount * prices.get(assetID)!) / 10n ** assetConfig.decimals;
+            borrowBalance += (balance.amount * prices.get(asset.assetId)!) / 10n ** assetConfig.decimals;
         }
     }
 
-    const availableToBorrow = getAvailableToBorrow(assetsConfig, assetsData, userLiteData.principals, prices);
-    for (const [_, assetID] of Object.entries(ASSETS_ID)) {
-        const assetConfig = assetsConfig.get(assetID) as AssetConfig;
-        const assetData = assetsData.get(assetID) as ExtendedAssetData;
-        const balance = userLiteData.balances.get(assetID) as UserBalance;
+    const availableToBorrow = getAvailableToBorrow(assetsConfig, assetsData, userLiteData.principals, prices, masterConstants);
+    for (const [_, asset] of Object.entries(poolAssetConfig)) {
+        const assetConfig = assetsConfig.get(asset.assetId) as AssetConfig;
+        const assetData = assetsData.get(asset.assetId) as ExtendedAssetData;
+        const balance = userLiteData.balances.get(asset.assetId) as UserBalance;
 
         if (balance.type === BalanceType.supply) {
             withdrawalLimits.set(
-                assetID,
+                asset.assetId,
                 bigIntMax(
                     bigIntMin(
                         assetData.balance,
                         ((supplyBalance -
-                            (borrowBalance * MASTER_CONSTANTS.ASSET_COEFFICIENT_SCALE) / assetConfig.collateralFactor) *
+                            (borrowBalance * masterConstants.ASSET_COEFFICIENT_SCALE) / assetConfig.collateralFactor) *
                             10n ** assetConfig.decimals) /
-                            prices.get(assetID)! -
+                            prices.get(asset.assetId)! -
                             5n,
                         balance.amount,
                     ),
@@ -339,8 +338,8 @@ export function parseUserData(
             );
         }
         borrowLimits.set(
-            assetID,
-            bigIntMin((availableToBorrow * 10n ** assetConfig.decimals) / prices.get(assetID)!, assetData.balance),
+            asset.assetId,
+            bigIntMin((availableToBorrow * 10n ** assetConfig.decimals) / prices.get(asset.assetId)!, assetData.balance),
         );
     }
 
@@ -350,7 +349,7 @@ export function parseUserData(
             ? 0
             : Number(BigInt(1e9) - (availableToBorrow * BigInt(1e9)) / (borrowBalance + availableToBorrow)) / 1e7;
 
-    const liquidationData = calculateLiquidationData(assetsConfig, assetsData, userLiteData.principals, prices);
+    const liquidationData = calculateLiquidationData(assetsConfig, assetsData, userLiteData.principals, prices, masterConstants);
     const healthFactor = 1 - Number(liquidationData.totalDebt) / Number(liquidationData.totalLimit);
 
     return {

@@ -14,6 +14,7 @@ import {
     EVAA_MASTER_TESTNET,
     FEES,
     LENDING_CODE,
+    MAINNET_POOL_CONFIG,
     MAINNET_VERSION,
     OPCODES,
     TESTNET_VERSION,
@@ -21,7 +22,7 @@ import {
 import { Maybe } from '@ton/core/dist/utils/maybe';
 import { EvaaUser } from './UserContract';
 import { parseMasterData } from '../api/parser';
-import { MasterData } from '../types/Master';
+import { MasterData, PoolAssetConfig, PoolConfig, PoolJettonAssetConfig, PoolTonAssetConfig } from '../types/Master';
 import { JettonWallet } from './JettonWallet';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
 
@@ -31,7 +32,7 @@ import { getUserJettonWallet } from '../utils/userJettonWallet';
  * @property debug - true to enable debug mode (optional)
  */
 export type EvaaParameters = {
-    testnet: boolean;
+    poolConfig: PoolConfig;
     debug?: boolean;
 };
 
@@ -58,7 +59,6 @@ export type SupplyBaseParameters = {
     includeUserCode: boolean;
     amount: bigint;
     userAddress: Address;
-    assetID: bigint;
     /* Will be in v6 
     amountToTransfer: bigint;
     payload: Cell; */
@@ -68,7 +68,7 @@ export type SupplyBaseParameters = {
  * @property type - 'ton'
  */
 export type TonSupplyParameters = SupplyBaseParameters & {
-    type: 'ton';
+    asset: PoolTonAssetConfig;
 };
 /**
  * Parameters for the jetton supply message
@@ -76,12 +76,16 @@ export type TonSupplyParameters = SupplyBaseParameters & {
  */
 export type JettonSupplyParameters = SupplyBaseParameters &
     JettonMessageParameters & {
-        type: 'jetton';
+        asset: PoolJettonAssetConfig;
     };
+
+export type SupplyParameters = TonSupplyParameters | JettonSupplyParameters;
+
 
 /**
  * Parameters for the withdraw message
  * @property queryID - unique query ID
+ *  * @property assetID - asset ID
  * @property assetID - asset ID
  * @property amount - amount to withdraw
  * @property userAddress - user address
@@ -90,11 +94,11 @@ export type JettonSupplyParameters = SupplyBaseParameters &
  */
 export type WithdrawParameters = {
     queryID: bigint;
-    assetID: bigint;
     amount: bigint;
     userAddress: Address;
     includeUserCode: boolean;
     priceData: Cell;
+    asset: PoolAssetConfig;
     /* Will be in v6 
     amountToTransfer: bigint;
     payload: Cell; */
@@ -137,7 +141,7 @@ export type LiquidationBaseParameters = LiquidationBaseData & {
  * @property type - 'ton'
  */
 export type TonLiquidationParameters = LiquidationBaseParameters & {
-    type: 'ton';
+    asset: PoolTonAssetConfig;
 };
 /**
  * Parameters for the jetton liquidation message
@@ -145,15 +149,15 @@ export type TonLiquidationParameters = LiquidationBaseParameters & {
  */
 export type JettonLiquidationParameters = LiquidationBaseParameters &
     JettonMessageParameters & {
-        type: 'jetton';
+        asset: PoolJettonAssetConfig
     };
 
 /**
  * Evaa master contract wrapper
  */
 export class Evaa implements Contract {
-    readonly address: Address = EVAA_MASTER_MAINNET;
-    readonly network: 'mainnet' | 'testnet' = 'mainnet';
+    readonly address: Address;
+    private poolConfig: PoolConfig;
     private readonly debug?: boolean;
     private _data?: MasterData;
     private lastSync = 0;
@@ -163,10 +167,8 @@ export class Evaa implements Contract {
      * @param parameters Evaa contract parameters
      */
     constructor(parameters?: EvaaParameters) {
-        if (parameters?.testnet) {
-            this.network = 'testnet';
-            this.address = EVAA_MASTER_TESTNET;
-        }
+        this.poolConfig = parameters?.poolConfig ?? MAINNET_POOL_CONFIG;
+        this.address = this.poolConfig.masterAddress;
         this.debug = parameters?.debug;
     }
 
@@ -174,16 +176,18 @@ export class Evaa implements Contract {
      * Create supply message
      * @returns supply message as a cell
      */
-    createSupplyMessage(parameters: TonSupplyParameters | JettonSupplyParameters): Cell {
-        if (parameters.type === 'jetton') {
+    createSupplyMessage(parameters: SupplyParameters): Cell {
+        if ('jettonMasterAddress' in parameters.asset) {
+            const jettonParams = parameters as JettonSupplyParameters;
+
             return beginCell()
                 .storeUint(OPCODES.JETTON_TRANSFER, 32)
                 .storeUint(parameters.queryID, 64)
                 .storeCoins(parameters.amount)
                 .storeAddress(this.address)
-                .storeAddress(parameters.responseAddress ?? parameters.userAddress)
+                .storeAddress(jettonParams.responseAddress ?? parameters.userAddress)
                 .storeBit(0)
-                .storeCoins(parameters.forwardAmount ?? FEES.SUPPLY_JETTON_FWD)
+                .storeCoins(jettonParams.forwardAmount ?? FEES.SUPPLY_JETTON_FWD)
                 .storeBit(1)
                 .storeRef(
                     beginCell()
@@ -218,7 +222,7 @@ export class Evaa implements Contract {
         return beginCell()
             .storeUint(OPCODES.WITHDRAW, 32)
             .storeUint(parameters.queryID, 64)
-            .storeUint(parameters.assetID, 256)
+            .storeUint(parameters.asset.assetId, 256)
             .storeUint(parameters.amount, 64)
             .storeAddress(parameters.userAddress)
             .storeInt(parameters.includeUserCode ? -1 : 0, 2)
@@ -234,15 +238,17 @@ export class Evaa implements Contract {
      * @returns liquidation message as a cell
      */
     createLiquidationMessage(parameters: TonLiquidationParameters | JettonLiquidationParameters): Cell {
-        if (parameters.type === 'jetton') {
+        if ('jettonMasterAddress' in parameters.asset) {
+            const jettonParams = parameters as JettonLiquidationParameters;
+
             return beginCell()
                 .storeUint(OPCODES.JETTON_TRANSFER, 32)
                 .storeUint(parameters.queryID, 64)
                 .storeCoins(parameters.liquidationAmount)
                 .storeAddress(this.address)
-                .storeAddress(parameters.responseAddress ?? parameters.liquidatorAddress)
+                .storeAddress(jettonParams.responseAddress ?? parameters.liquidatorAddress)
                 .storeBit(0)
-                .storeCoins(parameters.forwardAmount ?? FEES.LIQUIDATION_JETTON_FWD)
+                .storeCoins(jettonParams.forwardAmount ?? FEES.LIQUIDATION_JETTON_FWD)
                 .storeBit(1)
                 .storeRef(
                     beginCell()
@@ -304,7 +310,7 @@ export class Evaa implements Contract {
      * @returns user contract
      */
     openUserContract(userAddress: Address): EvaaUser {
-        return EvaaUser.createFromAddress(this.calculateUserSCAddr(userAddress), this.network === 'testnet');
+        return EvaaUser.createFromAddress(this.calculateUserSCAddr(userAddress));
     }
 
     getOpenedUserContract(provider: ContractProvider, userAddress: Address): OpenedContract<EvaaUser> {
@@ -326,12 +332,14 @@ export class Evaa implements Contract {
     ) {
         const message = this.createSupplyMessage(parameters);
 
-        if (parameters.type === 'jetton') {
+        if ('jettonMasterAddress' in parameters.asset) {
+            
             if (!via.address) {
                 throw Error('Via address is required for jetton supply');
             }
+
             const jettonWallet = provider.open(
-                JettonWallet.createFromAddress(getUserJettonWallet(via.address, parameters.assetID, this.network)),
+                JettonWallet.createFromAddress(getUserJettonWallet(via.address, parameters.asset)),
             );
             await jettonWallet.sendTransfer(via, value, message);
         } else {
@@ -345,6 +353,7 @@ export class Evaa implements Contract {
 
     async sendWithdraw(provider: ContractProvider, via: Sender, value: bigint, parameters: WithdrawParameters) {
         const message = this.createWithdrawMessage(parameters);
+
         await provider.internal(via, {
             value,
             sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
@@ -360,12 +369,13 @@ export class Evaa implements Contract {
     ) {
         const message = this.createLiquidationMessage(parameters);
 
-        if (parameters.type === 'jetton') {
+        if ('jettonMasterAddress' in parameters.asset) {
             if (!via.address) {
                 throw Error('Via address is required for jetton liquidation');
             }
+            
             const jettonWallet = provider.open(
-                JettonWallet.createFromAddress(getUserJettonWallet(via.address, parameters.loanAsset, this.network)),
+                JettonWallet.createFromAddress(getUserJettonWallet(via.address, parameters.asset)),
             );
             await jettonWallet.sendTransfer(via, value, message);
         } else {
@@ -404,16 +414,11 @@ export class Evaa implements Contract {
      */
     async getSync(provider: ContractProvider) {
         const state = (await provider.getState()).state;
-        if (state.type === 'active') {
-            this._data = parseMasterData(state.data!.toString('base64'), this.network === 'testnet');
-            if (this.network === 'testnet' && this._data.upgradeConfig.masterCodeVersion !== TESTNET_VERSION) {
+        if (state.type === 'active') { this.poolConfig.poolAssetsConfig
+            this._data = parseMasterData(state.data!.toString('base64'), this.poolConfig.poolAssetsConfig, this.poolConfig.masterConstants);
+            if (this._data.upgradeConfig.masterCodeVersion !== this.poolConfig.masterVersion) {
                 throw Error(
-                    `Outdated SDK version. It supports only master code version ${TESTNET_VERSION} on testnet, but the current master code version is ${this._data.upgradeConfig.masterCodeVersion}`,
-                );
-            }
-            if (this.network === 'mainnet' && this._data.upgradeConfig.masterCodeVersion !== MAINNET_VERSION) {
-                throw Error(
-                    `Outdated SDK version. It supports only master code version ${MAINNET_VERSION} on mainnet, but the current master code version is ${this._data.upgradeConfig.masterCodeVersion}`,
+                    `Outdated SDK pool version. It supports only master code version ${this.poolConfig.masterVersion}, but the current master code version is ${this._data.upgradeConfig.masterCodeVersion}`,
                 );
             }
             this.lastSync = Math.floor(Date.now() / 1000);

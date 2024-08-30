@@ -1,5 +1,5 @@
 import { Address, Cell, Dictionary } from '@ton/core';
-import { AssetConfig, ExtendedAssetData } from './Master';
+import { AssetConfig, ExtendedAssetData, ExtendedAssetsConfig, ExtendedAssetsData, MasterConfig, MasterConstants } from './Master';
 
 export enum BalanceType {
     supply = 'supply',
@@ -88,6 +88,7 @@ export type PredictHealthFactorArgs = {
     tokenSymbol: string;
     balances: Dictionary<bigint, bigint>;
     prices: Dictionary<bigint, bigint>;
-    assetsData: Dictionary<bigint, ExtendedAssetData>;
-    assetsConfig: Dictionary<bigint, AssetConfig>;
+    assetsData: ExtendedAssetsData;
+    assetsConfig: ExtendedAssetsConfig;
+    masterConstants: MasterConstants;
 };

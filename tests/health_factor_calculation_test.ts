@@ -1,4 +1,4 @@
-import {BalanceChangeType, createAssetConfig, Evaa, EVAA_MASTER_MAINNET, getPrices, UserDataActive} from '../src';
+import {BalanceChangeType, createAssetConfig, Evaa, EVAA_MASTER_MAINNET, getPrices, MAINNET_POOL_CONFIG, UserDataActive} from '../src';
 import {Address, beginCell, Dictionary, TonClient} from '@ton/ton';
 import dotenv from 'dotenv';
 import { predictHealthFactor } from '../src/api/math';
@@ -31,7 +31,8 @@ test('Health factor check example', async () => {
         balances: userPrincipals,
         prices: priceData!.dict,
         assetsData: evaa.data!.assetsData,
-        assetsConfig: evaa.data!.assetsConfig
+        assetsConfig: evaa.data!.assetsConfig,
+        masterConstants: MAINNET_POOL_CONFIG.masterConstants
     }));
     console.log(user.data);
 });

@@ -1,38 +1,37 @@
 import { Address, beginCell, Cell, Contract, ContractProvider, Dictionary, Sender, SendMode } from '@ton/core';
 import { UserData, UserLiteData } from '../types/User';
 import { parseUserData, parseUserLiteData } from '../api/parser';
-import { AssetConfig, ExtendedAssetData } from '../types/Master';
+import { AssetConfig, ExtendedAssetData, ExtendedAssetsConfig, ExtendedAssetsData, PoolConfig } from '../types/Master';
 import { LiquidationBaseData } from './MasterContract';
-import { MAINNET_ASSETS_ID, OPCODES } from '../constants';
+import { MAINNET_ASSETS_ID, MAINNET_POOL_CONFIG, OPCODES } from '../constants';
 
 /**
  * User contract wrapper
  */
 export class EvaaUser implements Contract {
     readonly address: Address;
-    readonly testnet: boolean = false;
     private lastSync = 0;
     private _liteData?: UserLiteData;
     private _data?: UserData;
+    private poolConfig: PoolConfig;
 
     /**
      * Create user contract wrapper from address
      * @param address user contract address
-     * @param testnet testnet flag
      */
-    static createFromAddress(address: Address, testnet: boolean = false) {
-        return new EvaaUser(address, testnet);
+    static createFromAddress(address: Address, poolConfig: PoolConfig = MAINNET_POOL_CONFIG) {
+        return new EvaaUser(address, poolConfig);
     }
 
-    private constructor(address: Address, testnet: boolean = false) {
+    private constructor(address: Address, poolConfig: PoolConfig = MAINNET_POOL_CONFIG) {
         this.address = address;
-        this.testnet = testnet;
+        this.poolConfig = poolConfig;
     }
 
     async getSyncLite(
         provider: ContractProvider,
-        assetsData: Dictionary<bigint, ExtendedAssetData>,
-        assetsConfig: Dictionary<bigint, AssetConfig>,
+        assetsData: ExtendedAssetsData,
+        assetsConfig: ExtendedAssetsConfig,
     ) {
         const state = (await provider.getState()).state;
         if (state.type === 'active') {
@@ -40,7 +39,8 @@ export class EvaaUser implements Contract {
                 state.data!.toString('base64'),
                 assetsData,
                 assetsConfig,
-                this.testnet,
+                this.poolConfig.poolAssetsConfig,
+                this.poolConfig.masterConstants
             );
             this.lastSync = Math.floor(Date.now() / 1000);
         } else {
@@ -57,12 +57,12 @@ export class EvaaUser implements Contract {
      * @returns true if user data was calculated
      */
     calculateUserData(
-        assetsData: Dictionary<bigint, ExtendedAssetData>,
-        assetsConfig: Dictionary<bigint, AssetConfig>,
+        assetsData: ExtendedAssetsData,
+        assetsConfig: ExtendedAssetsConfig,
         prices: Dictionary<bigint, bigint>,
     ): boolean {
         if (this._liteData) {
-            this._data = parseUserData(this._liteData, assetsData, assetsConfig, prices, this.testnet);
+            this._data = parseUserData(this._liteData, assetsData, assetsConfig, prices, this.poolConfig.poolAssetsConfig, this.poolConfig.masterConstants);
             return true;
         }
         return false;
@@ -92,8 +92,8 @@ export class EvaaUser implements Contract {
 
     async getSync(
         provider: ContractProvider,
-        assetsData: Dictionary<bigint, ExtendedAssetData>,
-        assetsConfig: Dictionary<bigint, AssetConfig>,
+        assetsData: ExtendedAssetsData,
+        assetsConfig: ExtendedAssetsConfig,
         prices: Dictionary<bigint, bigint>,
     ) {
         const state = (await provider.getState()).state;
@@ -102,9 +102,10 @@ export class EvaaUser implements Contract {
                 state.data!.toString('base64'),
                 assetsData,
                 assetsConfig,
-                this.testnet,
+                this.poolConfig.poolAssetsConfig,
+                this.poolConfig.masterConstants
             );
-            this._data = parseUserData(this._liteData, assetsData, assetsConfig, prices, this.testnet);
+            this._data = parseUserData(this._liteData, assetsData, assetsConfig, prices, this.poolConfig.poolAssetsConfig, this.poolConfig.masterConstants);
             this.lastSync = Math.floor(Date.now() / 1000);
         } else {
             this._data = { type: 'inactive' };
