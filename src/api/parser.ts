@@ -12,8 +12,7 @@ import {
 import { loadMaybeMyRef, loadMyRef } from './helpers';
 import { BalanceType, UserBalance, UserData, UserLiteData, UserRewards } from '../types/User';
 
-// Will be in v6
-/* export function createUserRewards(): DictionaryValue<UserRewards> {
+export function createUserRewards(): DictionaryValue<UserRewards> {
     return {
         serialize: (src: any, buidler: any) => {
             buidler.storeUint(src.trackingIndex, 64);
@@ -25,7 +24,7 @@ import { BalanceType, UserBalance, UserData, UserLiteData, UserRewards } from '.
             return { trackingIndex, trackingAccured };
         },
     };
-}*/
+}
 
 export function createAssetData(): DictionaryValue<AssetData> {
     return {
@@ -36,10 +35,8 @@ export function createAssetData(): DictionaryValue<AssetData> {
             buidler.storeUint(src.totalBorrow, 64);
             buidler.storeUint(src.lastAccural, 32);
             buidler.storeUint(src.balance, 64);
-            /* Will be in v6
             buidler.storeUint(src.trackingSupplyIndex, 64);
             buidler.storeUint(src.trackingBorrowIndex, 64);
-            buidler.storeUint(src.lastTrackingAccural, 32); */
         },
         parse: (src: Slice) => {
             const sRate = BigInt(src.loadInt(64));
@@ -48,13 +45,10 @@ export function createAssetData(): DictionaryValue<AssetData> {
             const totalBorrow = BigInt(src.loadInt(64));
             const lastAccural = BigInt(src.loadInt(32));
             const balance = BigInt(src.loadInt(64));
-            /* Will be in v6
             const trackingSupplyIndex = BigInt(src.loadUint(64));
             const trackingBorrowIndex = BigInt(src.loadUint(64));
-            const lastTrackingAccural = BigInt(src.loadUint(32)); 
 
-            return { sRate, bRate, totalSupply, totalBorrow, lastAccural, balance, trackingSupplyIndex, trackingBorrowIndex, lastTrackingAccural};        }, */
-            return { sRate, bRate, totalSupply, totalBorrow, lastAccural, balance};        },
+            return { sRate, bRate, totalSupply, totalBorrow, lastAccural, balance, trackingSupplyIndex, trackingBorrowIndex};        },
     };
 }
 
@@ -78,10 +72,9 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
             refBuild.storeUint(src.maxTotalSupply, 64);
             refBuild.storeUint(src.reserveFactor, 16);
             refBuild.storeUint(src.liquidationReserveFactor, 16);
-            /* Will be in v6 
             refBuild.storeUint(src.minPrincipalForRewards, 64);
             refBuild.storeUint(src.baseTrackingSupplySpeed, 64);
-            refBuild.storeUint(src.baseTrackingBorrowSpeed, 64); */
+            refBuild.storeUint(src.baseTrackingBorrowSpeed, 64);
             builder.storeRef(refBuild.endCell());
         },
         parse: (src: Slice) => {
@@ -102,10 +95,9 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
             const maxTotalSupply = ref.loadUintBig(64);
             const reserveFactor = ref.loadUintBig(16);
             const liquidationReserveFactor = ref.loadUintBig(16);
-            /* Will be in v6 
             const minPrincipalForRewards = ref.loadUintBig(64);
             const baseTrackingSupplySpeed = ref.loadUintBig(64);
-            const baseTrackingBorrowSpeed = ref.loadUintBig(64); */
+            const baseTrackingBorrowSpeed = ref.loadUintBig(64);
 
             return {
                 oracle,
@@ -124,10 +116,9 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
                 maxTotalSupply,
                 reserveFactor,
                 liquidationReserveFactor,
-                /* Will be in v6 
                 minPrincipalForRewards,
                 baseTrackingSupplySpeed,
-                baseTrackingBorrowSpeed */
+                baseTrackingBorrowSpeed
             };
         },
     };
@@ -145,16 +136,15 @@ export function parseMasterData(masterDataBOC: string, poolAssetsConfig: PoolAss
         updateTime: upgradeConfigParser.loadUint(64),
         freezeTime: upgradeConfigParser.loadUint(64),
         userCode: loadMyRef(upgradeConfigParser),
-        blankCode: loadMyRef(upgradeConfigParser),
         newMasterCode: loadMaybeMyRef(upgradeConfigParser),
         newUserCode: loadMaybeMyRef(upgradeConfigParser),
     };
     upgradeConfigParser.endParse();
 
     const masterConfigSlice = masterSlice.loadRef().beginParse();
-
     const assetsConfigDict = masterConfigSlice.loadDict(Dictionary.Keys.BigUint(256), createAssetConfig());
     const assetsDataDict = masterSlice.loadDict(Dictionary.Keys.BigUint(256), createAssetData());
+
     const assetsExtendedData = Dictionary.empty<bigint, ExtendedAssetData>();
     const assetsReserves = Dictionary.empty<bigint, bigint>();
     const apy = {
@@ -166,15 +156,16 @@ export function parseMasterData(masterDataBOC: string, poolAssetsConfig: PoolAss
         const assetData = calculateAssetData(assetsConfigDict, assetsDataDict, asset.assetId, masterConstants);
         assetsExtendedData.set(asset.assetId, assetData);
     }
-
     const masterConfig = {
         ifActive: masterConfigSlice.loadInt(8),
         admin: masterConfigSlice.loadAddress(),
-        adminPK: masterConfigSlice.loadUintBig(256),
+        oraclesInfo:  {
+            numOracles: masterConfigSlice.loadUint(16),
+            threshold: masterConfigSlice.loadUint(16),
+            oracles: loadMaybeMyRef(masterConfigSlice)
+        },
         tokenKeys: loadMaybeMyRef(masterConfigSlice),
-        walletToMaster: loadMaybeMyRef(masterConfigSlice),
     };
-
     masterConfigSlice.endParse();
 
     for (const [_, asset] of Object.entries(poolAssetsConfig)) {
@@ -214,11 +205,7 @@ export function parseUserLiteData(
     const userAddress = userSlice.loadAddress();
     const principalsDict = userSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.BigInt(64));
     const userState = userSlice.loadInt(64);
-    const trackingSupplyIndex = userSlice.loadUintBig(64);
-    const trackingBorrowIndex = userSlice.loadUintBig(64);
-    const dutchAuctionStart = userSlice.loadUint(32);
-    const backupCell = loadMyRef(userSlice);
-    /* Will be in v6 
+
     let trackingSupplyIndex = 0n;
     let trackingBorrowIndex = 0n;
     let dutchAuctionStart = 0;
@@ -237,7 +224,7 @@ export function parseUserLiteData(
         backupCell1 = userSlice.loadMaybeRef();
         backupCell2 = userSlice.loadMaybeRef();
     }
-    */
+    
     userSlice.endParse();
 
     const userBalances = Dictionary.empty<bigint, UserBalance>();
@@ -267,10 +254,10 @@ export function parseUserLiteData(
         trackingBorrowIndex: trackingBorrowIndex,
         dutchAuctionStart: dutchAuctionStart,
         backupCell: backupCell,
-        /* Will be in v6 
+        
         rewards: rewards,
         backupCell1: backupCell1,
-        backupCell2: backupCell2, */
+        backupCell2: backupCell2,
     };
 }
 

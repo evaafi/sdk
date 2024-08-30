@@ -200,7 +200,7 @@ export function calculateLiquidationData(
             }
         }
     }
-
+    
     if (totalLimit < totalDebt) {
         const gLoanAssetPrice = prices.get(gLoanAsset)!;
         const values: bigint[] = [];
@@ -226,7 +226,7 @@ export function calculateLiquidationData(
                 loanDecimal -
             10n;
         minCollateralAmount = (minCollateralAmount * 97n) / 100n;
-        if (minCollateralAmount / collateralDecimal >= 1n) {
+        if (minCollateralAmount / collateralDecimal >= 0n) {  // todo back to 1
             return {
                 greatestCollateralAsset: gCollateralAsset,
                 greatestCollateralValue: gCollateralValue,
