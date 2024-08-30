@@ -1,7 +1,7 @@
 import { beginCell, Cell, Dictionary, Slice } from "@ton/core";
 import { PriceData, RawPriceData } from "../types/Common";
 import { TTL_ORACLE_DATA_SEC } from "../config";
-import { Oracle } from "../types/Master";
+import { Oracle, PoolAssetsConfig } from "../types/Master";
 import { convertToMerkleProof, generateMerkleProofDirect } from "./merkleProof";
 import 'promise.any';
 
@@ -47,21 +47,21 @@ export type OraclePricesData = {
     prices: Dictionary<bigint, bigint>
 }
 
-export async function loadPrices(oracleNftId: String, endpoints: String[]): Promise<OutputData> {
-    return await Promise.any(endpoints.map(x => loadOracleData(oracleNftId, x)));
+export async function loadPrices(oracleNftId: String, endpoints: String[], timeout: number): Promise<OutputData> {
+    return await Promise.any(endpoints.map(x => loadOracleData(oracleNftId, x, timeout)));
 }
 
 
-async function loadOracleData(oracleNftId: String, endpoint: String): Promise<OutputData> {
+async function loadOracleData(oracleNftId: String, endpoint: String, timeout: number): Promise<OutputData> {
     let result = await fetch(`https://${endpoint}/api/indexer/v1/outputs/nft/${oracleNftId}`, {
         headers: { accept: 'application/json' },
-        signal: AbortSignal.timeout(5000)
+        signal: AbortSignal.timeout(timeout)
     });
     let outputId = (await result.json()) as NftData;
 
     result = await fetch(`https://${endpoint}/api/core/v2/outputs/${outputId.items[0]}`, {
         headers: { accept: 'application/json' },
-        signal: AbortSignal.timeout(5000)
+        signal: AbortSignal.timeout(timeout)
     });
     return (await result.json() as OutputData);
 }
@@ -92,13 +92,13 @@ export async function parsePrices(outputData: OutputData, oracleId: number): Pro
     }
 }
 
-export function verifyPrices(assets: Record<string, bigint>) {
+export function verifyPrices(assets: PoolAssetsConfig) {
     return function(priceData: RawPriceData): boolean {
         const timestamp = Date.now() / 1000;
         const pricesTime = priceData.timestamp;
 
-        for (const [key, assetId] of Object.entries(assets)) {
-            if(!priceData.dict.has(assetId)) {
+        for (const [key, asset] of Object.entries(assets)) {
+            if(!priceData.dict.has(asset.assetId)) {
                 return false;
             }
         }

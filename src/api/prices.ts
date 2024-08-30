@@ -1,15 +1,16 @@
 import { Dictionary } from '@ton/core';
-import { MAINNET_ASSETS_ID, ORACLE_NFTS } from '../constants';
+import { MAINNET_ASSETS_ID, MAINNET_POOL_CONFIG, ORACLE_NFTS } from '../constants';
 import { PriceData, RawPriceData } from '../types/Common';
 import { getMedianPrice, loadPrices, packAssetsData, packOraclesData, packPrices, parsePrices, verifyPrices } from '../utils/priceUtils';
 import { MINIMAL_ORACLES_NUMBER } from '../config';
+import { PoolAssetsConfig } from '../types/Master';
 
-export async function getPrices(endpoints: String[] = ["api.stardust-mainnet.iotaledger.net", "iota.evaa.finance"], checkPrices = MAINNET_ASSETS_ID): Promise<PriceData> {
+export async function getPrices(endpoints: String[] = ["api.stardust-mainnet.iotaledger.net", "iota.evaa.finance"], checkPrices: PoolAssetsConfig = MAINNET_POOL_CONFIG.poolAssetsConfig, timeout: number = 10000): Promise<PriceData> {
     if (endpoints.length == 0) {
         throw new Error("Empty endpoint list");
     }
     
-    const prices = await Promise.all(ORACLE_NFTS.map(async x => await parsePrices(await loadPrices(x.address, endpoints), x.id)));
+    const prices = await Promise.all(ORACLE_NFTS.map(async x => await parsePrices(await loadPrices(x.address, endpoints, timeout), x.id)));
 
     let acceptedPrices: RawPriceData[] = prices.filter(verifyPrices(checkPrices));
 
@@ -29,11 +30,12 @@ export async function getPrices(endpoints: String[] = ["api.stardust-mainnet.iot
     }
 
 
-    const medianData = Object.values(checkPrices).map(assetId => ({ assetId: assetId, medianPrice: getMedianPrice(acceptedPrices, assetId)}));
+    const medianData = Object.values(checkPrices).map(asset => ({ assetId: asset.assetId, medianPrice: getMedianPrice(acceptedPrices, asset.assetId)}));
     const packedMedianData = packAssetsData(medianData);
 
     const oraclesData = acceptedPrices.map(x => ({oracle: {id: x.oracleId, pubkey: x.pubkey}, data: {timestamp: x.timestamp, prices: x.dict}, signature: x.signature}));
-    const packedOracleData = packOraclesData(oraclesData, Object.values(checkPrices));
+    const assetIds: bigint[] = Object.values(checkPrices).map(x => x.assetId);
+    const packedOracleData = packOraclesData(oraclesData, assetIds);
 
     const dict = Dictionary.empty<bigint, bigint>();
     medianData.forEach(x => dict.set(x.assetId, x.medianPrice));
