@@ -73,11 +73,15 @@ export {
     LENDING_CODE,
     OPCODES,
     FEES,
-    MAINNET_ASSETS_ID,
-    TESTNET_ASSETS_ID,
+    MASTER_CONSTANTS
+} from './constants/general';
+
+export {
     MAINNET_POOL_CONFIG,
-    TESTNET_POOL_CONFIG
-} from './constants';
+    TESTNET_POOL_CONFIG,
+} from './constants/pools';
+
+export * from './constants/assets'
 
 // Utils
 export { getLastSentBoc, getTonConnectSender } from './utils/tonConnectSender';

@@ -12,7 +12,7 @@ export type MasterConstants = {
 export type PoolAssetConfig = (PoolTonAssetConfig | PoolJettonAssetConfig) & {
     name: string;
 };
-export type PoolAssetsConfig = Record<string, PoolAssetConfig>;
+export type PoolAssetsConfig = PoolAssetConfig[];
 
 export type PoolTonAssetConfig = {
     assetId: bigint;

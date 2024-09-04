@@ -3,7 +3,9 @@ import { UserData, UserLiteData } from '../types/User';
 import { parseUserData, parseUserLiteData } from '../api/parser';
 import { AssetConfig, ExtendedAssetData, ExtendedAssetsConfig, ExtendedAssetsData, PoolConfig } from '../types/Master';
 import { LiquidationBaseData } from './MasterContract';
-import { MAINNET_ASSETS_ID, MAINNET_POOL_CONFIG, OPCODES } from '../constants';
+import { OPCODES } from '../constants/general';
+import { MAINNET_POOL_CONFIG } from '../constants/pools';
+import { TON_MAINNET } from '../constants/assets';
 
 /**
  * User contract wrapper
@@ -155,7 +157,7 @@ export class EvaaUser implements Contract {
             collateralAsset: this._data.liquidationData.greatestCollateralAsset,
             minCollateralAmount: this._data.liquidationData.minCollateralAmount,
             liquidationAmount: this._data.liquidationData.liquidationAmount,
-            tonLiquidation: this._data.liquidationData.greatestLoanAsset === MAINNET_ASSETS_ID.TON,
+            tonLiquidation: this._data.liquidationData.greatestLoanAsset === TON_MAINNET.assetId,
         };
     }
 }

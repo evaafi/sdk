@@ -1,5 +1,5 @@
 import { beginCell, Cell, Dictionary } from '@ton/core';
-import { NFT_ID } from '../constants';
+import { NFT_ID } from '../constants/general';
 import { PriceData } from '../types/Common';
 
 type NftData = {

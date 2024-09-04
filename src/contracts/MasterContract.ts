@@ -10,21 +10,16 @@ import {
     storeStateInit,
 } from '@ton/core';
 import {
-    EVAA_MASTER_MAINNET,
-    EVAA_MASTER_TESTNET,
     FEES,
-    LENDING_CODE,
-    MAINNET_POOL_CONFIG,
-    MAINNET_VERSION,
     OPCODES,
-    TESTNET_VERSION,
-} from '../constants';
+} from '../constants/general';
 import { Maybe } from '@ton/core/dist/utils/maybe';
 import { EvaaUser } from './UserContract';
 import { parseMasterData } from '../api/parser';
 import { MasterData, PoolAssetConfig, PoolConfig, PoolJettonAssetConfig, PoolTonAssetConfig } from '../types/Master';
 import { JettonWallet } from './JettonWallet';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
+import { MAINNET_POOL_CONFIG } from '..';
 
 /**
  * Parameters for the Evaa contract
@@ -285,7 +280,7 @@ export class Evaa implements Contract {
      * @param userAddress
      * @returns user contract address
      */
-    calculateUserSCAddr(userAddress: Address): Address {
+    calculateUserSCAddr(userAddress: Address, lendingCode: Cell): Address {
         const lendingData = beginCell()
             .storeAddress(this.address)
             .storeAddress(userAddress)
@@ -296,7 +291,7 @@ export class Evaa implements Contract {
         const stateInit = beginCell()
             .store(
                 storeStateInit({
-                    code: LENDING_CODE,
+                    code: lendingCode,
                     data: lendingData,
                 }),
             )
@@ -310,7 +305,7 @@ export class Evaa implements Contract {
      * @returns user contract
      */
     openUserContract(userAddress: Address): EvaaUser {
-        return EvaaUser.createFromAddress(this.calculateUserSCAddr(userAddress));
+        return EvaaUser.createFromAddress(this.calculateUserSCAddr(userAddress, this.poolConfig.lendingCode), this.poolConfig);
     }
 
     getOpenedUserContract(provider: ContractProvider, userAddress: Address): OpenedContract<EvaaUser> {
@@ -414,7 +409,7 @@ export class Evaa implements Contract {
      */
     async getSync(provider: ContractProvider) {
         const state = (await provider.getState()).state;
-        if (state.type === 'active') { this.poolConfig.poolAssetsConfig
+        if (state.type === 'active') {
             this._data = parseMasterData(state.data!.toString('base64'), this.poolConfig.poolAssetsConfig, this.poolConfig.masterConstants);
             if (this._data.upgradeConfig.masterCodeVersion !== this.poolConfig.masterVersion) {
                 throw Error(
