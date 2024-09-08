@@ -28,6 +28,7 @@ export type PoolConfig = {
     masterAddress: Address;
     masterVersion: number;
     masterConstants: MasterConstants;
+    nftId: string;
     poolAssetsConfig: PoolAssetsConfig;
     lendingCode: Cell;
 };

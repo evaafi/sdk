@@ -161,7 +161,7 @@ export function parseMasterData(masterDataBOC: string, poolAssetsConfig: PoolAss
         supply: Dictionary.empty<bigint, number>(),
         borrow: Dictionary.empty<bigint, number>(),
     };
-
+    
     for (const [tokenSymbol, asset] of Object.entries(poolAssetsConfig)) {
         const assetData = calculateAssetData(assetsConfigDict, assetsDataDict, asset.assetId, masterConstants);
         assetsExtendedData.set(asset.assetId, assetData);

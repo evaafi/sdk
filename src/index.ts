@@ -61,7 +61,7 @@ export {
     UserDataInactive,
     UserDataActive,
     UserData,
-    BalanceChangeType,
+    BalanceChangeType
 } from './types/User';
 
 // Constants
@@ -79,7 +79,24 @@ export {
 export {
     MAINNET_POOL_CONFIG,
     TESTNET_POOL_CONFIG,
+    MAINNET_LP_POOL_CONFIG,
+    TESTNET_LP_POOL_CONFIG
 } from './constants/pools';
+
+export {
+    TON_MAINNET,
+    USDT_MAINNET,
+    TONUSDT_DEDUST_MAINNET,
+    TON_STORM_MAINNET,
+    USDT_STORM_MAINNET,
+    JUSDT_MAINNET,
+    JUSDC_MAINNET,
+    STTON_MAINNET,
+    TSTON_MAINNET,
+    JUSDT_TESTNET,
+    JUSDC_TESTNET,
+    STTON_TESTNET,
+} from './constants/assets';
 
 export * from './constants/assets'
 

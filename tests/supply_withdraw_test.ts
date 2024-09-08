@@ -1,32 +1,56 @@
-import {AssetConfig, calculatePresentValue, createAssetConfig, Evaa, EVAA_MASTER_MAINNET, EvaaUser, FEES, getPrices, getTonConnectSender, JUSDT_TESTNET, PoolAssetConfig, PoolConfig, PriceData, STTON_TESTNET, TESTNET_POOL_CONFIG, TON_MAINNET, TON_TESTNET, UserData, UserDataActive} from '../src';
-import {Address, beginCell, Cell, CellType, Dictionary, OpenedContract, Sender, toNano, TonClient, WalletContractV5Beta, WalletContractV5R1} from '@ton/ton';
+import {AssetConfig, calculatePresentValue, createAssetConfig, Evaa, EVAA_MASTER_MAINNET, EvaaUser, FEES, getPrices, getTonConnectSender, JUSDC_MAINNET, JUSDT_MAINNET, JUSDT_TESTNET, PoolAssetConfig, PoolConfig, PriceData, STTON_TESTNET, TESTNET_POOL_CONFIG, TON_MAINNET, TON_STORM_MAINNET, TON_TESTNET, TONUSDT_DEDUST_MAINNET, USDT_MAINNET, USDT_STORM_MAINNET, UserData, UserDataActive} from '../src';
+import {Address, beginCell, Cell, CellType, Dictionary, OpenedContract, Sender, toNano, TonClient, WalletContractV4, WalletContractV5Beta, WalletContractV5R1} from '@ton/ton';
 import dotenv from 'dotenv';
-import { sha256Hash } from '../src/utils/sha256BigInt';
-import { KeyPair, mnemonicToWalletKey } from '@ton/crypto';
-import { TESTNET_LP_POOL_CONFIG } from '../src/constants/pools';
+import { mnemonicToWalletKey } from '@ton/crypto';
+import { MAINNET_LP_POOL_CONFIG, TESTNET_LP_POOL_CONFIG } from '../src/constants/pools';
+import { getHttpEndpoint } from "@orbs-network/ton-access";
+import { exit } from 'process';
 
 let client: TonClient;
+let clientMainNet: TonClient;
 let evaa: OpenedContract<Evaa>;
+let evaaMainNet: OpenedContract<Evaa>;
 let sender: Sender;
+let sender_mainnet: Sender;
 let sender2: Sender;
 let sender3: Sender;
 let priceData: PriceData;
-const address: Address = Address.parseFriendly('0QDN5CpSs8HT2GO4IymOXPS5zTDzHtY-s8VTuUVAsCTwWCdG').address;
+let priceDataLP: PriceData;
+const address: Address = Address.parseFriendly('UQDN5CpSs8HT2GO4IymOXPS5zTDzHtY-s8VTuUVAsCTwWJzM').address;
+const address_mainnet: Address = Address.parseFriendly('UQDN5CpSs8HT2GO4IymOXPS5zTDzHtY-s8VTuUVAsCTwWJzM').address;
 const address2: Address = Address.parseFriendly('0QAq-I1fRZcegpp2bDALewjsXfdYRnYqE7KMA8DIi98EQLBd').address;
 const address3: Address = Address.parseFriendly('0QA5MjZwkAgDtp6eIb8FqQbaRH1IuYTYbOF6AVfzFSRafas1').address;
+//const address4: Address = Address.parseFriendly('UQB0jkvgow2xvEA5JS37-x7NkZYsB9TUEYD43cdQwJt0B9J5').address;
+//const address4: Address = Address.parseFriendly('UQC6oolqwFm36Tis31Pk5i6EGsblu8PyhVLB-IX1xU9pryd5').address;
 const liquidateAddr: Address = Address.parseFriendly('EQCd_evQcWHlAgZWdmaWiMbIyR4dHvTcevGiRwyL17Yh79xZ').address;
+
 
 
 beforeAll(async () => {
     dotenv.config();
+    const endpoint = await getHttpEndpoint(); 
     client = new TonClient({
         endpoint: 'https://testnet.toncenter.com/api/v2/jsonRPC',
         apiKey: process.env.RPC_API_KEY,
     });
+    clientMainNet = new TonClient({
+        //endpoint: 'https://toncenter.com/api/v2/jsonRPC',
+        endpoint: 'https://rpc.evaa.finance/api/v2/jsonRPC',
+        //apiKey: process.env.RPC_API_KEY_MAINNET,
+        apiKey: 'front-test-qdGscsEfza9YEjHK',
+        
+    });
     let keyPair = await mnemonicToWalletKey(process.env.WALLET_MNEMONIC!.split(' '));
     let keyPair2 = await mnemonicToWalletKey(process.env.WALLET_MNEMONIC_2!.split(' '));
     let keyPair3 = await mnemonicToWalletKey(process.env.WALLET_MNEMONIC_3!.split(' '));
+    //let keyPair4 = await mnemonicToWalletKey(process.env.WALLET_MNEMONIC_4!.split(' '));
     let wallet = client.open(
+        WalletContractV5R1.create({
+            workChain: 0,
+            publicKey: keyPair.publicKey,
+        }),
+    );
+    let walletMainNet = clientMainNet.open(
         WalletContractV5R1.create({
             workChain: 0,
             publicKey: keyPair.publicKey,
@@ -44,7 +68,20 @@ beforeAll(async () => {
             publicKey: keyPair3.publicKey,
         }),
     );
+    /*let wallet4 = client.open(
+        WalletContractV4.create({
+            workchain: 0,
+            publicKey: keyPair4.publicKey,
+        }),
+    );*/
+    /*let contract = clientMainNet.open(walletMainNet);
+    console.log(await contract.getBalance());
+    contract = client.open(wallet);
+    console.log(await contract.getBalance());
+
+    exit(0);*/
     evaa = client.open(new Evaa({poolConfig: TESTNET_LP_POOL_CONFIG}));
+    evaaMainNet = clientMainNet.open(new Evaa({poolConfig: MAINNET_LP_POOL_CONFIG}));
     sender = {
         address: address,
         send: wallet.sender(keyPair.secretKey).send
@@ -57,14 +94,20 @@ beforeAll(async () => {
         address: address3,
         send: wallet3.sender(keyPair3.secretKey).send
     };
-    priceData = await getPrices();
+    sender_mainnet = {
+        address: address_mainnet,
+        send: walletMainNet.sender(keyPair.secretKey).send
+    };
+    priceData = await evaa.getPrices();
+    priceDataLP = await evaaMainNet.getPrices();
 
 });
 
-async function waitForPrincipalChange(addr: Address, asset: PoolAssetConfig, fun: any):Promise<{ principal: bigint, data: UserDataActive }> {
+async function waitForPrincipalChange(addr: Address, asset: PoolAssetConfig, fun: any, currentEvaa = evaa, currentClient = client):Promise<{ principal: bigint, data: UserDataActive }> {
     let prevPrincipal = 0n;
-    let user = client.open(await evaa.openUserContract(addr));
-    await user.getSync(evaa.data!.assetsData, evaa.data!.assetsConfig, priceData.dict);
+    let user = currentClient.open(await currentEvaa.openUserContract(addr));
+    await user.getSync(currentEvaa.data!.assetsData, currentEvaa.data!.assetsConfig, priceData.dict);
+
     if (user.data?.type == "active") {
         prevPrincipal = user.data.principals.get(asset.assetId) ?? 0n;
     }
@@ -74,8 +117,8 @@ async function waitForPrincipalChange(addr: Address, asset: PoolAssetConfig, fun
     await fun();
 
     while (true) {
-        user = client.open(await evaa.openUserContract(addr));
-        await user.getSync(evaa.data!.assetsData, evaa.data!.assetsConfig, priceData.dict);
+        user = currentClient.open(await currentEvaa.openUserContract(addr));
+        await user.getSync(currentEvaa.data!.assetsData, currentEvaa.data!.assetsConfig, priceData.dict);
         if (user.data?.type == "active") {
             const principalNow: bigint = user.data.principals.get(asset.assetId) ?? 0n;
             if (Math.abs(Number(principalNow - prevPrincipal)) > 10) {
@@ -89,40 +132,69 @@ async function waitForPrincipalChange(addr: Address, asset: PoolAssetConfig, fun
 
 test('Get user info test', async () => {
 
-    await evaa.getSync();
+    let currentEvaa = evaaMainNet;
+    let currentClient = clientMainNet;
+    let currentPrices = priceDataLP;
+    await currentEvaa.getSync();
     
-    //console.log(evaa.data?.assetsConfig);
-    //let user = client.open(    EvaaUser.createFromAddress(Address.parseFriendly('kQCZ49e6RPFC4GLnehZ4es1H_xkXT_oyAZMrEt-u7mBN4p4L').address)
-    //)//    await evaa.openUserContract(liquidateAddr));*
-    let user = client.open(await evaa.openUserContract(address));
-    
-    await user.getSync(evaa.data!.assetsData, evaa.data!.assetsConfig, priceData.dict);
-    console.log(evaa.data?.assetsConfig);
+    //console.log(currentEvaa.data?.assetsConfig);
+    //let user = client.open(    currentEvaaUser.createFromAddress(Address.parseFriendly('kQCZ49e6RPFC4GLnehZ4es1H_xkXT_oyAZMrEt-u7mBN4p4L').address)
+    //)//    await currentEvaa.openUserContract(liquidateAddr));*
+    let user = currentClient.open(await currentEvaa.openUserContract(address_mainnet));
+    //console.log(currentPrices.dict);
+    console.log(currentEvaa.data!.assetsConfig);
+    await user.getSync(currentEvaa.data!.assetsData, currentEvaa.data!.assetsConfig, currentPrices.dict);
+    console.log('userscaddr', user.address);
+    //console.log(currentEvaa.data?.assetsConfig);
     if (user.data?.type != "active") {
         console.log("inactive", user.data?.type);
     } else {
-        console.log(user.data.principals.get(JUSDT_TESTNET.assetId)!);
+        console.log(user.data.principals.get(TON_MAINNET.assetId)!);
         console.log('principals', user.data.principals);
         console.log('liquidata', user.data.liquidationData)
     }
 })
 
-test('Just supply', async () => {
+test('Just supply testnet', async () => {
     await evaa.getSync();
 
-    await waitForPrincipalChange(address2, TON_TESTNET, async () => {
-        await evaa.sendSupply(sender2, toNano(3), {
-            queryID: 0n,
-            includeUserCode: true,
-            amount: 2_500_000_000n,
-            userAddress: address2,
-            asset: TON_TESTNET
-        });
-    });
+    try{
+        await waitForPrincipalChange(address, JUSDT_TESTNET, async () => {
+            await evaa.sendSupply(sender, toNano(1), {
+                queryID: 0n,
+                includeUserCode: true,
+                amount: 100_000n,
+                userAddress: address,
+                asset: JUSDT_TESTNET
+            });
+        });//, evaaMainNet, clientMainNet);
+    }
+    catch(e) {
+        console.log(e);
+    }
+})
+
+test('Just supply mainnet', async () => {
+    await evaaMainNet.getSync();
+
+    try{
+        await waitForPrincipalChange(address_mainnet, TON_MAINNET, async () => {
+            await evaaMainNet.sendSupply(sender_mainnet, toNano(1), {
+                queryID: 0n,
+                includeUserCode: true,
+                amount: 100_000_000n,
+                userAddress: address_mainnet,
+                asset: TON_MAINNET
+            });
+        }, evaaMainNet, clientMainNet);
+    }
+    catch(e) {
+        console.log(e);
+    }
 })
 
 test('Just withdraw max', async () => {
-    await evaa.getSync();
+    await evaaMainNet.getSync();
 
     await waitForPrincipalChange(address, TON_TESTNET,
         async() => {
@@ -134,13 +206,13 @@ test('Just withdraw max', async () => {
                 asset: TON_TESTNET,
                 priceData: priceData.dataCell
             });
-        }
+        }, evaaMainNet, clientMainNet
     );
 })
 
 /*test('Liquidate test', async () => {
     await evaa.getSync();
-    priceData = await getPrices();
+    priceData = await evaa.getPrices();
 
     let user = client.open(await evaa.openUserContract(liquidateAddr));
     await user.getSync(evaa.data!.assetsData, evaa.data!.assetsConfig, priceData.dict);
@@ -208,7 +280,7 @@ test('SupplyBorrowRepayMaxWithdrawMax test', async () => {
         });
     });
 
-    priceData = await getPrices();
+    priceData = await evaa.getPrices();
 
     let changes = await waitForPrincipalChange(address, JUSDT_TESTNET,
         async() => {
@@ -264,7 +336,7 @@ test('SupplyBorrowRepayMaxWithdrawMax test', async () => {
 
 test('Withdraw test', async () => {
     const user = client.open(await evaa.openUserContract(address));
-    const priceData = await getPrices();
+    const priceData = await evaa.getPrices();
     
     await evaa.getSync();
 

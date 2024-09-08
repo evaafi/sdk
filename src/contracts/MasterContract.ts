@@ -19,7 +19,7 @@ import { parseMasterData } from '../api/parser';
 import { MasterData, PoolAssetConfig, PoolConfig, PoolJettonAssetConfig, PoolTonAssetConfig } from '../types/Master';
 import { JettonWallet } from './JettonWallet';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
-import { MAINNET_POOL_CONFIG } from '..';
+import { getPrices, MAINNET_POOL_CONFIG } from '..';
 
 /**
  * Parameters for the Evaa contract
@@ -63,7 +63,7 @@ export type SupplyBaseParameters = {
  * @property type - 'ton'
  */
 export type TonSupplyParameters = SupplyBaseParameters & {
-    asset: PoolTonAssetConfig;
+    asset: PoolAssetConfig;
 };
 /**
  * Parameters for the jetton supply message
@@ -71,7 +71,7 @@ export type TonSupplyParameters = SupplyBaseParameters & {
  */
 export type JettonSupplyParameters = SupplyBaseParameters &
     JettonMessageParameters & {
-        asset: PoolJettonAssetConfig;
+        asset: PoolJettonAssetConfig & PoolAssetConfig;
     };
 
 export type SupplyParameters = TonSupplyParameters | JettonSupplyParameters;
@@ -136,7 +136,7 @@ export type LiquidationBaseParameters = LiquidationBaseData & {
  * @property type - 'ton'
  */
 export type TonLiquidationParameters = LiquidationBaseParameters & {
-    asset: PoolTonAssetConfig;
+    asset: PoolAssetConfig;
 };
 /**
  * Parameters for the jetton liquidation message
@@ -144,7 +144,7 @@ export type TonLiquidationParameters = LiquidationBaseParameters & {
  */
 export type JettonLiquidationParameters = LiquidationBaseParameters &
     JettonMessageParameters & {
-        asset: PoolJettonAssetConfig
+        asset: PoolAssetConfig & PoolJettonAssetConfig
     };
 
 /**
@@ -328,7 +328,6 @@ export class Evaa implements Contract {
         const message = this.createSupplyMessage(parameters);
 
         if ('jettonMasterAddress' in parameters.asset) {
-            
             if (!via.address) {
                 throw Error('Via address is required for jetton supply');
             }
@@ -336,6 +335,7 @@ export class Evaa implements Contract {
             const jettonWallet = provider.open(
                 JettonWallet.createFromAddress(getUserJettonWallet(via.address, parameters.asset)),
             );
+            console.log('jetton wallet', jettonWallet.address);
             await jettonWallet.sendTransfer(via, value, message);
         } else {
             await provider.internal(via, {
@@ -343,6 +343,7 @@ export class Evaa implements Contract {
                 sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
                 body: message,
             });
+
         }
     }
 
@@ -419,6 +420,14 @@ export class Evaa implements Contract {
             this.lastSync = Math.floor(Date.now() / 1000);
         } else {
             throw Error('Master contract is not active');
+        }
+    }
+
+    async getPrices(provider: ContractProvider, endpoints?: string[]) {
+        if ((endpoints?.length ?? 0) > 0) {
+            return await getPrices(this.poolConfig.nftId, endpoints);
+        } else {
+            return await getPrices(this.poolConfig.nftId);
         }
     }
 }

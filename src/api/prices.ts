@@ -1,5 +1,4 @@
 import { beginCell, Cell, Dictionary } from '@ton/core';
-import { NFT_ID } from '../constants/general';
 import { PriceData } from '../types/Common';
 
 type NftData = {
@@ -39,12 +38,12 @@ type OutputData = {
     };
 }
 
-export async function getPrices(endpoints: string[] = ["api.stardust-mainnet.iotaledger.net"]) {
-    return await Promise.any(endpoints.map(x => loadPrices(x)));
+export async function getPrices(nftId: string, endpoints: string[] = ["api.stardust-mainnet.iotaledger.net"]) {
+    return await Promise.any(endpoints.map(x => loadPrices(nftId, x)));
 }
 
-async function loadPrices(endpoint: String = "api.stardust-mainnet.iotaledger.net"): Promise<PriceData> {
-    let result = await fetch(`https://${endpoint}/api/indexer/v1/outputs/nft/${NFT_ID}`, {
+async function loadPrices(nftId: string, endpoint: string = "api.stardust-mainnet.iotaledger.net"): Promise<PriceData> {
+    let result = await fetch(`https://${endpoint}/api/indexer/v1/outputs/nft/${nftId}`, {
         headers: { accept: 'application/json' },
     });
     let outputId = (await result.json()) as NftData;
