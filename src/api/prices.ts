@@ -38,7 +38,7 @@ type OutputData = {
     };
 }
 
-export async function getPrices(nftId: string, endpoints: string[] = ["api.stardust-mainnet.iotaledger.net"]) {
+export async function getPricesByNft(nftId: string, endpoints: string[] = ["api.stardust-mainnet.iotaledger.net"]) {
     return await Promise.any(endpoints.map(x => loadPrices(nftId, x)));
 }
 

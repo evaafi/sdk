@@ -19,7 +19,7 @@ import { parseMasterData } from '../api/parser';
 import { MasterData, PoolAssetConfig, PoolConfig, PoolJettonAssetConfig, PoolTonAssetConfig } from '../types/Master';
 import { JettonWallet } from './JettonWallet';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
-import { getPrices, MAINNET_POOL_CONFIG } from '..';
+import { getPricesByNft, MAINNET_POOL_CONFIG } from '..';
 
 /**
  * Parameters for the Evaa contract
@@ -335,7 +335,6 @@ export class Evaa implements Contract {
             const jettonWallet = provider.open(
                 JettonWallet.createFromAddress(getUserJettonWallet(via.address, parameters.asset)),
             );
-            console.log('jetton wallet', jettonWallet.address);
             await jettonWallet.sendTransfer(via, value, message);
         } else {
             await provider.internal(via, {
@@ -425,9 +424,9 @@ export class Evaa implements Contract {
 
     async getPrices(provider: ContractProvider, endpoints?: string[]) {
         if ((endpoints?.length ?? 0) > 0) {
-            return await getPrices(this.poolConfig.nftId, endpoints);
+            return await getPricesByNft(this.poolConfig.nftId, endpoints);
         } else {
-            return await getPrices(this.poolConfig.nftId);
+            return await getPricesByNft(this.poolConfig.nftId);
         }
     }
 }

@@ -56,8 +56,6 @@ export function calculateAssetData(
     assetId: bigint,
     masterConstants: MasterConstants
 ): ExtendedAssetData {
-    // console.log(assetsConfigDict);
-    // console.log(assetsDataDict);
     const config = assetsConfigDict.get(assetId);
     const data = assetsDataDict.get(assetId);
 

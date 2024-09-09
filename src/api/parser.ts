@@ -243,7 +243,6 @@ export function parseUserLiteData(
     const userBalances = Dictionary.empty<bigint, UserBalance>();
 
     for (const [_, asset] of Object.entries(poolAssetsConfig)) {
-        // console.log(asset);
         const assetData = assetsData.get(asset.assetId) as ExtendedAssetData;
         const assetConfig = assetsConfig.get(asset.assetId) as AssetConfig;
         let principals = principalsDict.get(asset.assetId) || 0n;

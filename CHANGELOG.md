@@ -4,6 +4,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.5.4 - 2024-09-09
+
+check ```tests\supply_withdraw_test.ts``` for new examples
+
+### Added 
+
+- Pools supports (new argument for Evaa master contract) + LP_POOL constants, default is MAINNET_POOL_CONFIG
+```typescript
+const evaa = client.open(new Evaa({poolConfig: TESTNET_LP_POOL_CONFIG}));
+
+const evaaMainNet = clientMainNet.open(new Evaa({poolConfig: MAINNET_LP_POOL_CONFIG}));
+```
+- New types for pools initializtion, for assets
+check ```constants\assets.ts``` for new examples
+
+### Changed 
+- getPrices renamed to getPricesByNft, now you should initialize pool and use a new function inside Evaa
+
+```typescript
+await evaaMainNet.getPrices()
+```
+- Everything about working with assets
+```typescript
+import { JUSDC_MAINNET, JUSDC_TESTNET, JUSDT_MAINNET, JUSDT_TESTNET, STTON_MAINNET, STTON_TESTNET, TON_MAINNET, TON_STORM_MAINNET, TONUSDT_DEDUST_MAINNET, TSTON_MAINNET, USDT_MAINNET, USDT_STORM_MAINNET } from "@evaafi/sdk";
+```
+
+```typescript
+await evaaMainNet.sendSupply(sender_mainnet, toNano(1), {
+    queryID: 0n,
+    includeUserCode: true,
+    amount: 500_000_000n,
+    userAddress: address_mainnet,
+    asset: TON_MAINNET
+});
+```
+### Fixed
+- predictHealthFactor minor fixes
+- getUserJettonWallet all currencies support
+
 ## 0.5.3 - 2024-08-20
 
 ### Fixed
