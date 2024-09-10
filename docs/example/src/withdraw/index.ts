@@ -21,7 +21,7 @@ async function main() {
             publicKey: keyPair.publicKey,
         }),
     );
-    const priceData = await getPrices();
+    const priceData = await evaa.getPrices();
     await evaa.sendWithdraw(wallet.sender(keyPair.secretKey), FEES.WITHDRAW, {
         queryID: 0n,
         // we can set always to true, if we don't want to check user code version

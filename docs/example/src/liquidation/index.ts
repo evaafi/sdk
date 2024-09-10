@@ -22,7 +22,7 @@ async function main() {
         }),
     );
     await evaa.getSync();
-    const priceData = await getPrices();
+    const priceData = await evaa.getPrices();
 
     // get user contract that already opened by same client
     // alternative: openUserContract method, which return only instance of user contract without opening

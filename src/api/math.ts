@@ -1,5 +1,4 @@
-import { AssetConfig, AssetData, AssetInterest, ExtendedAssetData } from '../types/Master';
-import { MASTER_CONSTANTS } from '../constants';
+import { AssetConfig, AssetData, AssetInterest, ExtendedAssetData, ExtendedAssetsConfig, ExtendedAssetsData, MasterConstants } from '../types/Master';
 import { Dictionary } from '@ton/core';
 import { BalanceChangeType, BalanceType, LiquidationData, PredictHealthFactorArgs, UserBalance } from '../types/User';
 import { sha256Hash } from '../utils/sha256BigInt';
@@ -19,20 +18,20 @@ export function bigIntMin(...args: bigint[]): bigint {
     return args.reduce((m, e) => (e < m ? e : m));
 }
 
-export function calculatePresentValue(index: bigint, principalValue: bigint): bigint {
-    return (principalValue * index) / MASTER_CONSTANTS.FACTOR_SCALE;
+export function calculatePresentValue(index: bigint, principalValue: bigint, masterConstants: MasterConstants): bigint {
+    return (principalValue * index) / masterConstants.FACTOR_SCALE;
 }
 
-export function calculateCurrentRates(assetConfig: AssetConfig, assetData: AssetData) {
+export function calculateCurrentRates(assetConfig: AssetConfig, assetData: AssetData, masterConstants: MasterConstants) {
     const now = BigInt(Math.floor(Date.now() / 1000));
     const timeElapsed = now - assetData.lastAccural;
-    const { supplyInterest, borrowInterest } = calculateAssetInterest(assetConfig, assetData);
+    const { supplyInterest, borrowInterest } = calculateAssetInterest(assetConfig, assetData, masterConstants);
 
     if (timeElapsed > 0) {
         const updatedSRate =
-            assetData.sRate + mulFactor(MASTER_CONSTANTS.FACTOR_SCALE, assetData.sRate, supplyInterest * timeElapsed);
+            assetData.sRate + mulFactor(masterConstants.FACTOR_SCALE, assetData.sRate, supplyInterest * timeElapsed);
         const updatedBRate =
-            assetData.bRate + mulFactor(MASTER_CONSTANTS.FACTOR_SCALE, assetData.bRate, borrowInterest * timeElapsed);
+            assetData.bRate + mulFactor(masterConstants.FACTOR_SCALE, assetData.bRate, borrowInterest * timeElapsed);
         return {
             sRate: updatedSRate,
             bRate: updatedBRate,
@@ -52,9 +51,10 @@ export function calculateCurrentRates(assetConfig: AssetConfig, assetData: Asset
 }
 
 export function calculateAssetData(
-    assetsConfigDict: Dictionary<bigint, AssetConfig>,
+    assetsConfigDict: ExtendedAssetsConfig,
     assetsDataDict: Dictionary<bigint, AssetData>,
     assetId: bigint,
+    masterConstants: MasterConstants
 ): ExtendedAssetData {
     const config = assetsConfigDict.get(assetId);
     const data = assetsDataDict.get(assetId);
@@ -63,7 +63,7 @@ export function calculateAssetData(
         throw new Error('Asset Data or Config is not accessible');
     }
 
-    const { sRate, bRate, supplyInterest, borrowInterest, now } = calculateCurrentRates(config, data);
+    const { sRate, bRate, supplyInterest, borrowInterest, now } = calculateCurrentRates(config, data, masterConstants);
     data.sRate = sRate || 0n;
     data.bRate = bRate || 0n;
     data.lastAccural = now;
@@ -78,36 +78,36 @@ export function calculateAssetData(
     };
 }
 
-export function calculateAssetInterest(assetConfig: AssetConfig, assetData: AssetData): AssetInterest {
-    const totalSupply = calculatePresentValue(assetData.sRate, assetData.totalSupply);
-    const totalBorrow = calculatePresentValue(assetData.bRate, assetData.totalBorrow);
+export function calculateAssetInterest(assetConfig: AssetConfig, assetData: AssetData, masterConstants: MasterConstants): AssetInterest {
+    const totalSupply = calculatePresentValue(assetData.sRate, assetData.totalSupply, masterConstants);
+    const totalBorrow = calculatePresentValue(assetData.bRate, assetData.totalBorrow, masterConstants);
     let utilization = 0n;
     let supplyInterest = 0n;
     let borrowInterest = 0n;
 
     if (totalSupply !== 0n) {
-        utilization = (totalBorrow * MASTER_CONSTANTS.FACTOR_SCALE) / totalSupply;
+        utilization = (totalBorrow * masterConstants.FACTOR_SCALE) / totalSupply;
     }
 
     if (utilization <= assetConfig.targetUtilization) {
         borrowInterest =
             assetConfig.baseBorrowRate +
-            mulFactor(MASTER_CONSTANTS.FACTOR_SCALE, assetConfig.borrowRateSlopeLow, utilization);
+            mulFactor(masterConstants.FACTOR_SCALE, assetConfig.borrowRateSlopeLow, utilization);
     } else {
         borrowInterest =
             assetConfig.baseBorrowRate +
-            mulFactor(MASTER_CONSTANTS.FACTOR_SCALE, assetConfig.borrowRateSlopeLow, assetConfig.targetUtilization) +
+            mulFactor(masterConstants.FACTOR_SCALE, assetConfig.borrowRateSlopeLow, assetConfig.targetUtilization) +
             mulFactor(
-                MASTER_CONSTANTS.FACTOR_SCALE,
+                masterConstants.FACTOR_SCALE,
                 assetConfig.borrowRateSlopeHigh,
                 utilization - assetConfig.targetUtilization,
             );
     }
 
     supplyInterest = mulDiv(
-        mulDiv(borrowInterest, utilization, MASTER_CONSTANTS.FACTOR_SCALE),
-        MASTER_CONSTANTS.ASSET_RESERVE_FACTOR_SCALE - assetConfig.reserveFactor,
-        MASTER_CONSTANTS.ASSET_RESERVE_FACTOR_SCALE,
+        mulDiv(borrowInterest, utilization, masterConstants.FACTOR_SCALE),
+        masterConstants.ASSET_RESERVE_FACTOR_SCALE - assetConfig.reserveFactor,
+        masterConstants.ASSET_RESERVE_FACTOR_SCALE,
     );
 
     return {
@@ -117,10 +117,11 @@ export function calculateAssetInterest(assetConfig: AssetConfig, assetData: Asse
 }
 
 export function getAvailableToBorrow(
-    assetsConfig: Dictionary<bigint, AssetConfig>,
-    assetsData: Dictionary<bigint, ExtendedAssetData>,
+    assetsConfig: ExtendedAssetsConfig,
+    assetsData: ExtendedAssetsData,
     principals: Dictionary<bigint, bigint>,
     prices: Dictionary<bigint, bigint>,
+    masterConstants: MasterConstants
 ): bigint {
     let borrowLimit = 0n;
     let borrowAmount = 0n;
@@ -132,27 +133,27 @@ export function getAvailableToBorrow(
         const principal = principals.get(assetID) as bigint;
 
         if (principal < 0) {
-            borrowAmount += (calculatePresentValue(assetData.bRate, -principal) * price) / 10n ** assetConfig.decimals;
+            borrowAmount += (calculatePresentValue(assetData.bRate, -principal, masterConstants) * price) / 10n ** assetConfig.decimals;
         } else if (principal > 0) {
             borrowLimit +=
-                (calculatePresentValue(assetData.sRate, principal) * price * assetConfig.collateralFactor) /
+                (calculatePresentValue(assetData.sRate, principal, masterConstants) * price * assetConfig.collateralFactor) /
                 10n ** assetConfig.decimals /
-                MASTER_CONSTANTS.ASSET_COEFFICIENT_SCALE;
+                masterConstants.ASSET_COEFFICIENT_SCALE;
         }
     }
 
     return borrowLimit - borrowAmount;
 }
 
-export function presentValue(sRate: bigint, bRate: bigint, principalValue: bigint): UserBalance {
+export function presentValue(sRate: bigint, bRate: bigint, principalValue: bigint, masterConstants: MasterConstants): UserBalance {
     if (principalValue > 0) {
         return {
-            amount: calculatePresentValue(sRate, principalValue),
+            amount: calculatePresentValue(sRate, principalValue, masterConstants),
             type: BalanceType.supply,
         };
     } else if (principalValue < 0) {
         return {
-            amount: calculatePresentValue(bRate, -principalValue),
+            amount: calculatePresentValue(bRate, -principalValue, masterConstants),
             type: BalanceType.borrow,
         };
     } else {
@@ -164,10 +165,11 @@ export function presentValue(sRate: bigint, bRate: bigint, principalValue: bigin
 }
 
 export function calculateLiquidationData(
-    assetsConfig: Dictionary<bigint, AssetConfig>,
-    assetsData: Dictionary<bigint, ExtendedAssetData>,
+    assetsConfig: ExtendedAssetsConfig,
+    assetsData: ExtendedAssetsData,
     principals: Dictionary<bigint, bigint>,
     prices: Dictionary<bigint, bigint>,
+    masterConstants: MasterConstants,
 ): LiquidationData {
     let gCollateralValue = 0n;
     let gCollateralAsset = 0n;
@@ -184,7 +186,7 @@ export function calculateLiquidationData(
             principal > 0 ? (principal * assetData.sRate) / BigInt(1e12) : (principal * assetData.bRate) / BigInt(1e12);
         if (balance > 0) {
             const assetWorth = (balance * prices.get(key)!) / 10n ** assetConfig.decimals;
-            totalLimit += (assetWorth * assetConfig.liquidationThreshold) / MASTER_CONSTANTS.ASSET_COEFFICIENT_SCALE;
+            totalLimit += (assetWorth * assetConfig.liquidationThreshold) / masterConstants.ASSET_COEFFICIENT_SCALE;
             if (assetWorth > gCollateralValue) {
                 gCollateralValue = assetWorth;
                 gCollateralAsset = key;
@@ -209,7 +211,7 @@ export function calculateLiquidationData(
         values.push(
             (bigIntMax(gCollateralValue / 2n, bigIntMin(gCollateralValue, 10_000_000_000n)) *
                 loanDecimal *
-                MASTER_CONSTANTS.ASSET_COEFFICIENT_SCALE) /
+                masterConstants.ASSET_COEFFICIENT_SCALE) /
                 liquidationBonus /
                 gLoanAssetPrice,
         );
@@ -251,7 +253,7 @@ export function calculateLiquidationData(
 }
 
 export function predictHealthFactor(args: PredictHealthFactorArgs): number {
-    const liquidationData = calculateLiquidationData(args.assetsConfig, args.assetsData, args.balances, args.prices);
+    const liquidationData = calculateLiquidationData(args.assetsConfig, args.assetsData, args.balances, args.prices, args.masterConstants);
     const tokenHash = sha256Hash(args.tokenSymbol);
     
     const assetConfig = args.assetsConfig.get(tokenHash)!;
@@ -267,16 +269,15 @@ export function predictHealthFactor(args: PredictHealthFactorArgs): number {
     const currentBalance = assetPrice * Number(currentAmount) / Math.pow(10, decimals);
     const changeType = args.balanceChangeType;
 
-    if (currentAmount != null && !Number.isNaN(currentAmount) &&
-             Number.isFinite(currentAmount) && currentAmount != 0n) { 
+    if (currentAmount != null && currentAmount != 0n) { 
         if (changeType == BalanceChangeType.Borrow) {
-            totalBorrow += currentBalance * (1 + Number(assetConfig.originationFee) / Number(MASTER_CONSTANTS.ASSET_ORIGINATION_FEE_SCALE));
+            totalBorrow += currentBalance * (1 + Number(assetConfig.originationFee) / Number(args.masterConstants.ASSET_ORIGINATION_FEE_SCALE));
         } else if (changeType == BalanceChangeType.Repay) {
             totalBorrow -= currentBalance;
         } else if (changeType == BalanceChangeType.Withdraw) {
-            totalLimit -= currentBalance * Number(assetConfig.liquidationThreshold) / Number(MASTER_CONSTANTS.ASSET_COEFFICIENT_SCALE);
+            totalLimit -= currentBalance * Number(assetConfig.liquidationThreshold) / Number(args.masterConstants.ASSET_COEFFICIENT_SCALE);
         } else if (changeType == BalanceChangeType.Supply) {
-            totalLimit += currentBalance * Number(assetConfig.liquidationThreshold) / Number(MASTER_CONSTANTS.ASSET_COEFFICIENT_SCALE);
+            totalLimit += currentBalance * Number(assetConfig.liquidationThreshold) / Number(args.masterConstants.ASSET_COEFFICIENT_SCALE);
         }
     }
     if (Number(totalLimit) == 0) {
