@@ -17,7 +17,7 @@ export {
 export { createAssetData, createAssetConfig, parseMasterData, parseUserData, parseUserLiteData } from './api/parser';
 
 // Prices
-export { getPricesByNft } from './api/prices';
+export { getPrices } from './api/prices';
 
 // Contracts' wrappers
 export { JettonWallet } from './contracts/JettonWallet';

@@ -1,4 +1,4 @@
-import {AssetConfig, calculatePresentValue, createAssetConfig, Evaa, EVAA_MASTER_MAINNET, EvaaUser, FEES, getPricesByNft, getTonConnectSender, JUSDC_MAINNET, JUSDT_MAINNET, JUSDT_TESTNET, PoolAssetConfig, PoolConfig, PriceData, STTON_TESTNET, TESTNET_POOL_CONFIG, TON_MAINNET, TON_STORM_MAINNET, TON_TESTNET, TONUSDT_DEDUST_MAINNET, USDT_MAINNET, USDT_STORM_MAINNET, UserData, UserDataActive} from '../src';
+import {AssetConfig, calculatePresentValue, createAssetConfig, Evaa, EVAA_MASTER_MAINNET, EvaaUser, FEES, getPrices, getTonConnectSender, JUSDC_MAINNET, JUSDT_MAINNET, JUSDT_TESTNET, PoolAssetConfig, PoolConfig, PriceData, STTON_TESTNET, TESTNET_POOL_CONFIG, TON_MAINNET, TON_STORM_MAINNET, TON_TESTNET, TONUSDT_DEDUST_MAINNET, USDT_MAINNET, USDT_STORM_MAINNET, UserData, UserDataActive} from '../src';
 import {Address, beginCell, Cell, CellType, Dictionary, OpenedContract, Sender, toNano, TonClient, WalletContractV4, WalletContractV5Beta, WalletContractV5R1} from '@ton/ton';
 import dotenv from 'dotenv';
 import { mnemonicToWalletKey } from '@ton/crypto';
@@ -114,7 +114,6 @@ beforeAll(async () => {
     };
     priceData = await evaa.getPrices();
     priceDataLP = await evaaMainNet.getPrices();
-    //await getPricesByNft(MAIN_POOL_NFT_ID);
 });
 
 async function waitForPrincipalChange(addr: Address, asset: PoolAssetConfig, fun: any, currentEvaa = evaa, currentClient = client):Promise<{ principal: bigint, data: UserDataActive }> {

@@ -162,7 +162,7 @@ console.log(
 For [withdraw operation](./example/src/withdraw/index.ts) we need to get the current prices before sending the message:
 
 ```typescript
-const priceData = await getPricesByNft();
+const priceData = await getPrices();
 ```
 
 Then, using `dataCell` from `priceData`, we can perform our operation.
@@ -173,7 +173,7 @@ In the [liquidation example](./example/src/liquidation/index.ts) we first need t
 
 ```typescript
 await evaa.getSync();
-const priceData = await getPricesByNft();
+const priceData = await getPrices();
 ```
 
 Then we need to get the user contract instance that we want to check for liquidation:

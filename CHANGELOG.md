@@ -10,7 +10,7 @@ check ```tests\supply_withdraw_test.ts``` for new examples
 
 ### Added 
 
-- Pools supports (new argument for Evaa master contract) + LP_POOL constants, default is MAINNET_POOL_CONFIG
+- Pools supports (new argument for Evaa master contract) + LP_POOL constants, default is MAINNET_POOL_CONFIG, default pool is MAINNET_POOL_CONFIG
 ```typescript
 const evaa = client.open(new Evaa({poolConfig: TESTNET_LP_POOL_CONFIG}));
 
@@ -19,13 +19,18 @@ const evaaMainNet = clientMainNet.open(new Evaa({poolConfig: MAINNET_LP_POOL_CON
 - New types for pools initializtion, for assets
 check ```constants\assets.ts``` for new examples
 
-### Changed 
-- getPrices renamed to getPricesByNft, now you should initialize pool and use a new function inside Evaa
+- getPrices - a new function inside Evaa, returns prices of current pool
 
 ```typescript
 await evaaMainNet.getPrices()
 ```
-- Everything about working with assets
+### Changed 
+- New argument nftId (depends on pool) for getPrices 
+```typescript
+export async function getPrices(endpoints: string[] = ["api.stardust-mainnet.iotaledger.net"], nftId: string = MAIN_POOL_NFT_ID) {
+```
+
+- Everything about working with assets, new assets list
 ```typescript
 import { JUSDC_MAINNET, JUSDC_TESTNET, JUSDT_MAINNET, JUSDT_TESTNET, STTON_MAINNET, STTON_TESTNET, TON_MAINNET, TON_STORM_MAINNET, TONUSDT_DEDUST_MAINNET, TSTON_MAINNET, USDT_MAINNET, USDT_STORM_MAINNET } from "@evaafi/sdk";
 ```
