@@ -1,5 +1,6 @@
 import { beginCell, Cell, Dictionary } from '@ton/core';
 import { PriceData } from '../types/Common';
+import { MAIN_POOL_NFT_ID } from '../constants/general';
 
 type NftData = {
     ledgerIndex: number;
@@ -38,7 +39,7 @@ type OutputData = {
     };
 }
 
-export async function getPricesByNft(nftId: string, endpoints: string[] = ["api.stardust-mainnet.iotaledger.net"]) {
+export async function getPrices(endpoints: string[] = ["api.stardust-mainnet.iotaledger.net"], nftId: string = MAIN_POOL_NFT_ID) {
     return await Promise.any(endpoints.map(x => loadPrices(nftId, x)));
 }
 

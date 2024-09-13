@@ -1,4 +1,4 @@
-import {BalanceChangeType, createAssetConfig, Evaa, EVAA_MASTER_MAINNET, getPricesByNft, MAINNET_POOL_CONFIG, TESTNET_POOL_CONFIG, UserDataActive} from '../src';
+import {BalanceChangeType, createAssetConfig, Evaa, EVAA_MASTER_MAINNET, getPrices, MAINNET_POOL_CONFIG, TESTNET_POOL_CONFIG, UserDataActive} from '../src';
 import {Address, beginCell, Dictionary, TonClient} from '@ton/ton';
 import dotenv from 'dotenv';
 import { predictHealthFactor } from '../src/api/math';
