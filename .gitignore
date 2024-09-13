@@ -6,3 +6,5 @@ temp
 *.log
 .env
 .vscode/
+.DS_Store
+*.tgz
