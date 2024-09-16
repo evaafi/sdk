@@ -5,6 +5,7 @@ import {
     bigIntMin,
     calculateAssetData,
     calculateLiquidationData,
+    calculateMaximumWithdrawAmount,
     calculatePresentValue,
     getAvailableToBorrow,
     presentValue,
@@ -246,12 +247,12 @@ export function parseUserLiteData(
         const assetData = assetsData.get(asset.assetId) as ExtendedAssetData;
         const assetConfig = assetsConfig.get(asset.assetId) as AssetConfig;
         let principals = principalsDict.get(asset.assetId) || 0n;
+        const balance = presentValue(assetData.sRate, assetData.bRate, principals, masterConstants);
 
-        if (applyDust && (principals > -assetConfig.dust && principals < assetConfig.dust)) {  // abs(principals) < dust
+        if (applyDust && (principals > -assetConfig.dust && balance.amount < assetConfig.dust)) {  // v6 will be abs(principals) < dust
             principals = 0n;
             principalsDict.set(asset.assetId, 0n);
         }
-        const balance = presentValue(assetData.sRate, assetData.bRate, principals, masterConstants);
         userBalances.set(asset.assetId, balance);
     }
 
@@ -292,13 +293,13 @@ export function parseUserData(
         const assetData = assetsData.get(asset.assetId) as ExtendedAssetData;
         const assetConfig = assetsConfig.get(asset.assetId) as AssetConfig;
         let principals = userLiteData.principals.get(asset.assetId) || 0n;
+        const balance = presentValue(assetData.sRate, assetData.bRate, principals, masterConstants);
 
-        if (applyDust && (principals > -assetConfig.dust && principals < assetConfig.dust )) {  // abs(principals) < dust
+        if (applyDust && (principals > -assetConfig.dust && balance.amount < assetConfig.dust )) {  // v6 will be abs(principals) < dust
             principals = 0n;
             userLiteData.principals.set(asset.assetId, 0n);
         }
 
-        const balance = presentValue(assetData.sRate, assetData.bRate, principals, masterConstants);
         userLiteData.balances.set(asset.assetId, balance);
     }
 
@@ -319,22 +320,11 @@ export function parseUserData(
         const assetConfig = assetsConfig.get(asset.assetId) as AssetConfig;
         const assetData = assetsData.get(asset.assetId) as ExtendedAssetData;
         const balance = userLiteData.balances.get(asset.assetId) as UserBalance;
-
+        
         if (balance.type === BalanceType.supply) {
             withdrawalLimits.set(
                 asset.assetId,
-                bigIntMax(
-                    bigIntMin(
-                        assetData.balance,
-                        ((supplyBalance -
-                            (borrowBalance * masterConstants.ASSET_COEFFICIENT_SCALE) / assetConfig.collateralFactor) *
-                            10n ** assetConfig.decimals) /
-                            prices.get(asset.assetId)! -
-                            5n,
-                        balance.amount,
-                    ),
-                    0n,
-                ),
+                calculateMaximumWithdrawAmount(assetsConfig, assetsData, userLiteData.principals, prices, masterConstants, asset.assetId)
             );
         }
         borrowLimits.set(

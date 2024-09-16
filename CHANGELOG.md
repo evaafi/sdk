@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.5.5
+
+### Added
+- calculateMaximumWithdrawAmount function 
+### Fixed
+- parseUserLiteData (dust) & parseUserData (dust and withdrawLimits) calculations problem
+
 ## 0.5.4 - 2024-09-09
 
 check ```tests\supply_withdraw_test.ts``` for new examples
