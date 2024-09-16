@@ -9,6 +9,7 @@ export {
     calculateAssetData,
     calculateAssetInterest,
     getAvailableToBorrow,
+    calculateMaximumWithdrawAmount,
     presentValue,
     calculateLiquidationData,
 } from './api/math';
