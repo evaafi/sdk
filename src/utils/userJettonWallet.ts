@@ -1,7 +1,10 @@
 import { Address, beginCell, Cell, storeStateInit } from '@ton/core';
-import { PoolAssetConfig, PoolJettonAssetConfig } from '../types/Master';
+import { PoolAssetConfig } from '../types/Master';
 
-export function getUserJettonWallet(ownerAddress: Address, poolAssetConfig: PoolAssetConfig & PoolJettonAssetConfig) {
+export function getUserJettonWallet(ownerAddress: Address, poolAssetConfig: PoolAssetConfig) {
+  if (poolAssetConfig.name == 'TON') {
+    throw new Error("Cant getUserJettonWallet for TON asset")
+  }
     const jettonMasterAddress = poolAssetConfig.jettonMasterAddress;
     const jettonWalletCode = poolAssetConfig.jettonWalletCode;
 

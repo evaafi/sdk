@@ -4,7 +4,6 @@ import dotenv from 'dotenv';
 
 let client: TonClient;
 
-
 beforeAll(async () => {
     dotenv.config();
     client = new TonClient({

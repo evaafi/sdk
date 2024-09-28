@@ -1,5 +1,5 @@
 import { Address, Cell, Dictionary } from '@ton/core';
-import { AssetConfig, ExtendedAssetData, ExtendedAssetsConfig, ExtendedAssetsData, MasterConfig, MasterConstants } from './Master';
+import { AssetConfig, ExtendedAssetData, ExtendedAssetsConfig, ExtendedAssetsData, MasterConfig, MasterConstants, PoolAssetConfig, PoolConfig } from './Master';
 
 export enum BalanceType {
     supply = 'supply',
@@ -13,9 +13,9 @@ export type UserBalance = {
 
 export type UserLiqudationData = {
     greatestCollateralValue: bigint;
-    greatestCollateralAsset: bigint;
+    greatestCollateralAsset: PoolAssetConfig;
     greatestLoanValue: bigint;
-    greatestLoanAsset: bigint;
+    greatestLoanAsset: PoolAssetConfig;
     totalDebt: bigint;
     totalLimit: bigint;
 };
@@ -86,9 +86,9 @@ export type PredictHealthFactorArgs = {
     balanceChangeType: BalanceChangeType;
     amount: bigint;  // always positive
     tokenSymbol: string;
-    balances: Dictionary<bigint, bigint>;
+    principals: Dictionary<bigint, bigint>;
     prices: Dictionary<bigint, bigint>;
     assetsData: ExtendedAssetsData;
     assetsConfig: ExtendedAssetsConfig;
-    masterConstants: MasterConstants;
+    poolConfig: PoolConfig;
 };

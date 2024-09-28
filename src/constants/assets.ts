@@ -5,9 +5,10 @@ import { JETTON_WALLET_STANDART_CODE, JETTON_WALLET_STANDART_CODE_TESTNET } from
 
 export const TON_MAINNET: PoolAssetConfig = { 
     name: 'TON',
-    assetId: sha256Hash('TON') 
+    assetId: sha256Hash('TON'),
+    jettonMasterAddress: Address.parse('UQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJKZ'),  // fake
+    jettonWalletCode: Cell.EMPTY 
 }
-
 export const TON_TESTNET = TON_MAINNET;
 
 export const JUSDT_MAINNET: PoolAssetConfig = { 

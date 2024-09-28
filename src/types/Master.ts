@@ -9,16 +9,10 @@ export type MasterConstants = {
     ASSET_ORIGINATION_FEE_SCALE: bigint
 };
 
-export type PoolAssetConfig = (PoolTonAssetConfig | PoolJettonAssetConfig) & {
-    name: string;
-};
 export type PoolAssetsConfig = PoolAssetConfig[];
 
-export type PoolTonAssetConfig = {
-    assetId: bigint;
-}
-
-export type PoolJettonAssetConfig = {
+export type PoolAssetConfig = {
+    name: string;
     assetId: bigint;
     jettonMasterAddress: Address;
     jettonWalletCode: Cell;
@@ -115,3 +109,8 @@ export type MasterData = {
         borrow: Dictionary<bigint, number>;
     };
 };
+
+export type AgregatedBalances = {
+    totalBorrow: bigint;
+    totalSupply: bigint;
+}

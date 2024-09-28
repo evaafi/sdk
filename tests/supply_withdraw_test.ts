@@ -2,7 +2,7 @@ import {AssetConfig, calculatePresentValue, createAssetConfig, Evaa, EVAA_MASTER
 import {Address, beginCell, Cell, CellType, Dictionary, OpenedContract, Sender, toNano, TonClient, WalletContractV4, WalletContractV5Beta, WalletContractV5R1} from '@ton/ton';
 import dotenv from 'dotenv';
 import { mnemonicToWalletKey } from '@ton/crypto';
-import { MAINNET_LP_POOL_CONFIG, MAINNET_POOL_CONFIG, TESTNET_LP_POOL_CONFIG } from '../src/constants/pools';
+import { MAINNET_LP_POOL_CONFIG, MAINNET_POOL_CONFIG } from '../src/constants/pools';
 import { getHttpEndpoint } from "@orbs-network/ton-access";
 import { exit } from 'process';
 import { MAIN_POOL_NFT_ID } from '../src/constants/general';
@@ -26,8 +26,6 @@ const address3: Address = Address.parseFriendly('0QA5MjZwkAgDtp6eIb8FqQbaRH1IuYT
 //const address4: Address = Address.parseFriendly('UQB0jkvgow2xvEA5JS37-x7NkZYsB9TUEYD43cdQwJt0B9J5').address;
 //const address4: Address = Address.parseFriendly('UQC6oolqwFm36Tis31Pk5i6EGsblu8PyhVLB-IX1xU9pryd5').address;
 const liquidateAddr: Address = Address.parseFriendly('EQCd_evQcWHlAgZWdmaWiMbIyR4dHvTcevGiRwyL17Yh79xZ').address;
-
-
 
 beforeAll(async () => {
     dotenv.config();
@@ -90,7 +88,7 @@ beforeAll(async () => {
 
     exit(0);*/
     
-    evaa = client.open(new Evaa({poolConfig: TESTNET_LP_POOL_CONFIG}));
+    evaa = client.open(new Evaa({poolConfig: TESTNET_POOL_CONFIG}));
     evaaMainNet = clientMainNet.open(new Evaa({poolConfig: MAINNET_LP_POOL_CONFIG}));
     sender = {
         address: address,
@@ -207,19 +205,19 @@ test('Just supply mainnet', async () => {
 })
 
 test('Just withdraw max', async () => {
-    await evaaMainNet.getSync();
+    await evaa.getSync();
 
-    await waitForPrincipalChange(address_mainnet, TON_TESTNET,
+    await waitForPrincipalChange(address3, TON_TESTNET,
         async() => {
-            await evaaMainNet.sendWithdraw(sender_mainnet, toNano(1), {
+            await evaa.sendWithdraw(sender3, toNano(1), {
                 queryID: 0n,
                 includeUserCode: true,
                 amount: 0xFFFFFFFFFFFFFFFFn,
-                userAddress: address_mainnet,
+                userAddress: address3,
                 asset: TON_MAINNET,
                 priceData: priceData.dataCell
             });
-        }, evaaMainNet, clientMainNet
+        }, evaa, client
     );
 })
 
@@ -350,15 +348,15 @@ test('SupplyBorrowRepayMaxWithdrawMax test', async () => {
 test('Withdraw test', async () => {
     //const user = client.open(await evaa.openUserContract(address));
     
-    await evaaMainNet.getSync();
+    await evaa.getSync();
 
-    await evaaMainNet.sendWithdraw(sender2_mainnet, toNano(1), {
+    await evaa.sendWithdraw(sender2, toNano(1), {
         queryID: 0n,
         includeUserCode: true,
-        amount: 100_000n,
-        userAddress: address2_mainnet,
-        asset: USDT_STORM_MAINNET,
-        priceData: priceDataLP.dataCell!,
+        amount: 20_000n,
+        userAddress: address2,
+        asset: STTON_TESTNET,
+        priceData: priceData.dataCell!,
     });
     /*await evaa.sendWithdraw(sender, toNano(1), {
         queryID: 0n,
