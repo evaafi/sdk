@@ -652,10 +652,10 @@
     tweetnacl "^1.0.3"
     tweetnacl-util "^0.15.1"
 
-"@tonconnect/sdk@^3.0.0":
-  version "3.0.0"
-  resolved "https://registry.npmjs.org/@tonconnect/sdk/-/sdk-3.0.0.tgz"
-  integrity sha512-pg0OC//c3LU6jwH2hiLJrDXxITIfNwj0tFTV55xS6FXF2I9qzvVKTUPo4OHr1w3MZVJ7oCw4uz7gKZ+bcqK2hg==
+"@tonconnect/sdk@^3.0.5":
+  version "3.0.5"
+  resolved "https://registry.npmjs.org/@tonconnect/sdk/-/sdk-3.0.5.tgz"
+  integrity sha512-ow0qnN4s3iQ/r2uXobZ7YzdQBtan/36CgCT9IP35G07g38UxsUXwzw8ANmJTDj/JPiQcIKuYBMfIwIX9zLM0wg==
   dependencies:
     "@tonconnect/isomorphic-eventsource" "^0.0.2"
     "@tonconnect/isomorphic-fetch" "^0.0.3"
