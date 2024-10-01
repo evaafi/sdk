@@ -79,6 +79,7 @@ export {
 } from './constants/pools';
 
 export {
+    UNDEFINED_ASSET,
     TON_MAINNET,
     USDT_MAINNET,
     TONUSDT_DEDUST_MAINNET,

@@ -3,6 +3,13 @@ import { PoolAssetConfig } from "../types/Master";
 import { sha256Hash } from "../utils/sha256BigInt";
 import { JETTON_WALLET_STANDART_CODE, JETTON_WALLET_STANDART_CODE_TESTNET } from "./general";
 
+export const UNDEFINED_ASSET: PoolAssetConfig = { 
+    name: 'undefined_asset',
+    assetId: -1n,
+    jettonMasterAddress: Address.parse('UQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJKZ'),  // fake
+    jettonWalletCode: Cell.EMPTY 
+}
+
 export const TON_MAINNET: PoolAssetConfig = { 
     name: 'TON',
     assetId: sha256Hash('TON'),
