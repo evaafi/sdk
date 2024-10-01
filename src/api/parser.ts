@@ -9,7 +9,7 @@ import {
     calculateMaximumWithdrawAmountOld,
     calculatePresentValue,
     getAvailableToBorrow,
-    isV5MainPoolConntract,
+    isV5MainPoolContract,
     presentValue,
 } from './math';
 import { loadMaybeMyRef, loadMyRef } from './helpers';
@@ -253,7 +253,7 @@ export function parseUserLiteData(
         let principal = principalsDict.get(asset.assetId) || 0n;
         let balance = presentValue(assetData.sRate, assetData.bRate, principal, masterConstants);
 
-        if (applyDust && (principal > 0 && (isV5MainPoolConntract(poolConfig) ? balance.amount < assetConfig.dust : principal < assetConfig.dust))) {  // v6 will be abs(principals) < dust
+        if (applyDust && (principal > 0 && (isV5MainPoolContract(poolConfig) ? balance.amount < assetConfig.dust : principal < assetConfig.dust))) {  // v6 will be abs(principals) < dust
             principal = 0n;
             balance = {
                 amount: 0n,
@@ -305,7 +305,7 @@ export function parseUserData(
         let principal = userLiteData.principals.get(asset.assetId) || 0n;
         const balance = presentValue(assetData.sRate, assetData.bRate, principal, masterConstants);
 
-        if (applyDust && (principal > 0 && (isV5MainPoolConntract(poolConfig) ? balance.amount < assetConfig.dust : principal < assetConfig.dust))) {  // v6 will be abs(principals) < dust
+        if (applyDust && (principal > 0 && (isV5MainPoolContract(poolConfig) ? balance.amount < assetConfig.dust : principal < assetConfig.dust))) {  // v6 will be abs(principals) < dust
             principal = 0n;
             userLiteData.principals.set(asset.assetId, 0n);
         }
@@ -332,7 +332,7 @@ export function parseUserData(
         const balance = userLiteData.balances.get(asset.assetId) as UserBalance;
         
         if (balance.type === BalanceType.supply) {
-            if (isV5MainPoolConntract(poolConfig)) {
+            if (isV5MainPoolContract(poolConfig)) {
                 withdrawalLimits.set(
                     asset.assetId,
                     calculateMaximumWithdrawAmountOld(assetsConfig, assetsData, userLiteData.principals, prices, masterConstants, asset.assetId)

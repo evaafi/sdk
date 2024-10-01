@@ -162,7 +162,7 @@ export function getAgregatedBalances (
 /**
  * @deprecated The method should be used only for main contract v5
  */
-export function isV5MainPoolConntract(poolConfig: PoolConfig): boolean {
+export function isV5MainPoolContract(poolConfig: PoolConfig): boolean {
   if ((poolConfig.masterAddress == MAINNET_POOL_CONFIG.masterAddress && poolConfig.masterVersion == 5) || 
   (poolConfig.masterAddress == TESTNET_POOL_CONFIG.masterAddress && poolConfig.masterVersion == 5)) {
     return true;
@@ -380,29 +380,29 @@ export function calculateLiquidationData(
         }
     }
 
-    if (collateralAsset !== UNDEFINED_ASSET && totalLimit < totalDebt) {
+    if (collateralAsset.assetId !== UNDEFINED_ASSET.assetId && totalLimit < totalDebt) {
         const loanAssetPrice = prices.get(loanAsset.assetId)!;
         const values: bigint[] = [];
         const collateralAssetConfig = assetsConfig.get(collateralAsset.assetId)!;
         const loanAssetConfig = assetsConfig.get(loanAsset.assetId)!;
         const liquidationBonus = collateralAssetConfig.liquidationBonus;
-        const loanDecimal = 10n ** loanAssetConfig.decimals;
+        const loanScale = 10n ** loanAssetConfig.decimals;
         values.push(
             (bigIntMax(collateralValue / 2n, bigIntMin(collateralValue, 10_000_000_000n)) *
-                loanDecimal *
+                loanScale *
                 poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE) /
                 liquidationBonus /
                 loanAssetPrice,
         );
-        values.push((loanValue * loanDecimal) / loanAssetPrice);
+        values.push((loanValue * loanScale) / loanAssetPrice);
 
         const liquidationAmount = (bigIntMin(...values) as bigint) - 5n;
         const collateralAssetPrice: bigint = prices.get(collateralAsset.assetId)!;
         const collateralDecimal = 10n ** collateralAssetConfig.decimals;
         let minCollateralAmount =
-            (((liquidationAmount * loanAssetPrice * liquidationBonus) / 10000n) * collateralDecimal) /
+            (((liquidationAmount * loanAssetPrice * liquidationBonus) / poolConfig.masterConstants.ASSET_LIQUIDATION_BONUS_SCALE) * collateralDecimal) /
                 collateralAssetPrice /
-                loanDecimal -
+                loanScale -
             10n;
         minCollateralAmount = (minCollateralAmount * 97n) / 100n;
         if (minCollateralAmount / collateralDecimal >= 1n) {

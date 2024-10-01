@@ -12,6 +12,8 @@ export const MASTER_CONSTANTS = {
     ASSET_LIQUIDATION_BONUS_SCALE: 10_000n,
 };
 
+export const NULL_ADDRESS = Address.parse('UQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJKZ');
+
 export const EVAA_MASTER_MAINNET = Address.parse('EQC8rUZqR_pWV1BylWUlPNBzyiTYVoBEmQkMIQDZXICfnuRr');
 export const MAINNET_VERSION = 5;
 export const EVAA_MASTER_TESTNET = Address.parse('EQCoIxsE8m0Q_Ui9uM-2RPtVWXqHK0ttuW2Mccuaj4FfdkLl');  // EQBghPVKxgauOyrcyNYNwE2MRRnebaNpDGpVDQLbml_LIXnK

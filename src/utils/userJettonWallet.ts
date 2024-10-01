@@ -3,7 +3,7 @@ import { PoolAssetConfig } from '../types/Master';
 import { UNDEFINED_ASSET } from '../constants/assets';
 
 export function getUserJettonWallet(ownerAddress: Address, poolAssetConfig: PoolAssetConfig) {
-  if (poolAssetConfig.name == 'TON' || poolAssetConfig === UNDEFINED_ASSET) {
+  if (poolAssetConfig.name == 'TON' || poolAssetConfig.assetId === UNDEFINED_ASSET.assetId) {
     throw new Error(`Cant getUserJettonWallet for ${poolAssetConfig.name} asset`)
   }
     const jettonMasterAddress = poolAssetConfig.jettonMasterAddress;
