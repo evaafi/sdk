@@ -16,10 +16,10 @@ import {
 import { Maybe } from '@ton/core/dist/utils/maybe';
 import { EvaaUser } from './UserContract';
 import { parseMasterData } from '../api/parser';
-import { MasterData, PoolAssetConfig, PoolConfig, PoolJettonAssetConfig, PoolTonAssetConfig } from '../types/Master';
+import { MasterData, PoolAssetConfig, PoolConfig} from '../types/Master';
 import { JettonWallet } from './JettonWallet';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
-import { getPrices, MAINNET_POOL_CONFIG } from '..';
+import { getPrices, isTonAsset, MAINNET_POOL_CONFIG } from '..';
 
 /**
  * Parameters for the Evaa contract
@@ -32,50 +32,25 @@ export type EvaaParameters = {
 };
 
 /**
- * Parameters for the Jetton message
- * @property responseAddress - address to send excesses
- * @property forwardAmount - amount to forward to the destination address
- */
-export type JettonMessageParameters = {
-    responseAddress?: Address;
-    forwardAmount?: bigint;
-};
-
-/**
  * Base parameters for supply
  * @property queryID - unique query ID
  * @property includeUserCode - true to include user code for update (needed when user contract code version is outdated)
  * @property amount - amount to supply
  * @property userAddress - user address
- * @property assetID - asset ID
+ * @property asset
  */
-export type SupplyBaseParameters = {
+export type SupplyParameters = {
+    asset: PoolAssetConfig
     queryID: bigint;
     includeUserCode: boolean;
     amount: bigint;
     userAddress: Address;
+    responseAddress?: Address;
+    forwardAmount?: bigint;
     /* Will be in v6 
     amountToTransfer: bigint;
     payload: Cell; */
-};
-/**
- * Parameters for the TON supply message
- * @property type - 'ton'
- */
-export type TonSupplyParameters = SupplyBaseParameters & {
-    asset: PoolAssetConfig;
-};
-/**
- * Parameters for the jetton supply message
- * @property type - 'jetton'
- */
-export type JettonSupplyParameters = SupplyBaseParameters &
-    JettonMessageParameters & {
-        asset: PoolJettonAssetConfig & PoolAssetConfig;
-    };
-
-export type SupplyParameters = TonSupplyParameters | JettonSupplyParameters;
-
+}
 
 /**
  * Parameters for the withdraw message
@@ -124,28 +99,15 @@ export type LiquidationBaseData = {
  * @property includeUserCode - true to include user code for update (needed when user contract code version is outdated)
  * @property priceData - price data cell. Can be obtained from the getPrices function
  */
-export type LiquidationBaseParameters = LiquidationBaseData & {
+export type LiquidationParameters = LiquidationBaseData & {
+    asset: PoolAssetConfig;
     queryID: bigint;
     liquidatorAddress: Address;
     includeUserCode: boolean;
     priceData: Cell;
+    responseAddress?: Address;
+    forwardAmount?: bigint;
 };
-
-/**
- * Parameters for the TON liquidation message
- * @property type - 'ton'
- */
-export type TonLiquidationParameters = LiquidationBaseParameters & {
-    asset: PoolAssetConfig;
-};
-/**
- * Parameters for the jetton liquidation message
- * @property type - 'jetton'
- */
-export type JettonLiquidationParameters = LiquidationBaseParameters &
-    JettonMessageParameters & {
-        asset: PoolAssetConfig & PoolJettonAssetConfig
-    };
 
 /**
  * Evaa master contract wrapper
@@ -172,17 +134,15 @@ export class Evaa implements Contract {
      * @returns supply message as a cell
      */
     createSupplyMessage(parameters: SupplyParameters): Cell {
-        if ('jettonMasterAddress' in parameters.asset) {
-            const jettonParams = parameters as JettonSupplyParameters;
-
+        if (!isTonAsset(parameters.asset)) {
             return beginCell()
                 .storeUint(OPCODES.JETTON_TRANSFER, 32)
                 .storeUint(parameters.queryID, 64)
                 .storeCoins(parameters.amount)
                 .storeAddress(this.address)
-                .storeAddress(jettonParams.responseAddress ?? parameters.userAddress)
+                .storeAddress(parameters.responseAddress ?? parameters.userAddress)
                 .storeBit(0)
-                .storeCoins(jettonParams.forwardAmount ?? FEES.SUPPLY_JETTON_FWD)
+                .storeCoins(parameters.forwardAmount ?? FEES.SUPPLY_JETTON_FWD)
                 .storeBit(1)
                 .storeRef(
                     beginCell()
@@ -232,18 +192,16 @@ export class Evaa implements Contract {
      * Create liquidation message
      * @returns liquidation message as a cell
      */
-    createLiquidationMessage(parameters: TonLiquidationParameters | JettonLiquidationParameters): Cell {
-        if ('jettonMasterAddress' in parameters.asset) {
-            const jettonParams = parameters as JettonLiquidationParameters;
-
+    createLiquidationMessage(parameters: LiquidationParameters): Cell {
+        if (!isTonAsset(parameters.asset)) {
             return beginCell()
                 .storeUint(OPCODES.JETTON_TRANSFER, 32)
                 .storeUint(parameters.queryID, 64)
                 .storeCoins(parameters.liquidationAmount)
                 .storeAddress(this.address)
-                .storeAddress(jettonParams.responseAddress ?? parameters.liquidatorAddress)
+                .storeAddress(parameters.responseAddress ?? parameters.liquidatorAddress)
                 .storeBit(0)
-                .storeCoins(jettonParams.forwardAmount ?? FEES.LIQUIDATION_JETTON_FWD)
+                .storeCoins(parameters.forwardAmount ?? FEES.LIQUIDATION_JETTON_FWD)
                 .storeBit(1)
                 .storeRef(
                     beginCell()
@@ -323,11 +281,11 @@ export class Evaa implements Contract {
         provider: ContractProvider,
         via: Sender,
         value: bigint,
-        parameters: TonSupplyParameters | JettonSupplyParameters,
+        parameters: SupplyParameters,
     ) {
         const message = this.createSupplyMessage(parameters);
 
-        if ('jettonMasterAddress' in parameters.asset) {
+        if (!isTonAsset(parameters.asset)) {
             if (!via.address) {
                 throw Error('Via address is required for jetton supply');
             }
@@ -360,11 +318,11 @@ export class Evaa implements Contract {
         provider: ContractProvider,
         via: Sender,
         value: bigint,
-        parameters: TonLiquidationParameters | JettonLiquidationParameters,
+        parameters: LiquidationParameters,
     ) {
         const message = this.createLiquidationMessage(parameters);
 
-        if ('jettonMasterAddress' in parameters.asset) {
+        if (!isTonAsset(parameters.asset)) {
             if (!via.address) {
                 throw Error('Via address is required for jetton liquidation');
             }

@@ -1,7 +1,11 @@
 import { Address, beginCell, Cell, storeStateInit } from '@ton/core';
-import { PoolAssetConfig, PoolJettonAssetConfig } from '../types/Master';
+import { PoolAssetConfig } from '../types/Master';
+import { UNDEFINED_ASSET } from '../constants/assets';
 
-export function getUserJettonWallet(ownerAddress: Address, poolAssetConfig: PoolAssetConfig & PoolJettonAssetConfig) {
+export function getUserJettonWallet(ownerAddress: Address, poolAssetConfig: PoolAssetConfig) {
+  if (poolAssetConfig.name == 'TON' || poolAssetConfig.assetId === UNDEFINED_ASSET.assetId) {
+    throw new Error(`Cant getUserJettonWallet for ${poolAssetConfig.name} asset`)
+  }
     const jettonMasterAddress = poolAssetConfig.jettonMasterAddress;
     const jettonWalletCode = poolAssetConfig.jettonWalletCode;
 

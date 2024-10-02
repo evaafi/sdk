@@ -1,7 +1,7 @@
 import { Address, beginCell, Cell, Contract, ContractProvider, Dictionary, Sender, SendMode } from '@ton/core';
 import { UserData, UserLiteData } from '../types/User';
 import { parseUserData, parseUserLiteData } from '../api/parser';
-import { AssetConfig, ExtendedAssetData, ExtendedAssetsConfig, ExtendedAssetsData, PoolConfig } from '../types/Master';
+import { ExtendedAssetsConfig, ExtendedAssetsData, PoolConfig } from '../types/Master';
 import { LiquidationBaseData } from './MasterContract';
 import { OPCODES } from '../constants/general';
 import { MAINNET_POOL_CONFIG } from '../constants/pools';
@@ -41,8 +41,7 @@ export class EvaaUser implements Contract {
                 state.data!.toString('base64'),
                 assetsData,
                 assetsConfig,
-                this.poolConfig.poolAssetsConfig,
-                this.poolConfig.masterConstants
+                this.poolConfig
             );
             this.lastSync = Math.floor(Date.now() / 1000);
         } else {
@@ -64,7 +63,7 @@ export class EvaaUser implements Contract {
         prices: Dictionary<bigint, bigint>,
     ): boolean {
         if (this._liteData) {
-            this._data = parseUserData(this._liteData, assetsData, assetsConfig, prices, this.poolConfig.poolAssetsConfig, this.poolConfig.masterConstants);
+            this._data = parseUserData(this._liteData, assetsData, assetsConfig, prices, this.poolConfig);
             return true;
         }
         return false;
@@ -104,10 +103,9 @@ export class EvaaUser implements Contract {
                 state.data!.toString('base64'),
                 assetsData,
                 assetsConfig,
-                this.poolConfig.poolAssetsConfig,
-                this.poolConfig.masterConstants
+                this.poolConfig
             );
-            this._data = parseUserData(this._liteData, assetsData, assetsConfig, prices, this.poolConfig.poolAssetsConfig, this.poolConfig.masterConstants);
+            this._data = parseUserData(this._liteData, assetsData, assetsConfig, prices, this.poolConfig);
             this.lastSync = Math.floor(Date.now() / 1000);
         } else {
             this._data = { type: 'inactive' };
@@ -153,11 +151,11 @@ export class EvaaUser implements Contract {
 
         return {
             borrowerAddress: this._data.ownerAddress,
-            loanAsset: this._data.liquidationData.greatestLoanAsset,
-            collateralAsset: this._data.liquidationData.greatestCollateralAsset,
+            loanAsset: this._data.liquidationData.greatestLoanAsset.assetId,
+            collateralAsset: this._data.liquidationData.greatestCollateralAsset.assetId,
             minCollateralAmount: this._data.liquidationData.minCollateralAmount,
             liquidationAmount: this._data.liquidationData.liquidationAmount,
-            tonLiquidation: this._data.liquidationData.greatestLoanAsset === TON_MAINNET.assetId,
+            tonLiquidation: this._data.liquidationData.greatestLoanAsset.assetId === TON_MAINNET.assetId,
         };
     }
 }

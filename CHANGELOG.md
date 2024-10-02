@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+
+## 0.5.6 - 2024-09-28
+
+### Added
+- ```isTonAsset(PoolAssetConfig)``` function 
+### Fixed
+Dust is a small amount of principal that is ignored
+- ```parseUserLiteData``` (dust) & ```parseUserData``` (dust and withdrawLimits) calculations problem
+- ```user.data.withdrawalLimits```, ```user.data.balance```, ```user.data.principals``` calculation for LP pool contract and main pool contract
+### Changed 
+- ```parseUserLiteData``` (without prices), ```parseUserData``` applyDust argument default value changed to ```True```
+- Many composite types were removed from sdk  
+  -  ```PoolTonAssetConfig, PoolJettonAssetConfig``` -> ```PoolAssetConfig```,
+  -  ```JettonMessageParameters, SupplyBaseParameters, TonSupplyParameters, JettonSupplyParameters``` -> ```SupplyParameters```,
+  -  ```LiquidationBasePrameters, TonLiquidationParameters, JettonLiquidationParameters``` -> ```LiquidationParameters```
+
 ## 0.5.5
 
 ### Added

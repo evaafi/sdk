@@ -28,11 +28,11 @@ test('Health factor check example', async () => {
         balanceChangeType: BalanceChangeType.Borrow,
         amount: 1000000n,
         tokenSymbol: 'jUSDT',
-        balances: userPrincipals,
+        principals: userPrincipals,
         prices: priceData!.dict,
         assetsData: evaa.data!.assetsData,
         assetsConfig: evaa.data!.assetsConfig,
-        masterConstants: MAINNET_POOL_CONFIG.masterConstants
+        poolConfig: MAINNET_POOL_CONFIG
     }));
     console.log(user.data);
 });

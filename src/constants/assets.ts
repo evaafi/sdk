@@ -1,13 +1,21 @@
 import { Address, Cell } from "@ton/core";
 import { PoolAssetConfig } from "../types/Master";
 import { sha256Hash } from "../utils/sha256BigInt";
-import { JETTON_WALLET_STANDART_CODE, JETTON_WALLET_STANDART_CODE_TESTNET } from "./general";
+import { JETTON_WALLET_STANDART_CODE, JETTON_WALLET_STANDART_CODE_TESTNET, NULL_ADDRESS } from "./general";
+
+export const UNDEFINED_ASSET: PoolAssetConfig = { 
+    name: 'undefined_asset',
+    assetId: -1n,
+    jettonMasterAddress: NULL_ADDRESS,  // fake
+    jettonWalletCode: Cell.EMPTY 
+}
 
 export const TON_MAINNET: PoolAssetConfig = { 
     name: 'TON',
-    assetId: sha256Hash('TON') 
+    assetId: sha256Hash('TON'),
+    jettonMasterAddress: NULL_ADDRESS,  // fake
+    jettonWalletCode: Cell.EMPTY 
 }
-
 export const TON_TESTNET = TON_MAINNET;
 
 export const JUSDT_MAINNET: PoolAssetConfig = { 

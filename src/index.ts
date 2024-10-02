@@ -24,13 +24,8 @@ export { getPrices } from './api/prices';
 export { JettonWallet } from './contracts/JettonWallet';
 export {
     EvaaParameters,
-    JettonMessageParameters,
-    TonSupplyParameters,
-    JettonSupplyParameters,
     WithdrawParameters,
     LiquidationBaseData,
-    TonLiquidationParameters,
-    JettonLiquidationParameters,
     Evaa,
 } from './contracts/MasterContract';
 export { EvaaUser } from './contracts/UserContract';
@@ -81,10 +76,10 @@ export {
     MAINNET_POOL_CONFIG,
     TESTNET_POOL_CONFIG,
     MAINNET_LP_POOL_CONFIG,
-    TESTNET_LP_POOL_CONFIG
 } from './constants/pools';
 
 export {
+    UNDEFINED_ASSET,
     TON_MAINNET,
     USDT_MAINNET,
     TONUSDT_DEDUST_MAINNET,
@@ -100,6 +95,7 @@ export {
 } from './constants/assets';
 
 export * from './constants/assets'
+export * from './utils/utils'
 
 // Utils
 export { getLastSentBoc, getTonConnectSender } from './utils/tonConnectSender';
