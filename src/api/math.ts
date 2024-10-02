@@ -388,7 +388,7 @@ export function calculateLiquidationData(
         const liquidationBonus = collateralAssetConfig.liquidationBonus;
         const loanScale = 10n ** loanAssetConfig.decimals;
         values.push(
-            (bigIntMax(collateralValue / 2n, bigIntMin(collateralValue, 10_000_000_000n)) *
+            (bigIntMax(collateralValue / 2n, bigIntMin(collateralValue, 100_000_000_000n)) *
                 loanScale *
                 poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE) /
                 liquidationBonus /
