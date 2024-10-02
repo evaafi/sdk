@@ -24,7 +24,7 @@ export type PoolConfig = {
     masterAddress: Address;
     masterVersion: number;
     masterConstants: MasterConstants;
-    nftId: string;
+    oracles: OracleNFT[];
     poolAssetsConfig: PoolAssetsConfig;
     lendingCode: Cell;
 };

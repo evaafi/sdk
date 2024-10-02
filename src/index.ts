@@ -64,8 +64,6 @@ export {
 
 // Constants
 export {
-    MAINNET_ASSETS_ID,
-    TESTNET_ASSETS_ID,
     EVAA_MASTER_MAINNET,
     MAINNET_VERSION,
     EVAA_MASTER_TESTNET,

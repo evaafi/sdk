@@ -5,7 +5,6 @@ import { mnemonicToWalletKey } from '@ton/crypto';
 import { MAINNET_LP_POOL_CONFIG, MAINNET_POOL_CONFIG } from '../src/constants/pools';
 import { getHttpEndpoint } from "@orbs-network/ton-access";
 import { exit } from 'process';
-import { MAIN_POOL_NFT_ID } from '../src/constants/general';
 
 let client: TonClient;
 let clientMainNet: TonClient;
@@ -176,7 +175,9 @@ test('Just supply testnet', async () => {
                 includeUserCode: true,
                 amount: 100_000n,
                 userAddress: address,
-                asset: JUSDT_TESTNET
+                asset: JUSDT_TESTNET,
+                payload: Cell.EMPTY,
+                amountToTransfer: 0n
             });
         });//, evaaMainNet, clientMainNet);
     }

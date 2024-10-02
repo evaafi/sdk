@@ -1,5 +1,6 @@
 import { Address, Cell, toNano } from '@ton/core';
 import { sha256Hash } from '../utils/sha256BigInt';
+import { OracleNFT } from '../types/Master';
 
 export const MASTER_CONSTANTS = {
     FACTOR_SCALE: BigInt(1e12),
@@ -16,13 +17,21 @@ export const NULL_ADDRESS = Address.parse('UQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 export const EVAA_MASTER_MAINNET = Address.parse('EQC8rUZqR_pWV1BylWUlPNBzyiTYVoBEmQkMIQDZXICfnuRr');
 export const MAINNET_VERSION = 5;
-export const EVAA_MASTER_TESTNET = Address.parse('EQCoIxsE8m0Q_Ui9uM-2RPtVWXqHK0ttuW2Mccuaj4FfdkLl');  // EQBghPVKxgauOyrcyNYNwE2MRRnebaNpDGpVDQLbml_LIXnK
-export const TESTNET_VERSION = 5;
+export const EVAA_MASTER_TESTNET = Address.parse('kQC92pF4XWatZY9-ZS6SGW6s-dCpjk9NtEkdXQ7vFHJUAdT9');
+export const TESTNET_VERSION = 6;
 export const EVAA_LP_MAINNET = Address.parse('EQBIlZX2URWkXCSg3QF2MJZU-wC5XkBoLww-hdWk2G37Jc6N');
 export const EVAA_LP_MAINNET_VERSION = 0;
 
-export const MAIN_POOL_NFT_ID = '0xfb9874544d76ca49c5db9cc3e5121e4c018bc8a2fb2bfe8f2a38c5b9963492f5';
-export const LP_POOL_NFT_ID = '0x85f0045998038bebd076987deb4d4c680a323cb04380491eaa7857b6469ba923';
+export const ORACLES_MAINNET: OracleNFT[] = [{id: 0, address: '0x3bb147a37b7a7f874c39320440f352bddd2c9337e31a778731910f0266391650'}, 
+    {id: 1, address: '0x676767e93b05a21aec9023a65f73cffe1c725709c3c964a7c3f0fd4229089bfe'},
+    {id: 2, address: '0x9c9e65951b0c5920c286bdb3410babcaf21f85bc9c90c13172988630f1244e0f'},
+    {id: 3, address: '0x9dcf880229bfb68d7344fd294624b64f1e0b43b9d858f0fdb1bc6434616c08f5'},
+    {id: 4, address: '0x4d1afcf7c0426ca61c405c8cfaef0053a0f0d143740ffed04c8716beb99cd614'},
+    {id: 5, address: '0x11c6baa608ed10733051fd74134441d384e471722fbc496b43ea4e3c6652485f'},
+    {id: 6, address: '0x2b685672f38dc2fce59013bb740bf24c6037049a1c267bb3b5f6f55d5b195f5f'},
+];
+
+export const ORACLES_LP: OracleNFT[] = [{id:0, address: '0x85f0045998038bebd076987deb4d4c680a323cb04380491eaa7857b6469ba923'}];
 
 export const LENDING_CODE = Cell.fromBoc(
     Buffer.from(

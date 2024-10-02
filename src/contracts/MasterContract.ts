@@ -388,9 +388,9 @@ export class Evaa implements Contract {
 
     async getPrices(provider: ContractProvider, endpoints?: string[]) {
         if ((endpoints?.length ?? 0) > 0) {
-            return await getPrices(endpoints, this.poolConfig.nftId);
+            return await getPrices(endpoints, this.poolConfig.oracles, this.poolConfig.poolAssetsConfig);
         } else {
-            return await getPrices(undefined, this.poolConfig.nftId);
+            return await getPrices(undefined, this.poolConfig.oracles, this.poolConfig.poolAssetsConfig);
         }
     }
 }

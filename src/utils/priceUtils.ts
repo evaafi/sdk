@@ -1,7 +1,7 @@
 import { beginCell, Cell, Dictionary, Slice } from "@ton/core";
 import { PriceData, RawPriceData } from "../types/Common";
 import { TTL_ORACLE_DATA_SEC } from "../config";
-import { Oracle } from "../types/Master";
+import { Oracle, PoolAssetsConfig } from "../types/Master";
 import { convertToMerkleProof, generateMerkleProofDirect } from "./merkleProof";
 import 'promise.any';
 
@@ -92,13 +92,13 @@ export async function parsePrices(outputData: OutputData, oracleId: number): Pro
     }
 }
 
-export function verifyPrices(assets: Record<string, bigint>) {
+export function verifyPrices(assets: PoolAssetsConfig) {
     return function(priceData: RawPriceData): boolean {
         const timestamp = Date.now() / 1000;
         const pricesTime = priceData.timestamp;
 
-        for (const [key, assetId] of Object.entries(assets)) {
-            if(!priceData.dict.has(assetId)) {
+        for (const asset of assets) {
+            if(!priceData.dict.has(asset.assetId)) {
                 return false;
             }
         }

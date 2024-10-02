@@ -1,13 +1,13 @@
 import { Address } from "@ton/core";
 import { JUSDC_MAINNET, JUSDC_TESTNET, JUSDT_MAINNET, JUSDT_TESTNET, STTON_MAINNET, STTON_TESTNET, TON_MAINNET, TON_STORM_MAINNET, TONUSDT_DEDUST_MAINNET, TSTON_MAINNET, USDT_MAINNET, USDT_STORM_MAINNET } from "./assets";
 import { PoolConfig } from "../types/Master";
-import { EVAA_MASTER_MAINNET, EVAA_MASTER_TESTNET, LENDING_CODE, MAINNET_VERSION, MASTER_CONSTANTS, MAIN_POOL_NFT_ID, TESTNET_VERSION, LP_POOL_NFT_ID, EVAA_LP_MAINNET, EVAA_LP_MAINNET_VERSION } from "./general";
+import { EVAA_MASTER_MAINNET, EVAA_MASTER_TESTNET, LENDING_CODE, MAINNET_VERSION, MASTER_CONSTANTS, TESTNET_VERSION, EVAA_LP_MAINNET, EVAA_LP_MAINNET_VERSION, ORACLES_MAINNET, ORACLES_LP } from "./general";
 
 export const MAINNET_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_MASTER_MAINNET,
     masterVersion: MAINNET_VERSION,
     masterConstants: MASTER_CONSTANTS,
-    nftId: MAIN_POOL_NFT_ID,
+    oracles: ORACLES_MAINNET,
     poolAssetsConfig: [
         TON_MAINNET,
         JUSDT_MAINNET,
@@ -23,7 +23,7 @@ export const TESTNET_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_MASTER_TESTNET,
     masterVersion: TESTNET_VERSION,
     masterConstants: MASTER_CONSTANTS,
-    nftId: MAIN_POOL_NFT_ID,
+    oracles: ORACLES_MAINNET,
     poolAssetsConfig: [
         TON_MAINNET,
         JUSDT_TESTNET,
@@ -37,7 +37,7 @@ export const MAINNET_LP_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_LP_MAINNET,
     masterVersion: EVAA_LP_MAINNET_VERSION,
     masterConstants: MASTER_CONSTANTS,
-    nftId: LP_POOL_NFT_ID,
+    oracles: ORACLES_LP,
     poolAssetsConfig: [
         TON_MAINNET,
         USDT_MAINNET,
