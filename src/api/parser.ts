@@ -6,10 +6,8 @@ import {
     calculateAssetData,
     calculateLiquidationData,
     calculateMaximumWithdrawAmount,
-    calculateMaximumWithdrawAmountOld,
     calculatePresentValue,
     getAvailableToBorrow,
-    isV5MainPoolContract,
     presentValue,
 } from './math';
 import { loadMaybeMyRef, loadMyRef } from './helpers';
@@ -245,7 +243,6 @@ export function parseUserLiteData(
     }
     */
     userSlice.endParse();
-    const isV5Main = isV5MainPoolContract(poolConfig);
     const userBalances = Dictionary.empty<bigint, UserBalance>();
 
     for (const [_, asset] of Object.entries(poolAssetsConfig)) {
@@ -254,9 +251,8 @@ export function parseUserLiteData(
 
         let principal = principalsDict.get(asset.assetId) || 0n;
         let balance = presentValue(assetData.sRate, assetData.bRate, principal, masterConstants);
-        let leftBorder = isV5Main ? balance.amount : principal;
 
-        if (applyDust && (principal > 0 && (leftBorder < assetConfig.dust))) {  // v6 will be abs(principals) < dust
+        if (applyDust && (principal > 0 && (principal < assetConfig.dust))) {
             principal = 0n;
             balance = {
                 amount: 0n,
@@ -302,7 +298,6 @@ export function parseUserData(
 
     let supplyBalance = 0n;
     let borrowBalance = 0n;
-    const isV5Main = isV5MainPoolContract(poolConfig);
 
     for (const [_, asset] of Object.entries(poolAssetsConfig)) {
         const assetData = assetsData.get(asset.assetId) as ExtendedAssetData;
@@ -310,9 +305,8 @@ export function parseUserData(
 
         let principal = userLiteData.principals.get(asset.assetId) || 0n;
         const balance = presentValue(assetData.sRate, assetData.bRate, principal, masterConstants);
-        let leftBorder = isV5Main ? balance.amount : principal;
 
-        if (applyDust && (principal > 0 && (leftBorder < assetConfig.dust))) {  // v6 will be abs(principals) < dust
+        if (applyDust && (principal > 0 && (principal < assetConfig.dust))) {
             principal = 0n;
             userLiteData.principals.set(asset.assetId, 0n);
         }
@@ -339,18 +333,10 @@ export function parseUserData(
         const balance = userLiteData.balances.get(asset.assetId) as UserBalance;
         
         if (balance.type === BalanceType.supply) {
-            if (isV5MainPoolContract(poolConfig)) {
-                withdrawalLimits.set(
-                    asset.assetId,
-                    calculateMaximumWithdrawAmountOld(assetsConfig, assetsData, userLiteData.principals, prices, masterConstants, asset.assetId)
-                );
-            }
-            else {
-                withdrawalLimits.set(
-                    asset.assetId,
-                    calculateMaximumWithdrawAmount(assetsConfig, assetsData, userLiteData.principals, prices, masterConstants, asset.assetId)
-                );
-            }
+            withdrawalLimits.set(
+                asset.assetId,
+                calculateMaximumWithdrawAmount(assetsConfig, assetsData, userLiteData.principals, prices, masterConstants, asset.assetId)
+            );
         }
         borrowLimits.set(
             asset.assetId,

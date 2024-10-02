@@ -159,73 +159,7 @@ export function getAgregatedBalances (
     return {totalSupply: user_total_supply, totalBorrow: user_total_borrow};
   }
 
-/**
- * @deprecated The method should be used only for main contract v5
- */
-export function isV5MainPoolContract(poolConfig: PoolConfig): boolean {
-  if ((poolConfig.masterAddress == MAINNET_POOL_CONFIG.masterAddress && poolConfig.masterVersion == 5) || 
-  (poolConfig.masterAddress == TESTNET_POOL_CONFIG.masterAddress && poolConfig.masterVersion == 5)) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-/**
- * @deprecated The method should be used only for main contract v5
- */
-export function calculateMaximumWithdrawAmountOld(
-    assetsConfig: ExtendedAssetsConfig,
-    assetsData: ExtendedAssetsData,
-    principals: Dictionary<bigint, bigint>,
-    prices: Dictionary<bigint, bigint>,
-    masterConstants: MasterConstants,
-    assetId: bigint,
-): bigint {
-    let withdrawAmountMax = 0n;
-
-    const assetConfig = assetsConfig.get(assetId) as AssetConfig;
-    const assetData = assetsData.get(assetId) as ExtendedAssetData;
-    const oldPrincipal = principals.get(assetId) as bigint;
-    const oldPresentValue = presentValue(assetData.sRate, assetData.bRate, oldPrincipal, masterConstants);
-
-    if (oldPresentValue.amount > assetConfig.dust) {
-        if(checkNotInDebtAtAll(principals)) {
-            withdrawAmountMax = oldPresentValue.amount; 
-        } else {
-            if (!prices.has(assetId)) {
-                return 0n;
-            }
-
-            //const borrowable = getAvailableToBorrow(assetsConfig, assetsData, principals, prices, masterConstants);
-            const price = prices.get(assetId) as bigint;
-            const agregatedBalances = getAgregatedBalances(assetsData, assetsConfig, principals, principals, masterConstants);
-            let maxAmountToReclaim = 
-                mulDiv(
-                    agregatedBalances.totalSupply - mulDivC(agregatedBalances.totalBorrow, masterConstants.ASSET_COEFFICIENT_SCALE, assetConfig.collateralFactor),
-                    10n**assetConfig.decimals,
-                    price
-                );
-          
-            withdrawAmountMax = bigIntMin(
-                maxAmountToReclaim,
-                oldPresentValue.amount
-            );
-        }
-    } else {
-        if (!prices.has(assetId)) {
-            return 0n;
-        }
-
-        const price = prices.get(assetId) as bigint;
-
-        return getAvailableToBorrow(assetsConfig, assetsData, principals, prices, masterConstants) * (10n ** assetConfig.decimals) / price;
-    }
-
-    return withdrawAmountMax;
-}
-
-export function calculateMaximumWithdrawAmount(  //  todo v6 ifelse dust not debt at all is fixed?
+export function calculateMaximumWithdrawAmount(
     assetsConfig: ExtendedAssetsConfig,
     assetsData: ExtendedAssetsData,
     principals: Dictionary<bigint, bigint>,
