@@ -1,5 +1,4 @@
 import { Dictionary } from '@ton/core';
-import { MAINNET_ASSETS_ID, ORACLE_NFTS } from '../constants';
 import { PriceData, RawPriceData } from '../types/Common';
 import { getMedianPrice, loadPrices, packAssetsData, packOraclesData, packPrices, parsePrices, verifyPrices } from '../utils/priceUtils';
 import { MINIMAL_ORACLES_NUMBER } from '../config';
@@ -11,7 +10,7 @@ export async function getPrices(endpoints: String[] = ["api.stardust-mainnet.iot
         throw new Error("Empty endpoint list");
     }
     
-    const prices = await Promise.all(ORACLE_NFTS.map(async x => await parsePrices(await loadPrices(x.address, endpoints), x.id)));
+    const prices = await Promise.all(oracle.map(async x => await parsePrices(await loadPrices(x.address, endpoints), x.id)));
 
     let acceptedPrices: RawPriceData[] = prices.filter(verifyPrices(assets));
 
