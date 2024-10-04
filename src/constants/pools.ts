@@ -14,7 +14,8 @@ export const MAINNET_POOL_CONFIG: PoolConfig = {
         JUSDC_MAINNET,
         STTON_MAINNET,
         TSTON_MAINNET,
-        USDT_MAINNET
+        //todo uncomment 
+       // USDT_MAINNET
     ],
     lendingCode: LENDING_CODE
 };

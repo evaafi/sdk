@@ -2,16 +2,18 @@ import { Address, Cell, toNano } from '@ton/core';
 import { sha256Hash } from './utils/sha256BigInt';
 import { Oracle, OracleNFT } from './types/Master';
 
-export const EVAA_MASTER_MAINNET = Address.parse('EQA83hepAsl63hY6S4w7svgROU4KANpWBaaoyscETMvMcLK6');
+//todo set back to EQC8rUZqR_pWV1BylWUlPNBzyiTYVoBEmQkMIQDZXICfnuRr
+export const EVAA_MASTER_MAINNET = Address.parse('EQDTuR5bRTB3yG4avhOdc9h3JXTp1KI6YyL0HLKko9wdg5bd');
+//todo set back to 5 (todo set at 6 on 10.10.2024)
 export const MAINNET_VERSION = 0;
 export const EVAA_MASTER_TESTNET = Address.parse('kQC92pF4XWatZY9-ZS6SGW6s-dCpjk9NtEkdXQ7vFHJUAdT9');
 export const TESTNET_VERSION = 6;
 
 export const ORACLE_NFTS: OracleNFT[] = [
-    {id: 0, address: '0xB404F4A2EBB62F2623B370C89189748A0276C071965B1646B996407F10D72EB9'}, 
-    {id: 1, address: '0x9AD115087520D91B6B45D6A8521EB4616EE6914AF07FABDC2E9D1826DBB17078'},
-    {id: 2, address: '0xE503E02E8A9226B34E7C9DEB463CBF7F19BCE589362EB448A69A8EE7B2FCA631'},
-    {id: 3, address: '0x9CBF8374CF1F2CF17110134871D580198416E101683F4A61F54CF2A3E4E32070'},
+    {id: 0, address: '0xd3a8c0b9fd44fd25a49289c631e3ac45689281f2f8cf0744400b4c65bed38e5d'}, 
+    {id: 1, address: '0x2c21cabdaa89739de16bde7bc44e86401fac334a3c7e55305fe5e7563043e191'},
+    {id: 2, address: '0x2eb258ce7b5d02466ab8a178ad8b0ba6ffa7b58ef21de3dc3b6dd359a1e16af0'},
+    {id: 3, address: '0xf9a0769954b4430bca95149fb3d876deb7799d8f74852e0ad4ccc5778ce68b52'},
 ];
 
 export const MAINNET_ASSETS_ID = {
@@ -20,6 +22,7 @@ export const MAINNET_ASSETS_ID = {
     jUSDC: sha256Hash('jUSDC'),
     stTON: sha256Hash('stTON'),
     tsTON: sha256Hash('tsTON'),
+  //todo uncomment
    // USDT: sha256Hash('USDT'),
 };
 
