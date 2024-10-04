@@ -116,7 +116,7 @@ beforeAll(async () => {
 async function waitForPrincipalChange(addr: Address, asset: PoolAssetConfig, fun: any, currentEvaa = evaa, currentClient = client):Promise<{ principal: bigint, data: UserDataActive }> {
     let prevPrincipal = 0n;
     let user = currentClient.open(await currentEvaa.openUserContract(addr));
-    await user.getSync(currentEvaa.data!.assetsData, currentEvaa.data!.assetsConfig, priceData.dict);
+    await user.getSync(currentEvaa.data!.assetsData, currentEvaa.data!.assetsConfig, currentEvaa.data!.assetsReserves, priceData.dict);
 
     if (user.data?.type == "active") {
         prevPrincipal = user.data.principals.get(asset.assetId) ?? 0n;
@@ -128,7 +128,7 @@ async function waitForPrincipalChange(addr: Address, asset: PoolAssetConfig, fun
 
     while (true) {
         user = currentClient.open(await currentEvaa.openUserContract(addr));
-        await user.getSync(currentEvaa.data!.assetsData, currentEvaa.data!.assetsConfig, priceData.dict);
+        await user.getSync(currentEvaa.data!.assetsData, currentEvaa.data!.assetsConfig, currentEvaa.data!.assetsReserves, priceData.dict);
         if (user.data?.type == "active") {
             const principalNow: bigint = user.data.principals.get(asset.assetId) ?? 0n;
             if (Math.abs(Number(principalNow - prevPrincipal)) > 10) {

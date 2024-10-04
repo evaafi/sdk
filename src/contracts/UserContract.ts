@@ -1,4 +1,4 @@
-import { Address, beginCell, Cell, Contract, ContractProvider, Dictionary, Sender, SendMode } from '@ton/core';
+import { Address, beginCell, BitBuilder, Cell, Contract, ContractProvider, Dictionary, Sender, SendMode } from '@ton/core';
 import { UserData, UserLiteData } from '../types/User';
 import { parseUserData, parseUserLiteData } from '../api/parser';
 import { ExtendedAssetsConfig, ExtendedAssetsData, PoolConfig } from '../types/Master';
@@ -60,10 +60,11 @@ export class EvaaUser implements Contract {
     calculateUserData(
         assetsData: ExtendedAssetsData,
         assetsConfig: ExtendedAssetsConfig,
+        assetsReserves: Dictionary<bigint, bigint>,
         prices: Dictionary<bigint, bigint>,
     ): boolean {
         if (this._liteData) {
-            this._data = parseUserData(this._liteData, assetsData, assetsConfig, prices, this.poolConfig);
+            this._data = parseUserData(this._liteData, assetsData, assetsConfig, assetsReserves, prices, this.poolConfig);
             return true;
         }
         return false;
@@ -91,10 +92,11 @@ export class EvaaUser implements Contract {
         });
     }
 
-    async getSync(
+    async getSync(  // todo make arg masterdata
         provider: ContractProvider,
         assetsData: ExtendedAssetsData,
         assetsConfig: ExtendedAssetsConfig,
+        assetsReserves: Dictionary<bigint, bigint>,
         prices: Dictionary<bigint, bigint>,
     ) {
         const state = (await provider.getState()).state;
@@ -105,7 +107,7 @@ export class EvaaUser implements Contract {
                 assetsConfig,
                 this.poolConfig
             );
-            this._data = parseUserData(this._liteData, assetsData, assetsConfig, prices, this.poolConfig);
+            this._data = parseUserData(this._liteData, assetsData, assetsConfig, assetsReserves, prices, this.poolConfig);
             this.lastSync = Math.floor(Date.now() / 1000);
         } else {
             this._data = { type: 'inactive' };
