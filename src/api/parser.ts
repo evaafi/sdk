@@ -328,6 +328,7 @@ export function parseUserData(
                     assetData.totalSupply - assetData.totalBorrow)
             );
         }
+
         borrowLimits.set(
             asset.assetId,
             bigIntMin((availableToBorrow * 10n ** assetConfig.decimals) / prices.get(asset.assetId)!, assetData.balance, reserves),

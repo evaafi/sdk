@@ -48,7 +48,6 @@ export type SupplyParameters = {
     userAddress: Address;
     responseAddress?: Address;
     forwardAmount?: bigint;
-    assetID: bigint;
     amountToTransfer: bigint;
     payload: Cell;
 };

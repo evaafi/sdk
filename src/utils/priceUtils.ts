@@ -3,7 +3,6 @@ import { PriceData, RawPriceData } from "../types/Common";
 import { TTL_ORACLE_DATA_SEC } from "../config";
 import { Oracle, PoolAssetsConfig } from "../types/Master";
 import { convertToMerkleProof, generateMerkleProofDirect } from "./merkleProof";
-import 'promise.any';
 
 type NftData = {
     ledgerIndex: number;
