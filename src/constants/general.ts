@@ -17,7 +17,7 @@ export const NULL_ADDRESS = Address.parse('UQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 
 //todo set back to EQC8rUZqR_pWV1BylWUlPNBzyiTYVoBEmQkMIQDZXICfnuRr
-export const EVAA_MASTER_MAINNET = Address.parse('EQDTuR5bRTB3yG4avhOdc9h3JXTp1KI6YyL0HLKko9wdg5bd');
+export const EVAA_MASTER_MAINNET = Address.parse('EQC_hR5L4G3vkPG0VODURYoohp_3hlMW-gZiGp89HwyulZK4');
 //todo set back to 5 (todo set at 6 on 10.10.2024)
 export const MAINNET_VERSION = 0;
 export const EVAA_MASTER_TESTNET = Address.parse('kQC92pF4XWatZY9-ZS6SGW6s-dCpjk9NtEkdXQ7vFHJUAdT9');
