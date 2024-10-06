@@ -20,7 +20,7 @@ test('Health factor check example', async () => {
 
     const priceData = await evaa.getPrices();
     console.log('priceData', priceData);
-    await user.getSync(evaa.data!.assetsData, evaa.data!.assetsConfig, evaa.data!.assetsReserves, priceData!.dict);
+    await user.getSync(evaa.data!.assetsData, evaa.data!.assetsConfig, priceData!.dict);
     console.log(evaa.data!.assetsConfig.get(sha256Hash("TON")));
     const userPrincipals = (user.data! as UserDataActive).principals;
     console.log(evaa.data!.assetsConfig.get(sha256Hash("TON"))?.decimals);

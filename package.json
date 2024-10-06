@@ -1,6 +1,6 @@
 {
-  "name": "testsdkforevaa",
-  "version": "7.7.7",
+  "name": "@evaafi/sdkv6",
+  "version": "0.0.1",
   "description": "SDK for EVAA contracts",
   "main": "dist/index.js",
   "files": [

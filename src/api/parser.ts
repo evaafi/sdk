@@ -273,7 +273,6 @@ export function parseUserData(
     userLiteData: UserLiteData,
     assetsData: ExtendedAssetsData,
     assetsConfig: ExtendedAssetsConfig,
-    assetsReserves: Dictionary<bigint, bigint>,
     prices: Dictionary<bigint, bigint>,
     poolConfig: PoolConfig,
     applyDust: boolean = true
@@ -318,20 +317,18 @@ export function parseUserData(
     for (const [_, asset] of Object.entries(poolAssetsConfig)) {
         const assetConfig = assetsConfig.get(asset.assetId) as AssetConfig;
         const assetData = assetsData.get(asset.assetId) as ExtendedAssetData;
-        const reserves = assetsReserves.get(asset.assetId)!;
         const balance = userLiteData.balances.get(asset.assetId) as UserBalance;
         
         if (balance.type === BalanceType.supply) {
             withdrawalLimits.set(
                 asset.assetId,
-                bigIntMin(calculateMaximumWithdrawAmount(assetsConfig, assetsData, userLiteData.principals, prices, masterConstants, asset.assetId),
-                    assetData.totalSupply - assetData.totalBorrow)
+                calculateMaximumWithdrawAmount(assetsConfig, assetsData, userLiteData.principals, prices, masterConstants, asset.assetId)
             );
         }
 
         borrowLimits.set(
             asset.assetId,
-            bigIntMin((availableToBorrow * 10n ** assetConfig.decimals) / prices.get(asset.assetId)!, assetData.balance, reserves),
+            bigIntMin((availableToBorrow * 10n ** assetConfig.decimals) / prices.get(asset.assetId)!, assetData.balance),
         );
     }
 
