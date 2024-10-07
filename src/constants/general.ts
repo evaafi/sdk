@@ -21,7 +21,7 @@ export const MAINNET_VERSION = 5;
 export const EVAA_MASTER_TESTNET = Address.parse('kQC92pF4XWatZY9-ZS6SGW6s-dCpjk9NtEkdXQ7vFHJUAdT9');
 export const TESTNET_VERSION = 6;
 export const EVAA_LP_MAINNET = Address.parse('EQBIlZX2URWkXCSg3QF2MJZU-wC5XkBoLww-hdWk2G37Jc6N');
-export const EVAA_LP_MAINNET_VERSION = 1;
+export const EVAA_LP_MAINNET_VERSION = 2;
 
 export const ORACLES_MAINNET: OracleNFT[] = [
     {id: 0, address: '0xd3a8c0b9fd44fd25a49289c631e3ac45689281f2f8cf0744400b4c65bed38e5d'}, 
