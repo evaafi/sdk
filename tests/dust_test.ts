@@ -20,7 +20,7 @@ test('Manual dust check', async () => {
 
     const priceData = await evaa.getPrices();
     //console.log('priceData', priceData);
-    await user.getSync(evaa.data!.assetsData, evaa.data!.assetsConfig, evaa.data!.assetsReserves, priceData!.dict);
+    await user.getSync(evaa.data!.assetsData, evaa.data!.assetsConfig, priceData!.dict);
     
     if (user.data?.type != 'active') {
         console.log('User is inactive');
