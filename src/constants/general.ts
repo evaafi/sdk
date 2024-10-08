@@ -21,7 +21,7 @@ export const MAINNET_VERSION = 5;
 export const EVAA_MASTER_TESTNET = Address.parse('kQC92pF4XWatZY9-ZS6SGW6s-dCpjk9NtEkdXQ7vFHJUAdT9');
 export const TESTNET_VERSION = 6;
 export const EVAA_LP_MAINNET = Address.parse('EQBIlZX2URWkXCSg3QF2MJZU-wC5XkBoLww-hdWk2G37Jc6N');
-export const EVAA_LP_MAINNET_VERSION = 1;
+export const EVAA_LP_MAINNET_VERSION = 2;
 
 export const ORACLES_MAINNET: OracleNFT[] = [
     {id: 0, address: '0xd3a8c0b9fd44fd25a49289c631e3ac45689281f2f8cf0744400b4c65bed38e5d'}, 
@@ -30,7 +30,12 @@ export const ORACLES_MAINNET: OracleNFT[] = [
     {id: 3, address: '0xf9a0769954b4430bca95149fb3d876deb7799d8f74852e0ad4ccc5778ce68b52'},
 ];
 
-export const ORACLES_LP: OracleNFT[] = [{id:0, address: '0x85f0045998038bebd076987deb4d4c680a323cb04380491eaa7857b6469ba923'}];
+export const ORACLES_LP: OracleNFT[] = [
+    {id: 0, address: '0xd3a8c0b9fd44fd25a49289c631e3ac45689281f2f8cf0744400b4c65bed38e5d'}, 
+    {id: 1, address: '0x2c21cabdaa89739de16bde7bc44e86401fac334a3c7e55305fe5e7563043e191'},
+    {id: 2, address: '0x2eb258ce7b5d02466ab8a178ad8b0ba6ffa7b58ef21de3dc3b6dd359a1e16af0'},
+    {id: 3, address: '0xf9a0769954b4430bca95149fb3d876deb7799d8f74852e0ad4ccc5778ce68b52'},
+];
 
 export const LENDING_CODE = Cell.fromBoc(
     Buffer.from(
