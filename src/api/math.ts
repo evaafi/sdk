@@ -14,8 +14,9 @@ export function mulDiv(x: bigint, y: bigint, z: bigint): bigint {
 }
 
 export function mulDivC(x: bigint, y: bigint, z: bigint): bigint {
-    const mul = x * y;
-    return mul / z + (mul % z ? 1n : 0n);
+    //const mul = x * y;
+    //return mul / z + (mul % z ? 1n : 0n);
+    return BigInt(Math.ceil(Number(x * y) / Number(z)));
 }
 
 export function bigIntMax(...args: bigint[]): bigint {
@@ -147,13 +148,13 @@ export function getAgregatedBalances (
         const price = prices.get(assetId)!;
         const assetData = assetsData.get(assetId)!;
         const assetConfig = assetsConfig.get(assetId)!;
-  
+        // console.log('price', price);
         if (principal < 0) {
           user_total_borrow += presentValue(assetData.sRate, assetData.bRate, principal, masterConstants).amount * price / 10n ** assetConfig.decimals;
         } else {
           user_total_supply += presentValue(assetData.sRate, assetData.bRate, principal, masterConstants).amount * price / 10n ** assetConfig.decimals;
         }
-  
+        // console.log('aggregated', assetId, presentValue(assetData.sRate, assetData.bRate, principal, masterConstants).type, presentValue(assetData.sRate, assetData.bRate, principal, masterConstants).amount * price / 10n ** assetConfig.decimals)
       }
     }
     return {totalSupply: user_total_supply, totalBorrow: user_total_borrow};
@@ -199,7 +200,7 @@ export function calculateMaximumWithdrawAmountOld(
 
             //const borrowable = getAvailableToBorrow(assetsConfig, assetsData, principals, prices, masterConstants);
             const price = prices.get(assetId) as bigint;
-            const agregatedBalances = getAgregatedBalances(assetsData, assetsConfig, principals, principals, masterConstants);
+            const agregatedBalances = getAgregatedBalances(assetsData, assetsConfig, principals, prices, masterConstants);
             let maxAmountToReclaim = 
                 mulDiv(
                     agregatedBalances.totalSupply - mulDivC(agregatedBalances.totalBorrow, masterConstants.ASSET_COEFFICIENT_SCALE, assetConfig.collateralFactor),
@@ -211,6 +212,10 @@ export function calculateMaximumWithdrawAmountOld(
                 maxAmountToReclaim,
                 oldPresentValue.amount
             );
+            //console.log('agregatedBalances', agregatedBalances);
+            //console.log('masterConstants.ASSET_COEFFICIENT_SCALE', masterConstants.ASSET_COEFFICIENT_SCALE);
+            //console.log('assetConfig.collateralFactor', assetConfig.collateralFactor);
+            //console.log('sekay', maxAmountToReclaim, oldPresentValue.amount);
         }
     } else {
         if (!prices.has(assetId)) {
