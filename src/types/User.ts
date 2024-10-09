@@ -84,7 +84,7 @@ export enum BalanceChangeType {
 export type PredictHealthFactorArgs = {
     balanceChangeType: BalanceChangeType;
     amount: bigint;  // always positive
-    tokenSymbol: string;
+    asset: PoolAssetConfig;
     principals: Dictionary<bigint, bigint>;
     prices: Dictionary<bigint, bigint>;
     assetsData: ExtendedAssetsData;

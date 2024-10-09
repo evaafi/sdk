@@ -152,7 +152,7 @@ export function parseMasterData(masterDataBOC: string, poolAssetsConfig: PoolAss
         newMasterCode: loadMaybeMyRef(upgradeConfigParser),
         newUserCode: loadMaybeMyRef(upgradeConfigParser),
     };
-    upgradeConfigParser.endParse();
+    // upgradeConfigParser.endParse(); todo fix with new testnet contract
 
     const masterConfigSlice = masterSlice.loadRef().beginParse();
     const assetsConfigDict = masterConfigSlice.loadDict(Dictionary.Keys.BigUint(256), createAssetConfig());

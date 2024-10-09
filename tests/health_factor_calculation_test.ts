@@ -1,4 +1,4 @@
-import {BalanceChangeType, createAssetConfig, Evaa, EVAA_MASTER_MAINNET, getPrices, MAINNET_POOL_CONFIG, TESTNET_POOL_CONFIG, UserDataActive} from '../src';
+import {BalanceChangeType, createAssetConfig, Evaa, EVAA_MASTER_MAINNET, getPrices, JUSDC_TESTNET, MAINNET_LP_POOL_CONFIG, MAINNET_POOL_CONFIG, TESTNET_POOL_CONFIG, TONUSDT_DEDUST_MAINNET, USDT_MAINNET, UserDataActive} from '../src';
 import {Address, beginCell, Dictionary, TonClient} from '@ton/ton';
 import dotenv from 'dotenv';
 import { predictHealthFactor } from '../src/api/math';
@@ -11,6 +11,10 @@ beforeAll(async () => {
         endpoint: 'https://testnet.toncenter.com/api/v2/jsonRPC',
         apiKey: process.env.RPC_API_KEY,
     });
+    /*client = new TonClient({
+        endpoint: 'https://toncenter.com/api/v2/jsonRPC',
+        apiKey: process.env.RPC_API_KEY_MAINNET,
+    });*/
 });
 
 test('Health factor check example', async () => {
@@ -22,13 +26,14 @@ test('Health factor check example', async () => {
 
     console.log('priceData', priceData);
     await user.getSync(evaa.data!.assetsData, evaa.data!.assetsConfig, priceData!.dict);
-    console.log(evaa.data!.assetsConfig.get(sha256Hash("TON")));
+    //console.log(evaa.data!.assetsConfig.get(sha256Hash("TON")));
+    //console.log(user.data);
     const userPrincipals = (user.data! as UserDataActive).principals;
     console.log(evaa.data!.assetsConfig.get(sha256Hash("TON"))?.decimals);
     console.log('heath factor predict', predictHealthFactor({
         balanceChangeType: BalanceChangeType.Borrow,
         amount: 1000000n,
-        tokenSymbol: 'jUSDT',
+        asset: JUSDC_TESTNET,
         principals: userPrincipals,
         prices: priceData!.dict,
         assetsData: evaa.data!.assetsData,

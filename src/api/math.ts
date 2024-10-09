@@ -367,10 +367,10 @@ export function calculateLiquidationData(
 
 export function predictHealthFactor(args: PredictHealthFactorArgs): number {
     const liquidationData = calculateLiquidationData(args.assetsConfig, args.assetsData, args.principals, args.prices, args.poolConfig);
-    const tokenHash = sha256Hash(args.tokenSymbol);
+    const assetId = args.asset.assetId;
     
-    const assetConfig = args.assetsConfig.get(tokenHash)!;
-    const assetPrice = Number(args.prices.get(tokenHash)!);
+    const assetConfig = args.assetsConfig.get(assetId)!;
+    const assetPrice = Number(args.prices.get(assetId)!);
    
     let totalLimit = Number(liquidationData.totalLimit);
     let totalBorrow = Number(liquidationData.totalDebt);

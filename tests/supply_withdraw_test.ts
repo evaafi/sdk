@@ -153,7 +153,7 @@ test('Get user info test', async () => {
     let user = currentClient.open(await currentEvaa.openUserContract(address_mainnet));
     //console.log(currentPrices.dict);
     console.log(currentEvaa.data!.assetsConfig);
-    await user.getSync(currentEvaa.data!.assetsData, currentEvaa.data!.assetsConfig, currentEvaa.data!.assetsReserves, currentPrices.dict);
+    await user.getSync(currentEvaa.data!.assetsData, currentEvaa.data!.assetsConfig, currentPrices.dict);
     console.log('userscaddr', user.address);
     //console.log(currentEvaa.data?.assetsConfig);
     if (user.data?.type != "active") {
