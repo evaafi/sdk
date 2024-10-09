@@ -86,7 +86,7 @@ export type AssetData = {
     balance: bigint;
     trackingSupplyIndex: bigint;
     trackingBorrowIndex: bigint;
-    //lastTrackingAccural: bigint;
+    awaitedSupply?: bigint;
 };
 
 export type AssetInterest = {
