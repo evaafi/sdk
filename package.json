@@ -1,6 +1,6 @@
 {
   "name": "@evaafi/sdkv6",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "description": "SDK for EVAA lp-v6 contracts",
   "main": "dist/index.js",
   "files": [
@@ -27,18 +27,15 @@
     "prettier": "^3.2.4",
     "ts-jest": "^29.2.4",
     "ts-node": "^10.9.1",
-    "typescript": "^5.3.3",
-    "promise.any": "^2.0.6"
+    "typescript": "^5.3.3"
   },
   "peerDependencies": {
     "@ton/core": ">=0.56.0",
     "@tonconnect/sdk": ">=3.0.0",
-    "crypto-js": ">=4.2.0",
-    "promise.any": "^2.0.6"
+    "crypto-js": ">=4.2.0"
   },
   "dependencies": {
     "@ton/ton": "^14.0.0",
-    "dotenv": "^16.4.5",
-    "promise.any": "^2.0.6"
+    "dotenv": "^16.4.5"
   }
 }

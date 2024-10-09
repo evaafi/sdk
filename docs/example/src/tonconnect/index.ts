@@ -1,5 +1,5 @@
 import { getConnector } from './connector';
-import { ASSET_ID, Evaa, FEES, getLastSentBoc, getTonConnectSender } from '@evaafi/sdk';
+import { Evaa, FEES, getLastSentBoc, getTonConnectSender, TESTNET_POOL_CONFIG, TON_MAINNET } from '@evaafi/sdkv6';
 import { Cell, toNano, TonClient } from '@ton/ton';
 import { configDotenv } from 'dotenv';
 import { Address } from '@ton/core';
@@ -13,7 +13,7 @@ async function index() {
     const connector = await getConnector();
     const evaa = client.open(
         new Evaa({
-            testnet: true,
+            poolConfig: TESTNET_POOL_CONFIG
         }),
     );
     await evaa.getSync();
@@ -23,8 +23,9 @@ async function index() {
         includeUserCode: true,
         amount: toNano(1),
         userAddress: Address.parse(connector.wallet!.account.address),
-        assetID: ASSET_ID.TON,
-        type: 'ton',
+        asset: TON_MAINNET,
+        payload: Cell.EMPTY,
+        amountToTransfer: 0n
     });
     const lastSentBoc = getLastSentBoc();
     console.log(lastSentBoc);

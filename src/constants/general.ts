@@ -18,7 +18,7 @@ export const NULL_ADDRESS = Address.parse('UQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 export const EVAA_MASTER_MAINNET = Address.parse('EQC8rUZqR_pWV1BylWUlPNBzyiTYVoBEmQkMIQDZXICfnuRr');
 export const MAINNET_VERSION = 5;
-export const EVAA_MASTER_TESTNET = Address.parse('kQC92pF4XWatZY9-ZS6SGW6s-dCpjk9NtEkdXQ7vFHJUAdT9');
+export const EVAA_MASTER_TESTNET = Address.parse('EQDLsg3w-iBj26Gww7neYoJAxiT2t77Zo8ro56b0yuHsPp3C');
 export const TESTNET_VERSION = 6;
 export const EVAA_LP_MAINNET = Address.parse('EQBIlZX2URWkXCSg3QF2MJZU-wC5XkBoLww-hdWk2G37Jc6N');
 export const EVAA_LP_MAINNET_VERSION = 2;
@@ -28,6 +28,16 @@ export const ORACLES_MAINNET: OracleNFT[] = [
     {id: 1, address: '0x2c21cabdaa89739de16bde7bc44e86401fac334a3c7e55305fe5e7563043e191'},
     {id: 2, address: '0x2eb258ce7b5d02466ab8a178ad8b0ba6ffa7b58ef21de3dc3b6dd359a1e16af0'},
     {id: 3, address: '0xf9a0769954b4430bca95149fb3d876deb7799d8f74852e0ad4ccc5778ce68b52'},
+];
+
+export const ORACLES_TESTNET: OracleNFT[] = [
+    {id: 0, address: '0x3bb147a37b7a7f874c39320440f352bddd2c9337e31a778731910f0266391650'}, 
+    {id: 1, address: '0x676767e93b05a21aec9023a65f73cffe1c725709c3c964a7c3f0fd4229089bfe'},
+    {id: 2, address: '0x9c9e65951b0c5920c286bdb3410babcaf21f85bc9c90c13172988630f1244e0f'},
+    {id: 3, address: '0x9dcf880229bfb68d7344fd294624b64f1e0b43b9d858f0fdb1bc6434616c08f5'},
+    {id: 4, address: '0x4d1afcf7c0426ca61c405c8cfaef0053a0f0d143740ffed04c8716beb99cd614'},
+    {id: 5, address: '0x11c6baa608ed10733051fd74134441d384e471722fbc496b43ea4e3c6652485f'},
+    {id: 6, address: '0x2b685672f38dc2fce59013bb740bf24c6037049a1c267bb3b5f6f55d5b195f5f'},
 ];
 
 export const ORACLES_LP: OracleNFT[] = [
@@ -60,9 +70,9 @@ export const OPCODES = {
 
 export const FEES = {
     SUPPLY: toNano('0.3'),
-    WITHDRAW: toNano('0.5'),
-    SUPPLY_JETTON: toNano('0.29'),
-    SUPPLY_JETTON_FWD: toNano('0.5'),
+    WITHDRAW: toNano('0.35'),
+    SUPPLY_JETTON: toNano('0.35'),
+    SUPPLY_JETTON_FWD: toNano('0.3'),
     LIQUIDATION: toNano('0.8'),
     LIQUIDATION_JETTON: toNano('1'),
     LIQUIDATION_JETTON_FWD: toNano('0.8'),

@@ -19,6 +19,7 @@ test('Health factor check example', async () => {
     const user = client.open(await evaa.openUserContract(Address.parseFriendly("0QDN5CpSs8HT2GO4IymOXPS5zTDzHtY-s8VTuUVAsCTwWCdG").address));
 
     const priceData = await evaa.getPrices();
+
     console.log('priceData', priceData);
     await user.getSync(evaa.data!.assetsData, evaa.data!.assetsConfig, priceData!.dict);
     console.log(evaa.data!.assetsConfig.get(sha256Hash("TON")));

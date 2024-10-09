@@ -1,7 +1,7 @@
 import { configDotenv } from 'dotenv';
 import { mnemonicToWalletKey } from '@ton/crypto';
-import { TonClient, WalletContractV4 } from '@ton/ton';
-import { ASSET_ID, Evaa, FEES, getPrices } from '@evaafi/sdk';
+import { Cell, toNano, TonClient, WalletContractV5R1 } from '@ton/ton';
+import { Evaa, FEES, getPrices, JUSDC_MAINNET, JUSDC_TESTNET, MAINNET_POOL_CONFIG, STTON_TESTNET, TESTNET_POOL_CONFIG } from '@evaafi/sdkv6';
 
 async function main() {
     configDotenv();
@@ -11,12 +11,10 @@ async function main() {
         apiKey: process.env.RPC_API_KEY,
     });
     const evaa = client.open(
-        new Evaa({
-            testnet: true,
-        }),
+        new Evaa({poolConfig: TESTNET_POOL_CONFIG}),
     );
     const wallet = client.open(
-        WalletContractV4.create({
+        WalletContractV5R1.create({
             workchain: 0,
             publicKey: keyPair.publicKey,
         }),
@@ -26,10 +24,12 @@ async function main() {
         queryID: 0n,
         // we can set always to true, if we don't want to check user code version
         includeUserCode: true,
-        assetID: ASSET_ID.jUSDT,
+        asset: STTON_TESTNET,
         priceData: priceData!.dataCell,
         amount: 500_000n,
         userAddress: wallet.address,
+        payload: Cell.EMPTY,
+        amountToTransfer: toNano(0),
     });
 }
 

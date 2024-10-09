@@ -1,7 +1,7 @@
 import { configDotenv } from 'dotenv';
 import { mnemonicToWalletKey } from '@ton/crypto';
-import { TonClient, WalletContractV4 } from '@ton/ton';
-import { Evaa, FEES, getPrices } from '@evaafi/sdk';
+import { Cell, TonClient, WalletContractV4 } from '@ton/ton';
+import { Evaa, FEES, getPrices, TESTNET_POOL_CONFIG, TON_MAINNET, TONUSDT_DEDUST_MAINNET } from '@evaafi/sdkv6';
 
 async function main() {
     configDotenv();
@@ -11,9 +11,7 @@ async function main() {
         apiKey: process.env.RPC_API_KEY,
     });
     const evaa = client.open(
-        new Evaa({
-            testnet: true,
-        }),
+        new Evaa({poolConfig: TESTNET_POOL_CONFIG}),
     );
     const wallet = client.open(
         WalletContractV4.create({
@@ -40,7 +38,10 @@ async function main() {
                 includeUserCode: includeUserCode,
                 priceData: priceData!.dataCell,
                 ...liquidationData,
-                type: 'ton',
+                forwardAmount: FEES.LIQUIDATION_JETTON_FWD,
+                payload: Cell.EMPTY,
+                asset: TON_MAINNET,
+                responseAddress: wallet.address
             });
         } else {
             await evaa.sendLiquidation(wallet.sender(keyPair.secretKey), FEES.LIQUIDATION_JETTON, {
@@ -51,7 +52,8 @@ async function main() {
                 ...liquidationData,
                 responseAddress: wallet.address,
                 forwardAmount: FEES.LIQUIDATION_JETTON_FWD,
-                type: 'jetton',
+                payload: Cell.EMPTY,
+                asset: TON_MAINNET
             });
         }
     }
