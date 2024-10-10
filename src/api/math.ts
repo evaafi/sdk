@@ -238,12 +238,10 @@ export function getAvailableToBorrow(
             borrowAmount += mulDiv(calculatePresentValue(assetData.bRate, -principal, masterConstants), price, 10n ** assetConfig.decimals);
         } else if (principal > 0) {
             borrowLimit +=
-            bigIntMax(0n, 
                 mulDiv(
                     mulDiv(calculatePresentValue(assetData.sRate, principal, masterConstants), price, 10n ** assetConfig.decimals),
                     assetConfig.collateralFactor,
-                    masterConstants.ASSET_COEFFICIENT_SCALE) - calculatePresentValue(assetData.sRate, assetConfig.dust, masterConstants) / 2n
-            );
+                    masterConstants.ASSET_COEFFICIENT_SCALE);
         }
     }
 

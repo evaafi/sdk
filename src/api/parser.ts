@@ -331,7 +331,7 @@ export function parseUserData(
 
         borrowLimits.set(
             asset.assetId,
-            bigIntMin((availableToBorrow * 10n ** assetConfig.decimals) / prices.get(asset.assetId)!, assetData.balance, assetData.totalSupply - assetData.totalBorrow),
+            bigIntMax(0n, bigIntMin((availableToBorrow * 10n ** assetConfig.decimals) / prices.get(asset.assetId)!, assetData.balance, assetData.totalSupply - assetData.totalBorrow)),
         );
     }
 
