@@ -332,13 +332,13 @@ export function parseUserData(
         if (balance.type === BalanceType.supply) {
             withdrawalLimits.set(
                 asset.assetId,
-                calculateMaximumWithdrawAmount(assetsConfig, assetsData, userLiteData.principals, prices, masterConstants, asset.assetId)
+                bigIntMin(calculateMaximumWithdrawAmount(assetsConfig, assetsData, userLiteData.principals, prices, masterConstants, asset.assetId), assetData.balance)
             );
         }
 
         borrowLimits.set(
             asset.assetId,
-            bigIntMin((availableToBorrow * 10n ** assetConfig.decimals) / prices.get(asset.assetId)!, assetData.balance),
+            bigIntMin((availableToBorrow * 10n ** assetConfig.decimals) / prices.get(asset.assetId)!, assetData.balance, assetData.totalSupply - assetData.totalBorrow),
         );
     }
 

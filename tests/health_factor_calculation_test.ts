@@ -7,18 +7,18 @@ import { sha256Hash } from '../src/utils/sha256BigInt';
 let client: TonClient;
 beforeAll(async () => {
     dotenv.config();
-    client = new TonClient({
+    /*client = new TonClient({
         endpoint: 'https://testnet.toncenter.com/api/v2/jsonRPC',
         apiKey: process.env.RPC_API_KEY,
-    });
-    /*client = new TonClient({
+    });*/
+    client = new TonClient({
         endpoint: 'https://toncenter.com/api/v2/jsonRPC',
         apiKey: process.env.RPC_API_KEY_MAINNET,
-    });*/
+    });
 });
 
 test('Health factor check example', async () => {
-    const evaa = client.open(new Evaa({poolConfig: TESTNET_POOL_CONFIG}));
+    const evaa = client.open(new Evaa({poolConfig: MAINNET_POOL_CONFIG}));
     await evaa.getSync();
     const user = client.open(await evaa.openUserContract(Address.parseFriendly("0QDN5CpSs8HT2GO4IymOXPS5zTDzHtY-s8VTuUVAsCTwWCdG").address));
 
