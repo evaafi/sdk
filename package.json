@@ -1,6 +1,6 @@
 {
   "name": "@evaafi/sdkv6",
-  "version": "0.6.2",
+  "version": "0.6.2c",
   "description": "SDK for EVAA v6 contracts",
   "main": "dist/index.js",
   "files": [
