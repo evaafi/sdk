@@ -192,10 +192,12 @@ export function calculateMaximumWithdrawAmount(
             }
             else if (price > 0) {
                 maxAmountToReclaim =
-                    mulDiv(
-                        mulDivC(borrowable, masterConstants.ASSET_COEFFICIENT_SCALE, assetConfig.collateralFactor),
-                        10n ** assetConfig.decimals, price
-                    );
+                    bigIntMax(0n, 
+                        mulDiv(
+                            mulDiv(borrowable, masterConstants.ASSET_COEFFICIENT_SCALE, assetConfig.collateralFactor),
+                            10n ** assetConfig.decimals, price)
+                            - calculatePresentValue(assetData.sRate, assetConfig.dust, masterConstants) / 2n
+                        );
             }
           
             withdrawAmountMax = bigIntMin(
@@ -233,13 +235,15 @@ export function getAvailableToBorrow(
         const principal = principals.get(assetID) as bigint;
 
         if (principal < 0) {
-            borrowAmount += (calculatePresentValue(assetData.bRate, -principal, masterConstants) * price) / 10n ** assetConfig.decimals;
+            borrowAmount += mulDiv(calculatePresentValue(assetData.bRate, -principal, masterConstants), price, 10n ** assetConfig.decimals);
         } else if (principal > 0) {
             borrowLimit +=
-            mulDivC(
-                mulDivC(calculatePresentValue(assetData.sRate, principal, masterConstants), price, 10n ** assetConfig.decimals),
-                assetConfig.collateralFactor,
-                masterConstants.ASSET_COEFFICIENT_SCALE);
+            bigIntMax(0n, 
+                mulDiv(
+                    mulDiv(calculatePresentValue(assetData.sRate, principal, masterConstants), price, 10n ** assetConfig.decimals),
+                    assetConfig.collateralFactor,
+                    masterConstants.ASSET_COEFFICIENT_SCALE) - calculatePresentValue(assetData.sRate, assetConfig.dust, masterConstants) / 2n
+            );
         }
     }
 
