@@ -1,9 +1,25 @@
-import { AgregatedBalances, AssetConfig, AssetData, AssetInterest, ExtendedAssetData, ExtendedAssetsConfig, ExtendedAssetsData, MasterConstants, PoolConfig } from '../types/Master';
+import {
+    AgregatedBalances,
+    AssetConfig,
+    AssetData,
+    AssetInterest,
+    ExtendedAssetData,
+    ExtendedAssetsConfig,
+    ExtendedAssetsData,
+    MasterConstants,
+    PoolAssetConfig,
+    PoolConfig
+} from '../types/Master';
 import { Dictionary } from '@ton/core';
-import { BalanceChangeType, BalanceType, LiquidationData, PredictHealthFactorArgs, UserBalance } from '../types/User';
+import {
+    BalanceChangeType,
+    BalanceType, HealthParamsArgs,
+    LiquidationData,
+    PredictHealthFactorArgs,
+    UserBalance
+} from '../types/User';
 import { sha256Hash } from '../utils/sha256BigInt';
-import { TON_MAINNET, UNDEFINED_ASSET } from '../constants/assets';
-import { MAINNET_POOL_CONFIG, TESTNET_POOL_CONFIG } from '..';
+import { UNDEFINED_ASSET } from '../constants/assets';
 
 export function mulFactor(decimal: bigint, a: bigint, b: bigint): bigint {
     return (a * b) / decimal;
@@ -18,9 +34,14 @@ export function mulDivC(x: bigint, y: bigint, z: bigint): bigint {
     return mul / z + (mul % z ? 1n : 0n);
 }
 
+export function bigAbs(value: bigint) {
+    return value > 0n ? value : -value;
+}
+
 export function bigIntMax(...args: bigint[]): bigint {
     return args.reduce((m, e) => (e > m ? e : m));
 }
+
 export function bigIntMin(...args: bigint[]): bigint {
     return args.reduce((m, e) => (e < m ? e : m));
 }
@@ -127,7 +148,7 @@ export function checkNotInDebtAtAll(principals: Dictionary<bigint, bigint>): boo
     return principals.values().every(x => x >= 0n);
 }
 
-export function getAgregatedBalances (
+export function getAgregatedBalances(
     assetsData: ExtendedAssetsData,
     assetsConfig: ExtendedAssetsConfig,
     principals: Dictionary<bigint, bigint>,
@@ -138,7 +159,6 @@ export function getAgregatedBalances (
     let user_total_borrow = 0n;
   
     for (const [assetId, principal] of principals) {
-
         if (principal) {
     
         if (!prices.has(assetId)) {
@@ -265,13 +285,140 @@ export function presentValue(sRate: bigint, bRate: bigint, principalValue: bigin
     }
 }
 
+export function calculateHealthParams(args: HealthParamsArgs) {
+    const {
+        principals, prices,
+        assetsData, assetsConfig,
+        poolConfig
+    } = args;
+
+    const { ASSET_SRATE_SCALE, ASSET_BRATE_SCALE, ASSET_COEFFICIENT_SCALE } = poolConfig.masterConstants;
+
+    let totalSupply = 0n;
+    let totalDebt = 0n;
+    let totalLimit = 0n;
+
+    for (const asset of poolConfig.poolAssetsConfig) {
+        if (!principals.has(asset.assetId)) continue;
+        const principal = principals.get(asset.assetId)!;
+
+        const assetConfig = assetsConfig.get(asset.assetId)!;
+        if (!assetConfig) throw (`No config for ${asset.name}:${asset.assetId}`);
+
+        const assetData = assetsData.get(asset.assetId)!;
+        if (!assetData) throw (`No data for asset ${asset.name}:${asset.assetId}`);
+
+        const balance = principal > 0 ?
+            (principal * assetData.sRate) / ASSET_SRATE_SCALE :
+            (principal * assetData.bRate) / ASSET_BRATE_SCALE;
+
+        const assetWorth = (bigAbs(balance) * prices.get(asset.assetId)!) / 10n ** assetConfig.decimals;
+        if (balance > 0) {
+            totalSupply += assetWorth;
+            totalLimit += (assetWorth * assetConfig.liquidationThreshold) / ASSET_COEFFICIENT_SCALE;
+        } else if (balance < 0) {
+            totalDebt += assetWorth;
+        }
+    }
+
+    return { totalDebt, totalLimit };
+}
+
 /**
- * 
- * @param assetsConfig 
- * @param assetsData 
- * @param principals 
- * @param prices 
- * @param poolConfig 
+ * Check if the user is subject to liquidation
+ * @param args
+ */
+export function isLiquidable(args: {
+    assetsData: ExtendedAssetsData, assetsConfig: ExtendedAssetsConfig,
+    principals: Dictionary<bigint, bigint>, prices: Dictionary<bigint, bigint>,
+    poolConfig: PoolConfig
+}): boolean {
+    const { totalDebt, totalLimit } = calculateHealthParams(args);
+    return totalLimit < totalDebt;
+}
+
+export function isBadDebt(supplyAmount: bigint, borrowAmount: bigint, liquidationBonus: bigint, masterConstants: MasterConstants) {
+    if (borrowAmount === 0n) {
+        return false;
+    }
+    return (supplyAmount * masterConstants.ASSET_COEFFICIENT_SCALE / borrowAmount) < liquidationBonus;
+}
+
+export function addReserve(amount: bigint, loanScale: bigint, reserveFactor: bigint): bigint {
+    return amount * loanScale / (loanScale - reserveFactor);
+}
+
+/**
+ * Calculates liquidation amount and corresponding collateral amount
+ * @param supplyAmount user total supply worth amount
+ * @param borrowAmount user total borrow worth amount
+ * @param masterConstants evaa master contract constants
+ * @param loanAsset loan asset pool config
+ * @param collateralAsset collateral asset pool config
+ * @param principalsDict user principals
+ * @param assetsDataDict assets data collection
+ * @param assetsConfigDict assets config collection
+ * @param pricesDict assets prices
+ */
+export function calculateLiquidationAmount(
+    loanAsset: PoolAssetConfig, collateralAsset: PoolAssetConfig,
+    supplyAmount: bigint, borrowAmount: bigint, // from calculate health params
+    principalsDict: Dictionary<bigint, bigint>, pricesDict: Dictionary<bigint, bigint>,
+    assetsDataDict: ExtendedAssetsData, assetsConfigDict: ExtendedAssetsConfig, masterConstants: MasterConstants
+): { liquidationAmount: bigint, collateralAmount: bigint } {
+    const loanConfig = assetsConfigDict.get(loanAsset.assetId);
+    const loanData = assetsDataDict.get(loanAsset.assetId);
+    const loanPrice = pricesDict.get(loanAsset.assetId);
+    const loanPrinciple = principalsDict.get(loanAsset.assetId);
+
+    const collateralConfig = assetsConfigDict.get(collateralAsset.assetId);
+    const collateralData = assetsDataDict.get(collateralAsset.assetId);
+    const collateralPrice = pricesDict.get(collateralAsset.assetId);
+    const collateralPrinciple = principalsDict.get(collateralAsset.assetId);
+
+    if (!loanConfig || !loanData || !loanPrice || !loanPrinciple ||
+        !collateralConfig || !collateralData || !collateralPrice || !collateralPrinciple) {
+        return { liquidationAmount: 0n, collateralAmount: 0n };
+    }
+
+    const loanScale = 10n ** loanConfig.decimals;
+    const collateralScale = 10n ** collateralConfig.decimals;
+    const lbScale = masterConstants.ASSET_LIQUIDATION_BONUS_SCALE;
+    const worthThreshold = masterConstants.COLLATERAL_WORTH_THRESHOLD;
+    const reserveFactor = loanConfig.liquidationReserveFactor;
+
+    const liquidationBonus = collateralConfig.liquidationBonus;
+    const collateralPresent = calculatePresentValue(collateralData.sRate, collateralPrinciple, masterConstants);
+    const loanPresent = calculatePresentValue(loanData.bRate, loanPrinciple, masterConstants);
+
+    if (isBadDebt(supplyAmount, borrowAmount, liquidationBonus, masterConstants)) {
+        // if bad debt, take all collateral, and need to send quoted loan amount
+        let liquidationAmount = collateralPresent * collateralPrice / collateralScale *
+            loanScale * lbScale / liquidationBonus / loanPrice;
+
+        liquidationAmount = addReserve(liquidationAmount, loanScale, reserveFactor);
+
+        return { liquidationAmount, collateralAmount: collateralPresent };
+    }
+
+    let allowedCollateral = bigIntMax(collateralPresent / 2n, bigIntMin(collateralPresent, worthThreshold));
+    let liquidationAmount = bigIntMin(loanPresent, allowedCollateral * lbScale / liquidationBonus) * loanScale / loanPrice;
+
+    const collateralAmount = liquidationAmount * loanPrice *
+        liquidationBonus / lbScale * collateralScale / collateralPrice / loanScale;
+
+    liquidationAmount = addReserve(liquidationAmount, loanScale, reserveFactor);
+
+    return { liquidationAmount, collateralAmount };
+}
+
+/**
+ *
+ * @param assetsConfig assets config dictionary
+ * @param assetsData assets data dictionary
+ * @param principals principals dictionary
+ * @param prices prices dictionary
+ * @param poolConfig pool config
  * @returns can return UNDEFINED_ASSET if there are no assets
  */
 export function calculateLiquidationData(
@@ -288,25 +435,31 @@ export function calculateLiquidationData(
     let totalDebt = 0n;
     let totalLimit = 0n;
 
+    const {
+        ASSET_SRATE_SCALE, ASSET_BRATE_SCALE,
+        COLLATERAL_WORTH_THRESHOLD
+    } = poolConfig.masterConstants;
+
     for (const asset of poolConfig.poolAssetsConfig) {
-        if (!principals.has(asset.assetId)) {
-            continue;
-        }
         const principal = principals.get(asset.assetId)!;
+        if (!principal) continue;
         const assetConfig = assetsConfig.get(asset.assetId)!;
         const assetData = assetsData.get(asset.assetId)!;
-        const balance =
-            principal > 0 ? (principal * assetData.sRate) / BigInt(1e12) : (principal * assetData.bRate) / BigInt(1e12);
+        const balance = principal > 0 ?
+            (principal * assetData.sRate) / ASSET_SRATE_SCALE :
+            (principal * assetData.bRate) / ASSET_BRATE_SCALE;
+
+        const assetWorth = (bigAbs(balance) * prices.get(asset.assetId)!) / 10n ** assetConfig.decimals;
         if (balance > 0) {
-            const assetWorth = (balance * prices.get(asset.assetId)!) / 10n ** assetConfig.decimals;
             totalLimit += (assetWorth * assetConfig.liquidationThreshold) / poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE;
+            // get the greatest collateral
             if (assetWorth > collateralValue) {
                 collateralValue = assetWorth;
                 collateralAsset = asset;
             }
         } else if (balance < 0) {
-            const assetWorth = (-balance * prices.get(asset.assetId)!) / 10n ** assetConfig.decimals;
             totalDebt += assetWorth;
+            // get the greatest loan
             if (assetWorth > loanValue) {
                 loanValue = assetWorth;
                 loanAsset = asset;
@@ -322,11 +475,11 @@ export function calculateLiquidationData(
         const liquidationBonus = collateralAssetConfig.liquidationBonus;
         const loanScale = 10n ** loanAssetConfig.decimals;
         values.push(
-            (bigIntMax(collateralValue / 2n, bigIntMin(collateralValue, 100_000_000_000n)) *
+            (bigIntMax(collateralValue / 2n, bigIntMin(collateralValue, COLLATERAL_WORTH_THRESHOLD)) *
                 loanScale *
                 poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE) /
-                liquidationBonus /
-                loanAssetPrice,
+            liquidationBonus /
+            loanAssetPrice
         );
         values.push((loanValue * loanScale) / loanAssetPrice);
 
@@ -335,8 +488,8 @@ export function calculateLiquidationData(
         const collateralDecimal = 10n ** collateralAssetConfig.decimals;
         let minCollateralAmount =
             (((liquidationAmount * loanAssetPrice * liquidationBonus) / poolConfig.masterConstants.ASSET_LIQUIDATION_BONUS_SCALE) * collateralDecimal) /
-                collateralAssetPrice /
-                loanScale -
+            collateralAssetPrice /
+            loanScale -
             10n;
         minCollateralAmount = (minCollateralAmount * 97n) / 100n;
         if (minCollateralAmount / collateralDecimal >= 0n) {  // todo back to 1
@@ -348,8 +501,8 @@ export function calculateLiquidationData(
                 totalDebt,
                 totalLimit,
                 liquidable: true,
-                liquidationAmount,
-                minCollateralAmount,
+                liquidationAmount: addReserve(liquidationAmount, loanScale, loanAssetConfig.liquidationReserveFactor),
+                minCollateralAmount
             };
         }
     }
@@ -366,14 +519,14 @@ export function calculateLiquidationData(
 }
 
 export function predictHealthFactor(args: PredictHealthFactorArgs): number {
-    const liquidationData = calculateLiquidationData(args.assetsConfig, args.assetsData, args.principals, args.prices, args.poolConfig);
+    const healthParams = calculateHealthParams(args);
     const assetId = args.asset.assetId;
-    
+
     const assetConfig = args.assetsConfig.get(assetId)!;
     const assetPrice = Number(args.prices.get(assetId)!);
-   
-    let totalLimit = Number(liquidationData.totalLimit);
-    let totalBorrow = Number(liquidationData.totalDebt);
+
+    let totalLimit = Number(healthParams.totalLimit);
+    let totalBorrow = Number(healthParams.totalDebt);
 
     const currentAmount = args.amount;
 
@@ -382,7 +535,7 @@ export function predictHealthFactor(args: PredictHealthFactorArgs): number {
     const currentBalance = assetPrice * Number(currentAmount) / Math.pow(10, decimals);
     const changeType = args.balanceChangeType;
 
-    if (currentAmount != null && currentAmount != 0n) { 
+    if (currentAmount != null && currentAmount != 0n) {
         if (changeType == BalanceChangeType.Borrow) {
             totalBorrow += currentBalance * (1 + Number(assetConfig.originationFee) / Number(args.poolConfig.masterConstants.ASSET_ORIGINATION_FEE_SCALE));
         } else if (changeType == BalanceChangeType.Repay) {
