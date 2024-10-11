@@ -12,7 +12,11 @@ export {
     calculateMaximumWithdrawAmount,
     presentValue,
     calculateLiquidationData,
-    predictHealthFactor
+    predictHealthFactor,
+    calculateHealthParams,
+    calculateLiquidationAmounts,
+    isBadDebt,
+    isLiquidable,
 } from './api/math';
 
 // Parser
@@ -83,6 +87,7 @@ export {
 } from './constants/pools';
 
 export {
+    ASSET_ID,
     UNDEFINED_ASSET,
     TON_MAINNET,
     USDT_MAINNET,

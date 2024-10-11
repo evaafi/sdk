@@ -321,7 +321,7 @@ export function calculateHealthParams(args: HealthParamsArgs) {
         }
     }
 
-    return { totalDebt, totalLimit };
+    return { totalDebt, totalLimit, totalSupply };
 }
 
 /**
@@ -341,7 +341,7 @@ export function isBadDebt(supplyAmount: bigint, borrowAmount: bigint, liquidatio
     if (borrowAmount === 0n) {
         return false;
     }
-    return (supplyAmount * masterConstants.ASSET_COEFFICIENT_SCALE / borrowAmount) < liquidationBonus;
+    return supplyAmount * masterConstants.ASSET_COEFFICIENT_SCALE < liquidationBonus * borrowAmount;
 }
 
 export function addReserve(amount: bigint, loanScale: bigint, reserveFactor: bigint): bigint {
@@ -360,7 +360,7 @@ export function addReserve(amount: bigint, loanScale: bigint, reserveFactor: big
  * @param assetsConfigDict assets config collection
  * @param pricesDict assets prices
  */
-export function calculateLiquidationAmount(
+export function calculateLiquidationAmounts(
     loanAsset: PoolAssetConfig, collateralAsset: PoolAssetConfig,
     supplyAmount: bigint, borrowAmount: bigint, // from calculate health params
     principalsDict: Dictionary<bigint, bigint>, pricesDict: Dictionary<bigint, bigint>,

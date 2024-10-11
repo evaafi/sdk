@@ -20,7 +20,7 @@ import { parseMasterData } from '../api/parser';
 import { MasterData, PoolAssetConfig, PoolConfig} from '../types/Master';
 import { JettonWallet } from './JettonWallet';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
-import { getPrices, isTonAsset, MAINNET_POOL_CONFIG } from '..';
+import { getPrices, isTonAsset, isTonAssetId, MAINNET_POOL_CONFIG } from '..';
 
 /**
  * Parameters for the Evaa contract
@@ -327,7 +327,7 @@ export class Evaa implements Contract {
     ) {
         const message = this.createLiquidationMessage(parameters);
 
-        if (!isTonAsset(parameters.asset)) {
+        if (!isTonAssetId(parameters.loanAsset)) {
             if (!via.address) {
                 throw Error('Via address is required for jetton liquidation');
             }
