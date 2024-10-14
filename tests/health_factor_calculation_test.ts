@@ -20,7 +20,7 @@ beforeAll(async () => {
 test('Health factor check example', async () => {
     const evaa = client.open(new Evaa({poolConfig: MAINNET_POOL_CONFIG}));
     await evaa.getSync();
-    const user = client.open(await evaa.openUserContract(Address.parseFriendly("0QDN5CpSs8HT2GO4IymOXPS5zTDzHtY-s8VTuUVAsCTwWCdG").address));
+    const user = client.open(await evaa.openUserContract(Address.parseFriendly("UQAGq-yoeamrTxhN-evc86KimMIbCfx7bnLzrvqr3DMtqoa_").address));
 
     const priceData = await evaa.getPrices();
 
@@ -31,9 +31,9 @@ test('Health factor check example', async () => {
     const userPrincipals = (user.data! as UserDataActive).principals;
     console.log(evaa.data!.assetsConfig.get(sha256Hash("TON"))?.decimals);
     console.log('heath factor predict', predictHealthFactor({
-        balanceChangeType: BalanceChangeType.Borrow,
-        amount: 1000000n,
-        asset: JUSDC_TESTNET,
+        balanceChangeType: BalanceChangeType.Repay,
+        amount: 4000n,
+        asset: USDT_MAINNET,
         principals: userPrincipals,
         prices: priceData!.dict,
         assetsData: evaa.data!.assetsData,

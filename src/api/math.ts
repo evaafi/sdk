@@ -373,6 +373,7 @@ export function predictHealthFactor(args: PredictHealthFactorArgs): number {
     
     const assetConfig = args.assetsConfig.get(assetId)!;
     const assetPrice = Number(args.prices.get(assetId)!);
+    const assetData = args.assetsData.get(assetId)!;
    
     let totalLimit = Number(liquidationData.totalLimit);
     let totalBorrow = Number(liquidationData.totalDebt);
