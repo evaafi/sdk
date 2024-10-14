@@ -107,6 +107,7 @@ export type LiquidationParameters = LiquidationBaseData & {
     includeUserCode: boolean;
     priceData: Cell;
     payload: Cell;
+    payloadForwardAmount: bigint;
 };
 
 /**
@@ -212,7 +213,7 @@ export class Evaa implements Contract {
                         // the exact amount of transferred jettons for liquidation is known
                         .storeUint(0, 64)
                         .storeRef(beginCell()
-                            .storeUint(parameters.forwardAmount ?? 0, 64) // idk .. ) todo check
+                            .storeUint(parameters.payloadForwardAmount ?? 0, 64)
                             .storeRef(parameters.payload)
                         .endCell())
                         .storeRef(parameters.priceData)
@@ -230,7 +231,7 @@ export class Evaa implements Contract {
                 .storeInt(parameters.includeUserCode ? -1 : 0, 2)
                 .storeUint(parameters.liquidationAmount, 64)
                 .storeRef(beginCell()
-                    .storeUint(parameters.forwardAmount ?? 0, 64) // idk .. ) todo check
+                    .storeUint(parameters.payloadForwardAmount ?? 0, 64)
                     .storeRef(parameters.payload)
                 .endCell())
                 .storeRef(parameters.priceData)
