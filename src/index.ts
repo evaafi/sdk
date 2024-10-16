@@ -12,6 +12,7 @@ export {
     calculateMaximumWithdrawAmount,
     presentValue,
     calculateLiquidationData,
+    predictHealthFactor
 } from './api/math';
 
 // Parser
@@ -26,6 +27,7 @@ export {
     EvaaParameters,
     WithdrawParameters,
     LiquidationBaseData,
+    LiquidationParameters,
     Evaa,
 } from './contracts/MasterContract';
 export { EvaaUser } from './contracts/UserContract';
@@ -46,7 +48,9 @@ export {
     ExtendedAssetsConfig,
     PoolAssetConfig,
     PoolAssetsConfig,
+    MasterConstants
 } from './types/Master';
+
 export {
     BalanceType,
     UserBalance,

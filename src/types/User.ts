@@ -44,10 +44,9 @@ export type UserLiteData = {
     trackingBorrowIndex: bigint;
     dutchAuctionStart: number;
     backupCell: Cell;
-    /* Will be in v6 
     rewards: Dictionary<bigint, UserRewards>;
     backupCell1: Cell | null;
-    backupCell2: Cell | null; */
+    backupCell2: Cell | null;
 };
 
 export type UserDataActive = UserLiteData & {
@@ -85,7 +84,7 @@ export enum BalanceChangeType {
 export type PredictHealthFactorArgs = {
     balanceChangeType: BalanceChangeType;
     amount: bigint;  // always positive
-    tokenSymbol: string;
+    asset: PoolAssetConfig;
     principals: Dictionary<bigint, bigint>;
     prices: Dictionary<bigint, bigint>;
     assetsData: ExtendedAssetsData;

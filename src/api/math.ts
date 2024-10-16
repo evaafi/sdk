@@ -160,77 +160,7 @@ export function getAgregatedBalances (
     return {totalSupply: user_total_supply, totalBorrow: user_total_borrow};
   }
 
-/**
- * @deprecated The method should be used only for main contract v5
- */
-export function isV5MainPoolContract(poolConfig: PoolConfig): boolean {
-  if ((poolConfig.masterAddress == MAINNET_POOL_CONFIG.masterAddress && poolConfig.masterVersion == 5) || 
-  (poolConfig.masterAddress == TESTNET_POOL_CONFIG.masterAddress && poolConfig.masterVersion == 5)) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-/**
- * @deprecated The method should be used only for main contract v5
- */
-export function calculateMaximumWithdrawAmountOld(
-    assetsConfig: ExtendedAssetsConfig,
-    assetsData: ExtendedAssetsData,
-    principals: Dictionary<bigint, bigint>,
-    prices: Dictionary<bigint, bigint>,
-    masterConstants: MasterConstants,
-    assetId: bigint,
-): bigint {
-    let withdrawAmountMax = 0n;
-
-    const assetConfig = assetsConfig.get(assetId) as AssetConfig;
-    const assetData = assetsData.get(assetId) as ExtendedAssetData;
-    const oldPrincipal = principals.get(assetId) as bigint;
-    const oldPresentValue = presentValue(assetData.sRate, assetData.bRate, oldPrincipal, masterConstants);
-
-    if (oldPresentValue.amount > assetConfig.dust) {
-        if(checkNotInDebtAtAll(principals)) {
-            withdrawAmountMax = oldPresentValue.amount; 
-        } else {
-            if (!prices.has(assetId)) {
-                return 0n;
-            }
-
-            //const borrowable = getAvailableToBorrow(assetsConfig, assetsData, principals, prices, masterConstants);
-            const price = prices.get(assetId) as bigint;
-            const agregatedBalances = getAgregatedBalances(assetsData, assetsConfig, principals, prices, masterConstants);
-            let maxAmountToReclaim = 
-                mulDiv(
-                    agregatedBalances.totalSupply - mulDivC(agregatedBalances.totalBorrow, masterConstants.ASSET_COEFFICIENT_SCALE, assetConfig.collateralFactor),
-                    10n**assetConfig.decimals,
-                    price
-                );
-          
-            withdrawAmountMax = bigIntMin(
-                maxAmountToReclaim,
-                oldPresentValue.amount
-            );
-            //console.log('agregatedBalances', agregatedBalances);
-            //console.log('masterConstants.ASSET_COEFFICIENT_SCALE', masterConstants.ASSET_COEFFICIENT_SCALE);
-            //console.log('assetConfig.collateralFactor', assetConfig.collateralFactor);
-            //console.log('sekay', maxAmountToReclaim, oldPresentValue.amount);
-        }
-    } else {
-        if (!prices.has(assetId)) {
-            return 0n;
-        }
-
-        const price = prices.get(assetId) as bigint;
-
-        return getAvailableToBorrow(assetsConfig, assetsData, principals, prices, masterConstants) * (10n ** assetConfig.decimals) / price;
-    }
-
-    return withdrawAmountMax;
-}
-
-export function calculateMaximumWithdrawAmount(  //  todo v6 ifelse dust not debt at all is fixed?
+export function calculateMaximumWithdrawAmount(
     assetsConfig: ExtendedAssetsConfig,
     assetsData: ExtendedAssetsData,
     principals: Dictionary<bigint, bigint>,
@@ -263,10 +193,12 @@ export function calculateMaximumWithdrawAmount(  //  todo v6 ifelse dust not deb
             }
             else if (price > 0) {
                 maxAmountToReclaim =
-                    mulDiv(
-                        mulDivC(borrowable, masterConstants.ASSET_COEFFICIENT_SCALE, assetConfig.collateralFactor),
-                        10n ** assetConfig.decimals, price
-                    );
+                    bigIntMax(0n, 
+                        mulDiv(
+                            mulDiv(borrowable, masterConstants.ASSET_COEFFICIENT_SCALE, assetConfig.collateralFactor),
+                            10n ** assetConfig.decimals, price)
+                            - calculatePresentValue(assetData.sRate, assetConfig.dust, masterConstants) / 2n
+                        );
             }
           
             withdrawAmountMax = bigIntMin(
@@ -304,13 +236,13 @@ export function getAvailableToBorrow(
         const principal = principals.get(assetID) as bigint;
 
         if (principal < 0) {
-            borrowAmount += (calculatePresentValue(assetData.bRate, -principal, masterConstants) * price) / 10n ** assetConfig.decimals;
+            borrowAmount += mulDiv(calculatePresentValue(assetData.bRate, -principal, masterConstants), price, 10n ** assetConfig.decimals);
         } else if (principal > 0) {
             borrowLimit +=
-            mulDivC(
-                mulDivC(calculatePresentValue(assetData.sRate, principal, masterConstants), price, 10n ** assetConfig.decimals),
-                assetConfig.collateralFactor,
-                masterConstants.ASSET_COEFFICIENT_SCALE);
+                mulDiv(
+                    mulDiv(calculatePresentValue(assetData.sRate, principal, masterConstants), price, 10n ** assetConfig.decimals),
+                    assetConfig.collateralFactor,
+                    masterConstants.ASSET_COEFFICIENT_SCALE);
         }
     }
 
@@ -410,7 +342,7 @@ export function calculateLiquidationData(
                 loanScale -
             10n;
         minCollateralAmount = (minCollateralAmount * 97n) / 100n;
-        if (minCollateralAmount / collateralDecimal >= 1n) {
+        if (minCollateralAmount / collateralDecimal >= 0n) {  // todo back to 1
             return {
                 greatestCollateralAsset: collateralAsset,
                 greatestCollateralValue: collateralValue,
@@ -438,10 +370,11 @@ export function calculateLiquidationData(
 
 export function predictHealthFactor(args: PredictHealthFactorArgs): number {
     const liquidationData = calculateLiquidationData(args.assetsConfig, args.assetsData, args.principals, args.prices, args.poolConfig);
-    const tokenHash = sha256Hash(args.tokenSymbol);
+    const assetId = args.asset.assetId;
     
-    const assetConfig = args.assetsConfig.get(tokenHash)!;
-    const assetPrice = Number(args.prices.get(tokenHash)!);
+    const assetConfig = args.assetsConfig.get(assetId)!;
+    const assetPrice = Number(args.prices.get(assetId)!);
+    const assetData = args.assetsData.get(assetId)!;
    
     let totalLimit = Number(liquidationData.totalLimit);
     let totalBorrow = Number(liquidationData.totalDebt);

@@ -1,69 +1,45 @@
-import { beginCell, Cell, Dictionary } from '@ton/core';
-import { PriceData } from '../types/Common';
-import { MAIN_POOL_NFT_ID } from '../constants/general';
+import { Dictionary } from '@ton/core';
+import { PriceData, RawPriceData } from '../types/Common';
+import { getMedianPrice, loadPrices, packAssetsData, packOraclesData, packPrices, parsePrices, verifyPrices } from '../utils/priceUtils';
+import { OracleNFT, PoolConfig } from '../types/Master';
+import { MAINNET_POOL_CONFIG } from '../constants/pools';
 
-type NftData = {
-    ledgerIndex: number;
-    pageSize: number;
-    items: string[];
-};
+export async function getPrices(endpoints: String[] = ["api.stardust-mainnet.iotaledger.net", "iota.evaa.finance"], poolConfig: PoolConfig = MAINNET_POOL_CONFIG): Promise<PriceData> {
+    if (endpoints.length == 0) {
+        throw new Error("Empty endpoint list");
+    }
+    
+    const prices = await Promise.all(poolConfig.oracles.map(async x => await parsePrices(await loadPrices(x.address, endpoints), x.id)));
+    
+    let acceptedPrices: RawPriceData[] = prices.filter(verifyPrices(poolConfig.poolAssetsConfig));
 
-type OutputData = {
-    metadata: {
-        blockId: string;
-        transactionId: string;
-        outputIndex: number;
-        isSpent: boolean;
-        milestoneIndexSpent: number;
-        milestoneTimestampSpent: number;
-        transactionIdSpent: string;
-        milestoneIndexBooked: number;
-        milestoneTimestampBooked: number;
-        ledgerIndex: number;
-    };
-    output: {
-        type: number;
-        amount: string;
-        nftId: string;
-        unlockConditions: {
-            type: number;
-            address: {
-                type: number;
-                pubKeyHash: string;
-            };
-        }[];
-        features: {
-            type: number;
-            data: string;
-        }[];
-    };
-}
 
-export async function getPrices(endpoints: string[] = ["api.stardust-mainnet.iotaledger.net"], nftId: string = MAIN_POOL_NFT_ID) {
-    return await Promise.any(endpoints.map(x => loadPrices(nftId, x)));
-}
+    if (acceptedPrices.length < poolConfig.minimalOracles) {
+        throw new Error("Prices are outdated");
+    }
 
-async function loadPrices(nftId: string, endpoint: string = "api.stardust-mainnet.iotaledger.net"): Promise<PriceData> {
-    let result = await fetch(`https://${endpoint}/api/indexer/v1/outputs/nft/${nftId}`, {
-        headers: { accept: 'application/json' },
-    });
-    let outputId = (await result.json()) as NftData;
+    if (acceptedPrices.length > poolConfig.minimalOracles && acceptedPrices.length % 2 == 0) {
+        acceptedPrices = acceptedPrices.slice(0, acceptedPrices.length - 1);  // to reduce fees, MINIMAL_ORACLES_NUMBER is odd
+    }
 
-    result = await fetch(`https://${endpoint}/api/core/v2/outputs/${outputId.items[0]}`, {
-        headers: { accept: 'application/json' },
-    });
+    if (acceptedPrices.length != poolConfig.minimalOracles) {
+        const sortedByTimestamp = acceptedPrices.slice().sort((a, b) => b.timestamp - a.timestamp);
+        const newerPrices = sortedByTimestamp.slice(0, poolConfig.minimalOracles);
+        acceptedPrices = newerPrices.sort((a, b) => a.oracleId - b.oracleId);
+    }
 
-    let resData = (await result.json()) as OutputData;
 
-    const data = JSON.parse(
-        decodeURIComponent(resData.output.features[0].data.replace('0x', '').replace(/[0-9a-f]{2}/g, '%$&')),
-    );
+    const medianData = poolConfig.poolAssetsConfig.map(asset => ({ assetId: asset.assetId, medianPrice: getMedianPrice(acceptedPrices, asset.assetId)}));
+    const packedMedianData = packAssetsData(medianData);
 
-    const pricesCell = Cell.fromBoc(Buffer.from(data['packedPrices'], 'hex'))[0];
-    const signature = Buffer.from(data['signature'], 'hex');
+    const oraclesData = acceptedPrices.map(x => ({oracle: {id: x.oracleId, pubkey: x.pubkey}, data: {timestamp: x.timestamp, prices: x.dict}, signature: x.signature}));
+    const packedOracleData = packOraclesData(oraclesData, poolConfig.poolAssetsConfig.map(x => x.assetId));
+
+    const dict = Dictionary.empty<bigint, bigint>();
+    medianData.forEach(x => dict.set(x.assetId, x.medianPrice));
 
     return {
-        dict: pricesCell.beginParse().loadDictDirect(Dictionary.Keys.BigUint(256), Dictionary.Values.BigUint(64)),
-        dataCell: beginCell().storeRef(pricesCell).storeBuffer(signature).endCell(),
+        dict: dict,
+        dataCell: packPrices(packedMedianData, packedOracleData)
     };
 }

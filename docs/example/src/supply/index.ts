@@ -1,8 +1,8 @@
 import { configDotenv } from 'dotenv';
-import { SendMode, toNano, TonClient, WalletContractV4 } from '@ton/ton';
-import { ASSET_ID, Evaa, FEES } from '@evaafi/sdk';
+import { SendMode, toNano, TonClient, WalletContractV5R1 } from '@ton/ton';
+import { Evaa, FEES, TESTNET_POOL_CONFIG, TON_TESTNET } from '@evaafi/sdkv6';
 import { mnemonicToWalletKey } from '@ton/crypto';
-import { beginCell, external, internal, storeMessage } from '@ton/core';
+import { beginCell, Cell, external, internal, storeMessage } from '@ton/core';
 
 async function main() {
     configDotenv();
@@ -12,12 +12,10 @@ async function main() {
         apiKey: process.env.RPC_API_KEY,
     });
     const evaa = client.open(
-        new Evaa({
-            testnet: true,
-        }),
+        new Evaa({poolConfig: TESTNET_POOL_CONFIG}),
     );
     const wallet = client.open(
-        WalletContractV4.create({
+        WalletContractV5R1.create({
             workchain: 0,
             publicKey: keyPair.publicKey,
         }),
@@ -29,9 +27,11 @@ async function main() {
         includeUserCode: true,
         amount: toNano(1),
         userAddress: wallet.address,
-        assetID: ASSET_ID.TON,
-        type: 'ton',
+        asset: TON_TESTNET,
+        payload: Cell.EMPTY,
+        amountToTransfer: toNano(0),
     });
+
     // create signed transfer for out wallet with internal message to EVAA Master Contract
     const signedMessage = wallet.createTransfer({
         seqno: await wallet.getSeqno(),

@@ -1,7 +1,7 @@
 {
   "name": "@evaafi/sdk",
-  "version": "0.5.6a",
-  "description": "SDK for EVAA contracts",
+  "version": "0.6.0a",
+  "description": "The EVAA SDK is designed to easily integrate with the EVAA lending protocol on TON blockchain.",
   "main": "dist/index.js",
   "files": [
     "dist",
