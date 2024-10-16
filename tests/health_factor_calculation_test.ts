@@ -3,6 +3,7 @@ import {Address, beginCell, Dictionary, TonClient} from '@ton/ton';
 import dotenv from 'dotenv';
 import { predictHealthFactor } from '../src/api/math';
 import { sha256Hash } from '../src/utils/sha256BigInt';
+import { STTON_MAINNET } from '../src/constants/assets';
 
 let client: TonClient;
 beforeAll(async () => {
@@ -29,7 +30,7 @@ test('Health factor check example', async () => {
     //console.log(evaa.data!.assetsConfig.get(sha256Hash("TON")));
     //console.log(user.data);
     const userPrincipals = (user.data! as UserDataActive).principals;
-    console.log(evaa.data!.assetsConfig.get(sha256Hash("TON"))?.decimals);
+    //console.log(evaa.data!.assetsConfig.get(sha256Hash("TON"))?.decimals);
     console.log('heath factor predict', predictHealthFactor({
         balanceChangeType: BalanceChangeType.Repay,
         amount: 4000n,

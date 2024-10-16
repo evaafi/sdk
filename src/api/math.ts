@@ -14,8 +14,9 @@ export function mulDiv(x: bigint, y: bigint, z: bigint): bigint {
 }
 
 export function mulDivC(x: bigint, y: bigint, z: bigint): bigint {
-    const mul = x * y;
-    return mul / z + (mul % z ? 1n : 0n);
+    //const mul = x * y;
+    //return mul / z + (mul % z ? 1n : 0n);
+    return BigInt(Math.ceil(Number(x * y) / Number(z)));
 }
 
 export function bigIntMax(...args: bigint[]): bigint {
@@ -147,13 +148,13 @@ export function getAgregatedBalances (
         const price = prices.get(assetId)!;
         const assetData = assetsData.get(assetId)!;
         const assetConfig = assetsConfig.get(assetId)!;
-  
+        // console.log('price', price);
         if (principal < 0) {
           user_total_borrow += presentValue(assetData.sRate, assetData.bRate, principal, masterConstants).amount * price / 10n ** assetConfig.decimals;
         } else {
           user_total_supply += presentValue(assetData.sRate, assetData.bRate, principal, masterConstants).amount * price / 10n ** assetConfig.decimals;
         }
-  
+        // console.log('aggregated', assetId, presentValue(assetData.sRate, assetData.bRate, principal, masterConstants).type, presentValue(assetData.sRate, assetData.bRate, principal, masterConstants).amount * price / 10n ** assetConfig.decimals)
       }
     }
     return {totalSupply: user_total_supply, totalBorrow: user_total_borrow};

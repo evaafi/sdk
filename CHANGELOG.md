@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - user. ```getSync``` and ```getSyncLite``` new argument ```applyDust``` by default is ```false```
 ### Fixed
 - Healthfactor calculation minor bug
+- createLiquidationMessage fix new field payloadForwardAmount
 
 ## 0.6.0 - 2024-10-10
 ### Added
@@ -16,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 - Updated documentation and examples for v6 interactions
 - User Withdrawal and Borrow limits
+## 0.5.6a - 2024-10-09
+### Fixed
+- Fix typo in ```calculateMaximumWithdrawAmount```
 
 ## 0.5.6 - 2024-09-28
 
