@@ -379,11 +379,58 @@ export function isLiquidable(args: {
 /**
  * Calculates adjustment for liquidation reserve amount
  * @param amount raw liquidation amount
- * @param loanScale loan scale factor
  * @param reserveFactor asset reserve factor
+ * @param masterConstants pool common constants
  */
-export function adjustToReserve(amount: bigint, loanScale: bigint, reserveFactor: bigint): bigint {
-    return amount * loanScale / (loanScale - reserveFactor);
+export function adjustToReserve(amount: bigint, reserveFactor: bigint, masterConstants: MasterConstants): bigint {
+    const factorScale = masterConstants.ASSET_RESERVE_FACTOR_SCALE;
+    return amount * factorScale / (factorScale - reserveFactor);
+}
+
+type FailType = { ok: false };
+
+type GetAssetDataResult = {
+    config: AssetConfig,
+    data: AssetData,
+    price: bigint,
+    principal: bigint,
+    scale: bigint,
+    liquidationReserveFactor: bigint,
+    liquidationBonus: bigint,
+    present: UserBalance,
+    balance: bigint,
+    ok: true,
+};
+
+function getAssetData(assetId: bigint,
+                      assetsConfigDict: ExtendedAssetsConfig,
+                      assetsDataDict: ExtendedAssetsData,
+                      pricesDict: Dictionary<bigint, bigint>,
+                      principalsDict: Dictionary<bigint, bigint>,
+                      masterConstants: MasterConstants
+): GetAssetDataResult | FailType {
+    if (!assetsConfigDict.has(assetId) ||
+        !assetsDataDict.has(assetId) ||
+        !pricesDict.has(assetId) ||
+        !principalsDict.has(assetId)) {
+        return { ok: false };
+    }
+
+    const config = assetsConfigDict.get(assetId)!;
+    const data = assetsDataDict.get(assetId)!;
+    const base = {
+        ok: true,
+        config, data,
+        price: pricesDict.get(assetId)!,
+        principal: principalsDict.get(assetId)!,
+        scale: 10n ** config.decimals,
+        liquidationReserveFactor: config.liquidationReserveFactor,
+        liquidationBonus: config.liquidationBonus
+    };
+
+    const present = presentValue(data.sRate, data.bRate, base.principal, masterConstants);
+
+    return { ...base, present, balance: present.amount };
 }
 
 /**
@@ -399,70 +446,68 @@ export function adjustToReserve(amount: bigint, loanScale: bigint, reserveFactor
  * @param pricesDict assets prices
  */
 export function calculateLiquidationAmounts(
-    loanAsset: PoolAssetConfig, collateralAsset: PoolAssetConfig,
-    supplyAmount: bigint, borrowAmount: bigint, // from calculate health params
-    principalsDict: Dictionary<bigint, bigint>, pricesDict: Dictionary<bigint, bigint>,
-    assetsDataDict: ExtendedAssetsData, assetsConfigDict: ExtendedAssetsConfig,
+    loanAsset: PoolAssetConfig,
+    collateralAsset: PoolAssetConfig,
+    supplyAmount: bigint,
+    borrowAmount: bigint, // from calculate health params
+    principalsDict: Dictionary<bigint, bigint>,
+    pricesDict: Dictionary<bigint, bigint>,
+    assetsDataDict: ExtendedAssetsData,
+    assetsConfigDict: ExtendedAssetsConfig,
     masterConstants: MasterConstants
 ): { liquidationAmount: bigint, collateralAmount: bigint } {
-    if (!assetsConfigDict.has(loanAsset.assetId) || !assetsConfigDict.has(collateralAsset.assetId) ||
-        !assetsDataDict.has(loanAsset.assetId) || !assetsDataDict.has(collateralAsset.assetId) ||
-        !pricesDict.has(loanAsset.assetId) || !pricesDict.has(collateralAsset.assetId) ||
-        !principalsDict.has(loanAsset.assetId) || !principalsDict.has(collateralAsset.assetId)) {
+    const loan = getAssetData(loanAsset.assetId,
+        assetsConfigDict, assetsDataDict, pricesDict, principalsDict, masterConstants
+    );
+    const collateral = getAssetData(collateralAsset.assetId,
+        assetsConfigDict, assetsDataDict, pricesDict, principalsDict, masterConstants
+    );
+
+    if (!loan.ok || !collateral.ok ||
+        loan.present.type !== BalanceType.borrow ||
+        collateral.present.type !== BalanceType.supply) {
         return { liquidationAmount: 0n, collateralAmount: 0n };
     }
 
-    const loanConfig = assetsConfigDict.get(loanAsset.assetId)!;
-    const loanData = assetsDataDict.get(loanAsset.assetId)!;
-    const loanPrice = pricesDict.get(loanAsset.assetId)!;
-    const loanPrincipal = principalsDict.get(loanAsset.assetId)!;
-
-    const collateralConfig = assetsConfigDict.get(collateralAsset.assetId)!;
-    const collateralData = assetsDataDict.get(collateralAsset.assetId)!;
-    const collateralPrice = pricesDict.get(collateralAsset.assetId)!;
-    const collateralPrincipal = principalsDict.get(collateralAsset.assetId)!;
-
-    const loanScale = 10n ** loanConfig.decimals;
-    const collateralScale = 10n ** collateralConfig.decimals;
     const bonusScale = masterConstants.ASSET_LIQUIDATION_BONUS_SCALE;
     const collateralThreshold = masterConstants.COLLATERAL_WORTH_THRESHOLD;
-    const reserveFactor = loanConfig.liquidationReserveFactor;
-
-    const liquidationBonus = collateralConfig.liquidationBonus;
-    const collateralPresent = calculatePresentValue(collateralData.sRate, collateralPrincipal, masterConstants);
-    const loanPresent = calculatePresentValue(loanData.bRate, loanPrincipal, masterConstants);
+    const reserveFactor = loan.liquidationReserveFactor;
+    const liquidationBonus = collateral.liquidationBonus;
 
     if (isBadDebt(supplyAmount, borrowAmount, liquidationBonus, masterConstants)) {
         // if bad debt, can take all the collateral, and have to send quoted loan amount
-        let liquidationAmount = collateralPresent *
-            (collateralPrice / collateralScale) *
-            (loanScale / loanPrice) *
-            (bonusScale / liquidationBonus);
+        let baseLiquidationAmount = collateral.balance *
+            collateral.price / collateral.scale *
+            loan.scale / loan.price *
+            bonusScale / liquidationBonus;
 
-        liquidationAmount = adjustToReserve(liquidationAmount, loanScale, reserveFactor);
+        const liquidationAmount = adjustToReserve(baseLiquidationAmount, reserveFactor, masterConstants);
 
-        return { liquidationAmount, collateralAmount: collateralPresent };
+        return { liquidationAmount, collateralAmount: collateral.balance };
     }
 
-    let allowedCollateral = BigMath.max(
-        collateralPresent / 2n,
+    let allowedCollateralAmount = BigMath.max(
+        collateral.balance / 2n,
         BigMath.min(
-            collateralPresent,
-            collateralThreshold
+            collateral.balance, collateralThreshold
         )
     );
 
-    let liquidationAmount = BigMath.min(
-        loanPresent,
-        allowedCollateral * (bonusScale / liquidationBonus)
-    ) * (loanScale / loanPrice);
+    const toAssetAmount = (worth: bigint, scale: bigint, price: bigint): bigint => worth * scale / price;
+    const toAssetWorth = (amount: bigint, scale: bigint, price: bigint): bigint => amount * price / scale;
 
-    const collateralAmount = liquidationAmount *
-        (loanPrice / loanScale) *
-        (liquidationBonus / bonusScale) *
-        (collateralScale / collateralPrice);
+    const baseLiquidationWorth = BigMath.min(
+        toAssetWorth(loan.balance, loan.scale, loan.price),
+        toAssetWorth(allowedCollateralAmount, collateral.scale, collateral.price) * bonusScale / liquidationBonus
+    );
 
-    liquidationAmount = adjustToReserve(liquidationAmount, loanScale, reserveFactor);
+    const baseLiquidationAmount = toAssetAmount(baseLiquidationWorth, loan.scale, loan.price);
+    const liquidationWorth_withBonus = baseLiquidationWorth * liquidationBonus / bonusScale;
+    const collateralAmount = toAssetAmount(liquidationWorth_withBonus, collateral.scale, collateral.price);
+
+    // please don't leave negative dust values
+    const loanDust = presentValue(loan.data.sRate, loan.data.bRate, loan.config.dust, masterConstants);
+    const liquidationAmount = adjustToReserve(baseLiquidationAmount, reserveFactor, masterConstants) + loanDust.amount;
 
     return { liquidationAmount, collateralAmount };
 }
@@ -547,7 +592,7 @@ export function calculateLiquidationData(
             loanScale -
             10n;
         minCollateralAmount = (minCollateralAmount * 97n) / 100n;
-        if (minCollateralAmount / collateralDecimal >= 0n) {  // todo back to 1
+        if (minCollateralAmount > 0n) {
             return {
                 greatestCollateralAsset: collateralAsset,
                 greatestCollateralValue: collateralValue,
@@ -556,7 +601,7 @@ export function calculateLiquidationData(
                 totalDebt,
                 totalLimit,
                 liquidable: true,
-                liquidationAmount: adjustToReserve(liquidationAmount, loanScale, loanAssetConfig.liquidationReserveFactor),
+                liquidationAmount: adjustToReserve(liquidationAmount, loanAssetConfig.liquidationReserveFactor, poolConfig.masterConstants),
                 minCollateralAmount
             };
         }
