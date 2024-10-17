@@ -455,7 +455,12 @@ export function calculateLiquidationAmounts(
     assetsDataDict: ExtendedAssetsData,
     assetsConfigDict: ExtendedAssetsConfig,
     masterConstants: MasterConstants
-): { liquidationAmount: bigint, collateralAmount: bigint } {
+): {
+    isBadDebt: boolean,
+    liquidationAmount: bigint, collateralAmount: bigint,
+    calculateLoanByCollateral?: (amount: bigint) => bigint,
+    calculateCollateralByLoan?: (amount: bigint) => bigint,
+} {
     const loan = getAssetData(loanAsset.assetId,
         assetsConfigDict, assetsDataDict, pricesDict, principalsDict, masterConstants
     );
@@ -466,7 +471,7 @@ export function calculateLiquidationAmounts(
     if (!loan.ok || !collateral.ok ||
         loan.present.type !== BalanceType.borrow ||
         collateral.present.type !== BalanceType.supply) {
-        return { liquidationAmount: 0n, collateralAmount: 0n };
+        return { isBadDebt: false, liquidationAmount: 0n, collateralAmount: 0n };
     }
 
     const bonusScale = masterConstants.ASSET_LIQUIDATION_BONUS_SCALE;
@@ -483,7 +488,7 @@ export function calculateLiquidationAmounts(
 
         const liquidationAmount = adjustToReserve(baseLiquidationAmount, reserveFactor, masterConstants);
 
-        return { liquidationAmount, collateralAmount: collateral.balance };
+        return { isBadDebt: true, liquidationAmount, collateralAmount: collateral.balance };
     }
 
     let allowedCollateralAmount = BigMath.max(
@@ -509,7 +514,28 @@ export function calculateLiquidationAmounts(
     const loanDust = presentValue(loan.data.sRate, loan.data.bRate, loan.config.dust, masterConstants);
     const liquidationAmount = adjustToReserve(baseLiquidationAmount, reserveFactor, masterConstants) + loanDust.amount;
 
-    return { liquidationAmount, collateralAmount };
+    const calculateLoanByCollateral = (collateralAssetAmount: bigint): bigint => {
+        if (collateralAssetAmount < 0n) throw (`Invalid collateral amount`);
+        if (collateralAssetAmount > collateralAmount) return collateralAmount;
+
+        const worth = toAssetWorth(collateralAssetAmount, collateral.scale, collateral.price);
+        let loanAmount = toAssetAmount(worth * bonusScale / liquidationBonus, loan.scale, loan.price);
+        loanAmount += loanDust.amount;
+        return loanAmount;
+    };
+
+    const calculateCollateralByLoan = (loanAssetAmount: bigint) => {
+        if (loanAssetAmount < 0n) throw (`Invalid loan amount: ${loanAssetAmount}`);
+        if (loanAssetAmount > liquidationAmount) return collateralAmount;
+
+        const worth = toAssetWorth(loanAssetAmount, loan.scale, loan.price);
+        const maxCollateralAmount = toAssetAmount(worth * liquidationBonus / bonusScale, loan.scale, loan.price);
+        const dust = presentValue(collateral.data.sRate, collateral.data.bRate, collateral.config.dust, masterConstants);
+        const res = maxCollateralAmount - dust.amount;
+        return ((res > 0n) ? res : 0n);
+    };
+
+    return { isBadDebt: false, liquidationAmount, collateralAmount, calculateLoanByCollateral, calculateCollateralByLoan };
 }
 
 /**
