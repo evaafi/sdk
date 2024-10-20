@@ -268,7 +268,7 @@ export function getAvailableToBorrow(
 }
 
 /**
- * Calculates balance value for asset principal
+ * Calculates balance value for asset principal.
  * @param sRate asset supply rate
  * @param bRate asset borrow rate
  * @param principalValue asset principal value
@@ -294,7 +294,7 @@ export function presentValue(sRate: bigint, bRate: bigint, principalValue: bigin
 }
 
 /**
- * Determines if the provided pair of assets forms a bad debt
+ * Determines if the provided pair of assets forms a bad debt.
  * @param totalSupply total supply worth amount
  * @param totalBorrow total borrow worth amount
  * @param liquidationBonus collateral liquidation bonus value
@@ -307,15 +307,15 @@ export function isBadDebt(totalSupply: bigint, totalBorrow: bigint,
 }
 
 /**
- * Calculates user account health parameters
- * @param args
+ * Calculates health parameters of the specified user account based on its parameters
+ * @param parameters
  */
-export function calculateHealthParams(args: HealthParamsArgs) {
+export function calculateHealthParams(parameters: HealthParamsArgs) {
     const {
         principals, prices,
         assetsData, assetsConfig,
         poolConfig
-    } = args;
+    } = parameters;
 
     const { ASSET_LIQUIDATION_THRESHOLD_SCALE } = poolConfig.masterConstants;
 
@@ -358,7 +358,7 @@ export function calculateHealthParams(args: HealthParamsArgs) {
 
     return {
         totalDebt, totalLimit, totalSupply,
-        isLiquidable: _isLiquidable,
+        isLiquidatable: _isLiquidable,
         isBadDebt: _isBadDebt
     };
 }
@@ -367,13 +367,13 @@ export function calculateHealthParams(args: HealthParamsArgs) {
  * Check if the user is subject to liquidation
  * @param args
  */
-export function isLiquidable(args: {
+export function isLiquidatable(args: {
     assetsData: ExtendedAssetsData, assetsConfig: ExtendedAssetsConfig,
     principals: Dictionary<bigint, bigint>, prices: Dictionary<bigint, bigint>,
     poolConfig: PoolConfig
 }): boolean {
-    const { isLiquidable } = calculateHealthParams(args);
-    return isLiquidable;
+    const { isLiquidatable: res } = calculateHealthParams(args);
+    return res;
 }
 
 /**
@@ -398,9 +398,50 @@ export function deductReserve(amount: bigint, reserveFactor: bigint, reserveFact
     return amount * (reserveFactorScale - reserveFactor) / reserveFactorScale;
 }
 
-type FailType = { ok: false };
+/**
+ * Converts worth value to specified asset amount
+ * @param worth worth value (decimals = 9)
+ * @param scale asset scale (10^asset_decimals)
+ * @param price asset price
+ */
+export function toAssetAmount(worth: bigint, scale: bigint, price: bigint): bigint {
+    return worth * scale / price;
+}
 
-type GetAssetDataResult = {
+/**
+ * Converts calculates worth value of specified asset amount
+ * @param amount worth value (decimals = 9)
+ * @param scale asset scale (10^asset_decimals)
+ * @param price asset price
+ */
+export function toAssetWorth(amount: bigint, scale: bigint, price: bigint): bigint {
+    return amount * price / scale;
+}
+
+/**
+ * Adds liquidation bonus to reward value.
+ * @param value reward asset value
+ * @param bonus liquidation bonus factor
+ * @param scale liquidation bonus scale
+ */
+export function addLiquidationBonus(value: bigint, bonus: bigint, scale: bigint): bigint {
+    return value * bonus / scale;
+}
+
+/**
+ * Deducts liquidation bonus from reward value.
+ * @param value reward asset value
+ * @param bonus liquidation bonus factor
+ * @param scale liquidation bonus scale
+ */
+export function deductLiquidationBonus(value: bigint, bonus: bigint, scale: bigint): bigint {
+    return value * scale / bonus;
+}
+
+export type SuccessType = { ok: true };
+export type FailType = { ok: false };
+
+export type PreparedAssetInfo = {
     config: AssetConfig,
     data: AssetData,
     price: bigint,
@@ -411,16 +452,26 @@ type GetAssetDataResult = {
     present: UserBalance,
     balance: bigint,
     dust: bigint,
-    ok: true,
 };
 
-function getAssetData(assetId: bigint,
-                      assetsConfigDict: ExtendedAssetsConfig,
-                      assetsDataDict: ExtendedAssetsData,
-                      pricesDict: Dictionary<bigint, bigint>,
-                      principalsDict: Dictionary<bigint, bigint>,
-                      masterConstants: MasterConstants
-): GetAssetDataResult | FailType {
+export type PreparedAssetInfoResult = (PreparedAssetInfo & SuccessType) | FailType;
+
+/**
+ * Prepares extended asset info
+ * @param assetId
+ * @param assetsConfigDict
+ * @param assetsDataDict
+ * @param pricesDict
+ * @param principalsDict
+ * @param masterConstants
+ */
+export function prepareAssetInfo(assetId: bigint,
+                                 assetsConfigDict: ExtendedAssetsConfig,
+                                 assetsDataDict: ExtendedAssetsData,
+                                 pricesDict: Dictionary<bigint, bigint>,
+                                 principalsDict: Dictionary<bigint, bigint>,
+                                 masterConstants: MasterConstants
+): PreparedAssetInfoResult {
     if (!assetsConfigDict.has(assetId) ||
         !assetsDataDict.has(assetId) ||
         !pricesDict.has(assetId) ||
@@ -446,12 +497,6 @@ function getAssetData(assetId: bigint,
     return { ...base, present: assetPresent, balance: assetPresent.amount, dust: dustPresent.amount };
 }
 
-const toAssetAmount = (worth: bigint, scale: bigint, price: bigint): bigint => worth * scale / price;
-const toAssetWorth = (amount: bigint, scale: bigint, price: bigint): bigint => amount * price / scale;
-
-const addLiquidationBonus = (value: bigint, bonus: bigint, scale: bigint): bigint => value * bonus / scale;
-const deductLiquidationBonus = (value: bigint, bonus: bigint, scale: bigint): bigint => value * scale / bonus;
-
 /**
  * Calculates liquidation amount and corresponding collateral amount
  * @param supplyAmount user total supply worth amount
@@ -463,6 +508,8 @@ const deductLiquidationBonus = (value: bigint, bonus: bigint, scale: bigint): bi
  * @param assetsDataDict assets data collection
  * @param assetsConfigDict assets config collection
  * @param pricesDict assets prices
+ * @returns maxLiquidationAmount max loan asset amount to transfer
+ * @returns maxCollateralRewardAmount max collateral reward amount, which can be obtained
  */
 export function calculateLiquidationAmounts(
     loanAsset: PoolAssetConfig,
@@ -475,39 +522,37 @@ export function calculateLiquidationAmounts(
     assetsConfigDict: ExtendedAssetsConfig,
     masterConstants: MasterConstants
 ): {
-    liquidationAmount: bigint, collateralAmount: bigint,
-    calculateLoanByCollateral?: (amount: bigint) => bigint,
-    calculateCollateralByLoan?: (amount: bigint) => bigint,
+    maxLiquidationAmount: bigint, maxCollateralRewardAmount: bigint
 } {
-    const loan = getAssetData(loanAsset.assetId,
+    const loanInfo = prepareAssetInfo(loanAsset.assetId,
         assetsConfigDict, assetsDataDict, pricesDict, principalsDict, masterConstants
     );
-    const collateral = getAssetData(collateralAsset.assetId,
+    const collateralInfo = prepareAssetInfo(collateralAsset.assetId,
         assetsConfigDict, assetsDataDict, pricesDict, principalsDict, masterConstants
     );
 
-    if (!loan.ok || !collateral.ok ||
-        loan.present.type !== BalanceType.borrow ||
-        collateral.present.type !== BalanceType.supply) {
-        return { liquidationAmount: 0n, collateralAmount: 0n };
+    if (!loanInfo.ok || !collateralInfo.ok ||
+        loanInfo.present.type !== BalanceType.borrow ||
+        collateralInfo.present.type !== BalanceType.supply) {
+        return { maxLiquidationAmount: 0n, maxCollateralRewardAmount: 0n };
     }
 
     const liquidationBonusScale = masterConstants.ASSET_LIQUIDATION_BONUS_SCALE;
     const collateralThreshold = masterConstants.COLLATERAL_WORTH_THRESHOLD;
     const reserveFactorScale = masterConstants.ASSET_RESERVE_FACTOR_SCALE;
-    const reserveFactor = loan.liquidationReserveFactor;
-    const liquidationBonus = collateral.liquidationBonus;
+    const reserveFactor = loanInfo.liquidationReserveFactor;
+    const liquidationBonus = collateralInfo.liquidationBonus;
 
-    let allowedCollateralAmount = collateral.balance;
-    const is_bad_debt = isBadDebt(supplyAmount, borrowAmount, liquidationBonus, masterConstants);
-    if (!is_bad_debt) {
-        BigMath.max(collateral.balance / 2n, BigMath.min(collateral.balance, collateralThreshold));
+    let allowedCollateralAmount = collateralInfo.balance;
+    const _isBadDebt = isBadDebt(supplyAmount, borrowAmount, liquidationBonus, masterConstants);
+    if (!_isBadDebt) {
+        BigMath.max(collateralInfo.balance / 2n, BigMath.min(collateralInfo.balance, collateralThreshold));
     }
 
     const baseLiquidationWorth = BigMath.min(
-        toAssetWorth(loan.balance, loan.scale, loan.price),
+        toAssetWorth(loanInfo.balance, loanInfo.scale, loanInfo.price),
         deductLiquidationBonus(
-            toAssetWorth(allowedCollateralAmount, collateral.scale, collateral.price),
+            toAssetWorth(allowedCollateralAmount, collateralInfo.scale, collateralInfo.price),
             liquidationBonus,
             liquidationBonusScale
         )
@@ -515,41 +560,33 @@ export function calculateLiquidationAmounts(
 
     // calculate collateral amount
     let collateralAmount = addLiquidationBonus(baseLiquidationWorth, liquidationBonus, liquidationBonusScale);
-    collateralAmount = toAssetAmount(collateralAmount, collateral.scale, collateral.price);
+    collateralAmount = toAssetAmount(collateralAmount, collateralInfo.scale, collateralInfo.price);
 
     // calculate loan amount
-    let liquidationAmount = toAssetAmount(baseLiquidationWorth, loan.scale, loan.price);
+    let liquidationAmount = toAssetAmount(baseLiquidationWorth, loanInfo.scale, loanInfo.price);
     liquidationAmount = addReserve(liquidationAmount, reserveFactor, reserveFactorScale);
 
-    const calculateLoanByCollateral = (amount: bigint): bigint => {
-        if (amount < 0n) throw (`Invalid collateral amount`);
-        if (amount > collateralAmount) return collateralAmount;
-
-        let value = toAssetWorth(amount, collateral.scale, collateral.price);
-        value = deductLiquidationBonus(value, liquidationBonus, liquidationBonusScale);
-        value = addReserve(value, reserveFactor, reserveFactorScale);
-        const loanAmount = toAssetAmount(value, loan.scale, loan.price);
-        return loanAmount + loan.dust;
-    };
-
-    const calculateCollateralByLoan = (amount: bigint) => {
-        if (amount < 0n) throw (`Invalid loan amount: ${amount}`);
-        if (amount > liquidationAmount) return collateralAmount;
-
-        let value = toAssetWorth(amount, loan.scale, loan.price);
-        value = deductReserve(value, reserveFactor, reserveFactorScale);
-        value = addLiquidationBonus(value, liquidationBonus, liquidationBonusScale);
-        const maxCollateralAmount = toAssetAmount(value, loan.scale, loan.price);
-        const res = maxCollateralAmount - collateral.dust;
-        return ((res > 0n) ? res : 0n);
-    };
-
     return {
-        liquidationAmount: liquidationAmount + loan.dust,
-        collateralAmount,
-        calculateLoanByCollateral,
-        calculateCollateralByLoan
+        maxLiquidationAmount: liquidationAmount,
+        maxCollateralRewardAmount: collateralAmount
     };
+}
+
+/**
+ * This function shows how to calculate min collateral amount value.
+ * when liquidator has not enough of loan asset to cover the full loan.
+ * @param transferredAmount amount of loan asset liquidator want to transfer.
+ * @param maxLiquidationAmount max liquidation amount value calculated.
+ * @param maxCollateralReward max collateral reward amount calculated.
+ * @returns minCollateralAmount value for safe liquidation.
+ */
+export function calculateMinCollateralByTransferredAmount(
+    transferredAmount: bigint, maxLiquidationAmount: bigint, maxCollateralReward: bigint
+) {
+    if (maxLiquidationAmount === 0n) {
+        return 0n;
+    }
+    return maxCollateralReward * transferredAmount / maxLiquidationAmount;
 }
 
 /**
