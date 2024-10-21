@@ -20,6 +20,7 @@ export class EvaaUser implements Contract {
     /**
      * Create user contract wrapper from address
      * @param address user contract address
+     * @param poolConfig pool config
      */
     static createFromAddress(address: Address, poolConfig: PoolConfig = MAINNET_POOL_CONFIG) {
         return new EvaaUser(address, poolConfig);
@@ -34,6 +35,7 @@ export class EvaaUser implements Contract {
         provider: ContractProvider,
         assetsData: ExtendedAssetsData,
         assetsConfig: ExtendedAssetsConfig,
+        applyDust: boolean = false
     ) {
         const state = (await provider.getState()).state;
         if (state.type === 'active') {
@@ -41,7 +43,8 @@ export class EvaaUser implements Contract {
                 state.data!.toString('base64'),
                 assetsData,
                 assetsConfig,
-                this.poolConfig
+                this.poolConfig,
+                applyDust
             );
             this.lastSync = Math.floor(Date.now() / 1000);
         } else {
@@ -96,6 +99,7 @@ export class EvaaUser implements Contract {
         assetsData: ExtendedAssetsData,
         assetsConfig: ExtendedAssetsConfig,
         prices: Dictionary<bigint, bigint>,
+        applyDust: boolean = false
     ) {
         const state = (await provider.getState()).state;
         if (state.type === 'active') {
@@ -103,9 +107,10 @@ export class EvaaUser implements Contract {
                 state.data!.toString('base64'),
                 assetsData,
                 assetsConfig,
-                this.poolConfig
+                this.poolConfig,
+                applyDust
             );
-            this._data = parseUserData(this._liteData, assetsData, assetsConfig, prices, this.poolConfig);
+            this._data = parseUserData(this._liteData, assetsData, assetsConfig, prices, this.poolConfig, applyDust);
             this.lastSync = Math.floor(Date.now() / 1000);
         } else {
             this._data = { type: 'inactive' };

@@ -46,7 +46,7 @@ export const MAINNET_LP_POOL_CONFIG: PoolConfig = {
         USDT_MAINNET,
         TONUSDT_DEDUST_MAINNET,
         TON_STORM_MAINNET,
-        USDT_STORM_MAINNET,
+        USDT_STORM_MAINNET
     ],
     lendingCode: LENDING_CODE
 };

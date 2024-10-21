@@ -3,6 +3,20 @@ import { PoolAssetConfig } from "../types/Master";
 import { sha256Hash } from "../utils/sha256BigInt";
 import { JETTON_WALLET_STANDART_CODE, JETTON_WALLET_STANDART_CODE_TESTNET, NULL_ADDRESS } from "./general";
 
+export const ASSET_ID = {
+    TON:            sha256Hash('TON'),
+    USDT:           sha256Hash('USDT'),
+    jUSDT:          sha256Hash('jUSDT'),
+    jUSDC:          sha256Hash('jUSDC'),
+    stTON:          sha256Hash('stTON'),
+    tsTON:          sha256Hash('tsTON'),
+    TONUSDT_DEDUST: sha256Hash('TONUSDT_DEDUST'),
+    TONUSDT_STONFI: sha256Hash('TONUSDT_STONFI'),
+    TON_STORM:      sha256Hash('TON_STORM'),
+    USDT_STORM:     sha256Hash('USDT_STORM'),
+    time:           sha256Hash('time'),
+};
+
 export const UNDEFINED_ASSET: PoolAssetConfig = { 
     name: 'undefined_asset',
     assetId: -1n,
@@ -12,7 +26,7 @@ export const UNDEFINED_ASSET: PoolAssetConfig = {
 
 export const TON_MAINNET: PoolAssetConfig = { 
     name: 'TON',
-    assetId: sha256Hash('TON'),
+    assetId: ASSET_ID.TON,
     jettonMasterAddress: NULL_ADDRESS,  // fake
     jettonWalletCode: Cell.EMPTY 
 }
@@ -20,21 +34,21 @@ export const TON_TESTNET = TON_MAINNET;
 
 export const JUSDT_MAINNET: PoolAssetConfig = { 
     name: 'jUSDT',
-    assetId: sha256Hash('jUSDT'), 
+    assetId: ASSET_ID.jUSDT,
     jettonMasterAddress: Address.parse('EQBynBO23ywHy_CgarY9NK9FTz0yDsG82PtcbSTQgGoXwiuA'),
     jettonWalletCode: JETTON_WALLET_STANDART_CODE
 }
 
 export const JUSDC_MAINNET: PoolAssetConfig = { 
     name: 'jUSDC',
-    assetId: sha256Hash('jUSDC'), 
+    assetId: ASSET_ID.jUSDC,
     jettonMasterAddress: Address.parse('EQB-MPwrd1G6WKNkLz_VnV6WqBDd142KMQv-g1O-8QUA3728'),
     jettonWalletCode: JETTON_WALLET_STANDART_CODE
 }
 
 export const STTON_MAINNET: PoolAssetConfig = { 
     name: 'stTON',
-    assetId: sha256Hash('stTON'), 
+    assetId: ASSET_ID.stTON,
     jettonMasterAddress: Address.parse('EQDNhy-nxYFgUqzfUzImBEP67JqsyMIcyk2S5_RwNNEYku0k'),
     jettonWalletCode: Cell.fromBase64(
         'te6cckECEgEAA2IAART/APSkE/S88sgLAQIBYgIDAgLMBAUAG6D2BdqJofQB9IH0gahhAgHUBgcCASAJCgHPCDHAJJfBOAB0NMDAXGwlRNfA/AN4PpA+kAx+gAxcdch+gAx+gAwc6m0AALTHyGCEA+KfqW6lTE0WfAK4CGCEBeNRRm6ljFERAPwC+AhghBZXwe8upUxNFnwDOAUXwTABOMCMIQP8vCAIABE+kQwwADy4U2AAfO1E0PoA+kD6QNQwECNfAwGCCJiWgKFtgBByIm6zIJFxkXDiA8jLBVAGzxZQBPoCy2oDk1jMAZEw4gHJAfsAAgFYCwwCAUgQEQHxAPTP/oA+kAh8AHtRND6APpA+kDUMFE2oVIqxwXy4sEowv/y4sJUNEJwVCATVBQDyFAE+gJYzxYBzxbMySLIywES9AD0AMsAySD5AHB0yMsCygfL/8nQBPpA9AQx+gAg10nCAPLixHeAGMjLBVAIzxZw+gIXy2sTzIA0C9ztRND6APpA+kDUMAjTP/oAUVGgBfpA+kBTW8cFVHNtcFQgE1QUA8hQBPoCWM8WAc8WzMkiyMsBEvQA9ADLAMn5AHB0yMsCygfL/8nQUA3HBRyx8uLDCvoAUaihggiYloBmtgihggjk4cCgGKEnlxBJEDg3XwTjDSXXCwGAODwCeghAXjUUZyMsfGcs/UAf6AiLPFlAGzxYl+gJQA88WyVAFzCORcpFx4lAIqBOgggpiWgCgFLzy4sUEyYBA+wAQI8hQBPoCWM8WAc8WzMntVABwUnmgGKGCEHNi0JzIyx9SMMs/WPoCUAfPFlAHzxbJcYAQyMsFJM8WUAb6AhXLahTMyXH7ABAkECMAfMMAI8IAsI4hghDVMnbbcIAQyMsFUAjPFlAE+gIWy2oSyx8Syz/JcvsAkzVsIeIDyFAE+gJYzxYBzxbMye1UAMkMO1E0PoA+kD6QNQwBtM/+gAwUUShUjfHBfLiwSXC//LiwgSCC5OHAL7y4sWCEHvdl97Iyx8Uyz9Y+gIhzxbJcYAYyMsFJM8WcPoCy2rMyYBA+wBAE8hQBPoCWM8WAc8WzMntVIACBIAg1yHtRND6APpA+kDUMATTHyGCEBeNRRm6AoIQe92X3roSsfLgyNM/MfoAMBOgUCPIUAT6AljPFgHPFszJ7VSBpMmqD'
@@ -43,7 +57,7 @@ export const STTON_MAINNET: PoolAssetConfig = {
 
 export const TSTON_MAINNET: PoolAssetConfig = { 
     name: 'tsTON',
-    assetId: sha256Hash('tsTON'), 
+    assetId: ASSET_ID.tsTON,
     jettonMasterAddress: Address.parse('EQC98_qAmNEptUtPc7W6xdHh_ZHrBUFpw5Ft_IzNU20QAJav'),
     jettonWalletCode: Cell.fromBase64(
         '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'
@@ -52,7 +66,7 @@ export const TSTON_MAINNET: PoolAssetConfig = {
 
 export const USDT_MAINNET: PoolAssetConfig = { 
     name: 'USDT',
-    assetId: sha256Hash('USDT'), 
+    assetId: ASSET_ID.USDT,
     jettonMasterAddress: Address.parse('EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs'),
     jettonWalletCode: Cell.fromBoc(
         Buffer.from(
@@ -64,21 +78,21 @@ export const USDT_MAINNET: PoolAssetConfig = {
 
 export const JUSDT_TESTNET: PoolAssetConfig = { 
     name: 'jUSDT',
-    assetId: sha256Hash('jUSDT'), 
+    assetId: ASSET_ID.jUSDT,
     jettonMasterAddress: Address.parse('kQBe4gtSQMxM5RpMYLr4ydNY72F8JkY-icZXG1NJcsju8XM7'),
     jettonWalletCode: JETTON_WALLET_STANDART_CODE_TESTNET
 }
 
 export const JUSDC_TESTNET: PoolAssetConfig = { 
     name: 'jUSDC',
-    assetId: sha256Hash('jUSDC'), 
+    assetId: ASSET_ID.jUSDC,
     jettonMasterAddress: Address.parse('kQDaY5yUatYnHei73HBqRX_Ox9LK2XnR7XuCY9MFC2INbfYI'),
     jettonWalletCode: JETTON_WALLET_STANDART_CODE_TESTNET
 }
 
 export const STTON_TESTNET: PoolAssetConfig = { 
     name: 'stTON',
-    assetId: sha256Hash('stTON'), 
+    assetId: ASSET_ID.stTON,
     jettonMasterAddress: Address.parse('kQC3Duw3dg8k98xf5S7Bm7YOWVJ5QW8hm3iLqFfJfa_g9h07'),
     jettonWalletCode: Cell.fromBoc(
         Buffer.from(
@@ -90,7 +104,7 @@ export const STTON_TESTNET: PoolAssetConfig = {
 
 export const TONUSDT_DEDUST_MAINNET: PoolAssetConfig = {
     name: 'TONUSDT_DEDUST',
-    assetId: sha256Hash('TONUSDT_DEDUST'), 
+    assetId: ASSET_ID.TONUSDT_DEDUST,
     jettonMasterAddress: Address.parse('EQA-X_yo3fzzbDbJ_0bzFWKqtRuZFIRa1sJsveZJ1YpViO3r'),
     jettonWalletCode: Cell.fromBoc(
         Buffer.from(
@@ -102,7 +116,7 @@ export const TONUSDT_DEDUST_MAINNET: PoolAssetConfig = {
 
 export const TON_STORM_MAINNET: PoolAssetConfig = { 
     name: 'TON_STORM',
-    assetId: sha256Hash('TON_STORM'), 
+    assetId: ASSET_ID.TON_STORM,
     jettonMasterAddress: Address.parse('EQCNY2AQ3ZDYwJAqx_nzl9i9Xhd_Ex7izKJM6JTxXRnO6n1F'),
     jettonWalletCode: Cell.fromBoc(
         Buffer.from(
@@ -110,11 +124,12 @@ export const TON_STORM_MAINNET: PoolAssetConfig = {
             'hex',
         ),
     )[0],
+
 }
 
 export const USDT_STORM_MAINNET: PoolAssetConfig = { 
     name: 'USDT_STORM',
-    assetId: sha256Hash('USDT_STORM'), 
+    assetId: ASSET_ID.USDT_STORM,
     jettonMasterAddress: Address.parse('EQCup4xxCulCcNwmOocM9HtDYPU8xe0449tQLp6a-5BLEegW'),
     jettonWalletCode: Cell.fromBoc(
         Buffer.from(

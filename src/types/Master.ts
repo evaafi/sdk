@@ -8,7 +8,10 @@ export type MasterConstants = {
     ASSET_LIQUIDATION_RESERVE_FACTOR_SCALE: bigint,
     ASSET_LIQUIDATION_THRESHOLD_SCALE: bigint,
     ASSET_LIQUIDATION_BONUS_SCALE: bigint,
-    ASSET_ORIGINATION_FEE_SCALE: bigint
+    ASSET_ORIGINATION_FEE_SCALE: bigint,
+    ASSET_SRATE_SCALE: bigint,
+    ASSET_BRATE_SCALE: bigint,
+    COLLATERAL_WORTH_THRESHOLD: bigint,
 };
 
 export type PoolAssetsConfig = PoolAssetConfig[];

@@ -74,6 +74,14 @@ export type UserRewards = {
     trackingAccured: bigint;
 };
 
+export type HealthParamsArgs = {
+    assetsData: ExtendedAssetsData;
+    assetsConfig: ExtendedAssetsConfig;
+    principals: Dictionary<bigint, bigint>;
+    prices: Dictionary<bigint, bigint>;
+    poolConfig: PoolConfig;
+}
+
 export enum BalanceChangeType {
     Borrow = 0,
     Repay = 1,

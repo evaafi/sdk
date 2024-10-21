@@ -347,7 +347,10 @@ export function parseUserData(
             : Number(BigInt(1e9) - (availableToBorrow * BigInt(1e9)) / (borrowBalance + availableToBorrow)) / 1e7;
 
     const liquidationData = calculateLiquidationData(assetsConfig, assetsData, userLiteData.principals, prices, poolConfig);
-    const healthFactor = 1 - Number(liquidationData.totalDebt) / Number(liquidationData.totalLimit);
+    let healthFactor = 1;
+    if (liquidationData.totalLimit != 0n) {
+        healthFactor = 1 - Number(liquidationData.totalDebt) / Number(liquidationData.totalLimit);
+    } 
 
     return {
         ...userLiteData,
