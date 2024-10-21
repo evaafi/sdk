@@ -13,11 +13,14 @@ export {
     presentValue,
     calculateLiquidationData,
     predictHealthFactor,
-    calculateHealthParams,
+    calculateHealthParams
+} from './api/math';
+
+export {
     calculateLiquidationAmounts,
     calculateMinCollateralByTransferredAmount,
-    isBadDebt,
     isLiquidatable,
+    isBadDebt,
     addReserve,
     deductReserve,
     addLiquidationBonus,
@@ -27,8 +30,12 @@ export {
     PreparedAssetInfo,
     PreparedAssetInfoResult,
     prepareAssetInfo,
-
-} from './api/math';
+    findAssetById,
+    selectGreatestAssets,
+    calculateAssetsValues,
+    AssetsValues,
+    SelectedAssets,
+} from './api/liquidation';
 
 // Parser
 export { createAssetData, createAssetConfig, parseMasterData, parseUserData, parseUserLiteData } from './api/parser';
