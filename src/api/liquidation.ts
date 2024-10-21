@@ -225,9 +225,6 @@ export function isBadDebt(totalSupply: bigint, totalBorrow: bigint,
     return totalSupply * masterConstants.ASSET_LIQUIDATION_BONUS_SCALE < totalBorrow * liquidationBonus;
 }
 
-
-const ACCURACY_SCALE = 1_000_000n;
-
 /**
  * Adds reserve to liquidation amount
  * @param amount raw liquidation amount
@@ -236,7 +233,7 @@ const ACCURACY_SCALE = 1_000_000n;
  * @returns liquidation amount with reserve
  */
 export function addReserve(amount: bigint, reserveFactor: bigint, factorScale: bigint): bigint {
-    return amount * factorScale * ACCURACY_SCALE / (factorScale - reserveFactor) / ACCURACY_SCALE;
+    return amount * factorScale / (factorScale - reserveFactor);
 }
 
 /**
@@ -247,7 +244,7 @@ export function addReserve(amount: bigint, reserveFactor: bigint, factorScale: b
  * @returns liquidation amount without reserve
  */
 export function deductReserve(amount: bigint, reserveFactor: bigint, reserveFactorScale: bigint): bigint {
-    return amount * (reserveFactorScale - reserveFactor) * ACCURACY_SCALE / reserveFactorScale / ACCURACY_SCALE;
+    return amount * (reserveFactorScale - reserveFactor) / reserveFactorScale;
 }
 
 /**
