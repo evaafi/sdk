@@ -40,7 +40,6 @@ export function createAssetData(): DictionaryValue<AssetData> {
             buidler.storeUint(src.balance, 64);
             buidler.storeUint(src.trackingSupplyIndex, 64);
             buidler.storeUint(src.trackingBorrowIndex, 64);
-
             if (src.awaitedSupply) {
                 buidler.storeUint(src.awaitedSupply, 64);
             }
@@ -54,7 +53,6 @@ export function createAssetData(): DictionaryValue<AssetData> {
             const balance = BigInt(src.loadInt(64));
             const trackingSupplyIndex = BigInt(src.loadUint(64));
             const trackingBorrowIndex = BigInt(src.loadUint(64));
-            
             let awaitedSupply: bigint | undefined = undefined;
             if (src.remainingBits == 64) {
                 awaitedSupply = BigInt(src.loadUint(64));   
@@ -332,13 +330,13 @@ export function parseUserData(
         if (balance.type === BalanceType.supply) {
             withdrawalLimits.set(
                 asset.assetId,
-                calculateMaximumWithdrawAmount(assetsConfig, assetsData, userLiteData.principals, prices, masterConstants, asset.assetId)
+                bigIntMin(calculateMaximumWithdrawAmount(assetsConfig, assetsData, userLiteData.principals, prices, masterConstants, asset.assetId), assetData.balance)
             );
         }
 
         borrowLimits.set(
             asset.assetId,
-            bigIntMin((availableToBorrow * 10n ** assetConfig.decimals) / prices.get(asset.assetId)!, assetData.balance),
+            bigIntMax(0n, bigIntMin((availableToBorrow * 10n ** assetConfig.decimals) / prices.get(asset.assetId)!, assetData.balance, assetData.totalSupply - assetData.totalBorrow)),
         );
     }
 
@@ -349,7 +347,10 @@ export function parseUserData(
             : Number(BigInt(1e9) - (availableToBorrow * BigInt(1e9)) / (borrowBalance + availableToBorrow)) / 1e7;
 
     const liquidationData = calculateLiquidationData(assetsConfig, assetsData, userLiteData.principals, prices, poolConfig);
-    const healthFactor = 1 - Number(liquidationData.totalDebt) / Number(liquidationData.totalLimit);
+    let healthFactor = 1;
+    if (liquidationData.totalLimit != 0n) {
+        healthFactor = 1 - Number(liquidationData.totalDebt) / Number(liquidationData.totalLimit);
+    } 
 
     return {
         ...userLiteData,
