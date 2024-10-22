@@ -13,7 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@evaafi/sdkv6": "file:evaafi-sdkv6-0.0.4a.tgz",
+    "@evaafi/sdk": "file:./evaafi-sdk-0.6.1.tgz",
     "@ton/crypto": "^3.2.0",
     "@ton/ton": "^15.0.0",
     "@types/qrcode-terminal": "^0.12.2",

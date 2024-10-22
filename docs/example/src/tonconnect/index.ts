@@ -1,5 +1,5 @@
 import { getConnector } from './connector';
-import { Evaa, FEES, getLastSentBoc, getTonConnectSender, TESTNET_POOL_CONFIG, TON_MAINNET } from '@evaafi/sdkv6';
+import { Evaa, FEES, getLastSentBoc, getTonConnectSender, TESTNET_POOL_CONFIG, TON_MAINNET } from '@evaafi/sdk';
 import { Cell, toNano, TonClient } from '@ton/ton';
 import { configDotenv } from 'dotenv';
 import { Address } from '@ton/core';

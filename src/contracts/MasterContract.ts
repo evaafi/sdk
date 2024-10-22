@@ -20,7 +20,7 @@ import { parseMasterData } from '../api/parser';
 import { MasterData, PoolAssetConfig, PoolConfig} from '../types/Master';
 import { JettonWallet } from './JettonWallet';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
-import { getPrices, isTonAsset, MAINNET_POOL_CONFIG } from '..';
+import { getPrices, isTonAsset, isTonAssetId, MAINNET_POOL_CONFIG } from '..';
 
 /**
  * Parameters for the Evaa contract
@@ -115,7 +115,7 @@ export type LiquidationParameters = LiquidationBaseData & {
  */
 export class Evaa implements Contract {
     readonly address: Address;
-    private poolConfig: PoolConfig;
+    private _poolConfig: PoolConfig;
     private readonly debug?: boolean;
     private _data?: MasterData;
     private lastSync = 0;
@@ -125,9 +125,16 @@ export class Evaa implements Contract {
      * @param parameters Evaa contract parameters
      */
     constructor(parameters?: EvaaParameters) {
-        this.poolConfig = parameters?.poolConfig ?? MAINNET_POOL_CONFIG;
-        this.address = this.poolConfig.masterAddress;
+        this._poolConfig = parameters?.poolConfig ?? MAINNET_POOL_CONFIG;
+        this.address = this._poolConfig.masterAddress;
         this.debug = parameters?.debug;
+    }
+
+    /**
+     * Returns pool config
+     */
+    get poolConfig(): PoolConfig {
+        return this._poolConfig;
     }
 
     /**
@@ -269,7 +276,7 @@ export class Evaa implements Contract {
      * @returns user contract
      */
     openUserContract(userAddress: Address): EvaaUser {
-        return EvaaUser.createFromAddress(this.calculateUserSCAddr(userAddress, this.poolConfig.lendingCode), this.poolConfig);
+        return EvaaUser.createFromAddress(this.calculateUserSCAddr(userAddress, this._poolConfig.lendingCode), this._poolConfig);
     }
 
     getOpenedUserContract(provider: ContractProvider, userAddress: Address): OpenedContract<EvaaUser> {
@@ -328,7 +335,7 @@ export class Evaa implements Contract {
     ) {
         const message = this.createLiquidationMessage(parameters);
 
-        if (!isTonAsset(parameters.asset)) {
+        if (!isTonAssetId(parameters.loanAsset)) {
             if (!via.address) {
                 throw Error('Via address is required for jetton liquidation');
             }
@@ -374,10 +381,10 @@ export class Evaa implements Contract {
     async getSync(provider: ContractProvider) {
         const state = (await provider.getState()).state;
         if (state.type === 'active') {
-            this._data = parseMasterData(state.data!.toString('base64'), this.poolConfig.poolAssetsConfig, this.poolConfig.masterConstants);
-            if (this._data.upgradeConfig.masterCodeVersion !== this.poolConfig.masterVersion) {
+            this._data = parseMasterData(state.data!.toString('base64'), this._poolConfig.poolAssetsConfig, this._poolConfig.masterConstants);
+            if (this._data.upgradeConfig.masterCodeVersion !== this._poolConfig.masterVersion) {
                 throw Error(
-                    `Outdated SDK pool version. It supports only master code version ${this.poolConfig.masterVersion}, but the current master code version is ${this._data.upgradeConfig.masterCodeVersion}`,
+                    `Outdated SDK pool version. It supports only master code version ${this._poolConfig.masterVersion}, but the current master code version is ${this._data.upgradeConfig.masterCodeVersion}`,
                 );
             }
             this.lastSync = Math.floor(Date.now() / 1000);
@@ -388,9 +395,9 @@ export class Evaa implements Contract {
 
     async getPrices(provider: ContractProvider, endpoints?: string[]) {
         if ((endpoints?.length ?? 0) > 0) {
-            return await getPrices(endpoints, this.poolConfig);
+            return await getPrices(endpoints, this._poolConfig);
         } else {
-            return await getPrices(undefined, this.poolConfig);
+            return await getPrices(undefined, this._poolConfig);
         }
     }
 }

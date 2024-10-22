@@ -1,6 +1,6 @@
 {
   "name": "@evaafi/sdk",
-  "version": "0.6.0a",
+  "version": "0.6.1",
   "description": "The EVAA SDK is designed to easily integrate with the EVAA lending protocol on TON blockchain.",
   "main": "dist/index.js",
   "files": [
@@ -20,6 +20,7 @@
   "devDependencies": {
     "@orbs-network/ton-access": "^2.3.3",
     "@ton/core": "0.56.0",
+    "@ton/crypto": "^3.3.0",
     "@tonconnect/sdk": "^3.0.5",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.10.4",

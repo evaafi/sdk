@@ -20,6 +20,7 @@ export class EvaaUser implements Contract {
     /**
      * Create user contract wrapper from address
      * @param address user contract address
+     * @param poolConfig pool config
      */
     static createFromAddress(address: Address, poolConfig: PoolConfig = MAINNET_POOL_CONFIG) {
         return new EvaaUser(address, poolConfig);
