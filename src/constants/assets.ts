@@ -14,7 +14,6 @@ export const ASSET_ID = {
     TONUSDT_STONFI: sha256Hash('TONUSDT_STONFI'),
     TON_STORM:      sha256Hash('TON_STORM'),
     USDT_STORM:     sha256Hash('USDT_STORM'),
-    time:           sha256Hash('time'),
 };
 
 export const UNDEFINED_ASSET: PoolAssetConfig = { 

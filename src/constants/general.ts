@@ -2,10 +2,13 @@ import { Address, Cell, toNano } from '@ton/core';
 import { sha256Hash } from '../utils/sha256BigInt';
 import { OracleNFT } from '../types/Master';
 
+
+const ASSET_PRICE_SCALE = BigInt(1e9);
+
 export const MASTER_CONSTANTS = {
     FACTOR_SCALE: BigInt(1e12),
     ASSET_COEFFICIENT_SCALE: 10000n,
-    ASSET_PRICE_SCALE: BigInt(1e9),
+    ASSET_PRICE_SCALE,
     ASSET_RESERVE_FACTOR_SCALE: 10000n,
     ASSET_LIQUIDATION_RESERVE_FACTOR_SCALE: 10000n,
     ASSET_ORIGINATION_FEE_SCALE: BigInt(1e9),
@@ -13,7 +16,7 @@ export const MASTER_CONSTANTS = {
     ASSET_LIQUIDATION_BONUS_SCALE: 10_000n,
     ASSET_SRATE_SCALE: BigInt(1e12),
     ASSET_BRATE_SCALE: BigInt(1e12),
-    COLLATERAL_WORTH_THRESHOLD: BigInt(1e11),
+    COLLATERAL_WORTH_THRESHOLD: 100n * ASSET_PRICE_SCALE, // literally 100$
 };
 
 export const NULL_ADDRESS = Address.parse('UQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJKZ');
