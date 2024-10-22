@@ -165,33 +165,32 @@ export function calculateLiquidationAmounts(
     }
 
     const liquidationBonusScale = masterConstants.ASSET_LIQUIDATION_BONUS_SCALE;
-    const collateralThreshold = masterConstants.COLLATERAL_WORTH_THRESHOLD;
+    const collateralThreshold = masterConstants.COLLATERAL_WORTH_THRESHOLD; // basically 100$ worth (100*10^9)
     const reserveFactorScale = masterConstants.ASSET_RESERVE_FACTOR_SCALE;
     const reserveFactor = loanInfo.liquidationReserveFactor;
     const liquidationBonus = collateralInfo.liquidationBonus;
 
-    let allowedCollateralAmount = collateralInfo.balance;
+    let allowedCollateralValue = toAssetWorth(collateralInfo.balance, collateralInfo.scale, collateralInfo.price);
+
     const _isBadDebt = isBadDebt(supplyAmount, borrowAmount, liquidationBonus, masterConstants);
     if (!_isBadDebt) {
-        BigMath.max(collateralInfo.balance / 2n, BigMath.min(collateralInfo.balance, collateralThreshold));
+        allowedCollateralValue = BigMath.min(allowedCollateralValue, BigMath.max(allowedCollateralValue / 2n, collateralThreshold));
     }
 
-    const baseLiquidationWorth = BigMath.min(
-        toAssetWorth(loanInfo.balance, loanInfo.scale, loanInfo.price),
-        deductLiquidationBonus(
-            toAssetWorth(allowedCollateralAmount, collateralInfo.scale, collateralInfo.price),
-            liquidationBonus,
-            liquidationBonusScale
-        )
+    const loanValue = toAssetWorth(loanInfo.balance, loanInfo.scale, loanInfo.price);
+    const baseLiquidationValue = BigMath.min(
+        // deductReserve(loanValue, reserveFactor, reserveFactorScale),
+        loanValue,
+        deductLiquidationBonus(allowedCollateralValue, liquidationBonus, liquidationBonusScale)
     );
 
     // calculate collateral amount
-    let collateralAmount = addLiquidationBonus(baseLiquidationWorth, liquidationBonus, liquidationBonusScale);
+    let collateralAmount = addLiquidationBonus(baseLiquidationValue, liquidationBonus, liquidationBonusScale);
     collateralAmount = toAssetAmount(collateralAmount, collateralInfo.scale, collateralInfo.price);
 
     // calculate loan amount
-    let liquidationAmount = toAssetAmount(baseLiquidationWorth, loanInfo.scale, loanInfo.price);
-    liquidationAmount = addReserve(liquidationAmount, reserveFactor, reserveFactorScale);
+    let liquidationAmount = addReserve(baseLiquidationValue, reserveFactor, reserveFactorScale);
+    liquidationAmount = toAssetAmount(liquidationAmount, loanInfo.scale, loanInfo.price);
 
     return {
         maxLiquidationAmount: liquidationAmount,

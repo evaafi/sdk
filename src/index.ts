@@ -13,7 +13,8 @@ export {
     presentValue,
     calculateLiquidationData,
     predictHealthFactor,
-    calculateHealthParams
+    calculateHealthParams,
+    BigMath,
 } from './api/math';
 
 export {
