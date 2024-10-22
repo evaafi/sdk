@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.6.1 - 2024-10-22
+### Changed
+- added liquidation.ts with ```findAssetById```, ```calculateAssetsValues```, ```selectGreatestAssets```, ```calculateMinCollateralByTransferredAmount```, ```calculateLiquidationAmounts```, ```isLiquidatable```, ```isBadDebt```, ```addReserve```, ```deductReserve```, ```toAssetAmount```, ```toAssetWorth```, ```addLiquidationBonus```, ```deductLiquidationBonus```, ```PreparedAssetInfo```, ```prepareAssetInfo``` functions required or flexible liquidations calculation.
+- user. ```getSync``` and ```getSyncLite``` new argument ```applyDust``` by default is ```false```;
+- updated sdk usage example
+### Fixed
+
+
 ## 0.6.0a - 2024-10-14
 ### Changed
 - user. ```getSync``` and ```getSyncLite``` new argument ```applyDust``` by default is ```false```

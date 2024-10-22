@@ -1,7 +1,7 @@
 import { configDotenv } from 'dotenv';
 import { mnemonicToWalletKey } from '@ton/crypto';
 import { Cell, toNano, TonClient, WalletContractV5R1 } from '@ton/ton';
-import { Evaa, FEES, getPrices, JUSDC_MAINNET, JUSDC_TESTNET, MAINNET_POOL_CONFIG, STTON_TESTNET, TESTNET_POOL_CONFIG } from '@evaafi/sdkv6';
+import { Evaa, FEES, getPrices, JUSDC_MAINNET, JUSDC_TESTNET, MAINNET_POOL_CONFIG, STTON_TESTNET, TESTNET_POOL_CONFIG } from '@evaafi/sdk';
 
 async function main() {
     configDotenv();

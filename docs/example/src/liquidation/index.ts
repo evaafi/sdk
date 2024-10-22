@@ -1,7 +1,7 @@
 import { configDotenv } from 'dotenv';
 import { mnemonicToWalletKey } from '@ton/crypto';
 import { Cell, TonClient, WalletContractV4 } from '@ton/ton';
-import { Evaa, FEES, getPrices, TESTNET_POOL_CONFIG, TON_MAINNET, TONUSDT_DEDUST_MAINNET } from '@evaafi/sdkv6';
+import { Evaa, FEES, getPrices, TESTNET_POOL_CONFIG, TON_MAINNET, TONUSDT_DEDUST_MAINNET } from '@evaafi/sdk';
 
 async function main() {
     configDotenv();
@@ -41,7 +41,8 @@ async function main() {
                 forwardAmount: FEES.LIQUIDATION_JETTON_FWD,
                 payload: Cell.EMPTY,
                 asset: TON_MAINNET,
-                responseAddress: wallet.address
+                responseAddress: wallet.address,
+                payloadForwardAmount: 0n,
             });
         } else {
             await evaa.sendLiquidation(wallet.sender(keyPair.secretKey), FEES.LIQUIDATION_JETTON, {
@@ -53,7 +54,8 @@ async function main() {
                 responseAddress: wallet.address,
                 forwardAmount: FEES.LIQUIDATION_JETTON_FWD,
                 payload: Cell.EMPTY,
-                asset: TON_MAINNET
+                asset: TON_MAINNET,
+                payloadForwardAmount: 0n,
             });
         }
     }

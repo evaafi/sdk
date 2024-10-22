@@ -1,6 +1,6 @@
 import { configDotenv } from 'dotenv';
 import { SendMode, toNano, TonClient, WalletContractV5R1 } from '@ton/ton';
-import { Evaa, FEES, TESTNET_POOL_CONFIG, TON_TESTNET } from '@evaafi/sdkv6';
+import { Evaa, FEES, TESTNET_POOL_CONFIG, TON_TESTNET } from '@evaafi/sdk';
 import { mnemonicToWalletKey } from '@ton/crypto';
 import { beginCell, Cell, external, internal, storeMessage } from '@ton/core';
 
