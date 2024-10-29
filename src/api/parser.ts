@@ -205,7 +205,7 @@ export function parseUserLiteData(
     assetsData: ExtendedAssetsData,
     assetsConfig: ExtendedAssetsConfig,
     poolConfig: PoolConfig,
-    applyDust: boolean = true
+    applyDust: boolean = false
 ): UserLiteData {
     const poolAssetsConfig = poolConfig.poolAssetsConfig;
     const masterConstants = poolConfig.masterConstants;
@@ -283,7 +283,7 @@ export function parseUserData(
     assetsConfig: ExtendedAssetsConfig,
     prices: Dictionary<bigint, bigint>,
     poolConfig: PoolConfig,
-    applyDust: boolean = true
+    applyDust: boolean = false
 ): UserData {
     const poolAssetsConfig = poolConfig.poolAssetsConfig;
     const masterConstants = poolConfig.masterConstants;
