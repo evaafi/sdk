@@ -25,7 +25,7 @@ export const TESTNET_POOL_CONFIG: PoolConfig = {
     masterVersion: TESTNET_VERSION,
     masterConstants: MASTER_CONSTANTS,
     oracles: ORACLES_TESTNET,
-    minimalOracles: 5,
+    minimalOracles: 3,
     poolAssetsConfig: [
         TON_MAINNET,
         JUSDT_TESTNET,

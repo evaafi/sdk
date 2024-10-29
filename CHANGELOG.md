@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.6.1-a - 2024-10-29
+### Changed
+- updated `EVAA_LP_MAINNET_VERSION` to `3`
+- `awaitedSupply` is always defined
+### Fixed
+- `applyDust` is `false` by default in `parseUserLiteData` and `parseUserData`
+- `minimalOracles` is `3` in all pools
+
+
 ## 0.6.1 - 2024-10-22
 ### Changed
 - added liquidation.ts with ```findAssetById```, ```calculateAssetsValues```, ```selectGreatestAssets```, ```calculateMinCollateralByTransferredAmount```, ```calculateLiquidationAmounts```, ```isLiquidatable```, ```isBadDebt```, ```addReserve```, ```deductReserve```, ```toAssetAmount```, ```toAssetWorth```, ```addLiquidationBonus```, ```deductLiquidationBonus```, ```PreparedAssetInfo```, ```prepareAssetInfo``` functions required or flexible liquidations calculation.
