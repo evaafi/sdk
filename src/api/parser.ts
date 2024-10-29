@@ -40,9 +40,7 @@ export function createAssetData(): DictionaryValue<AssetData> {
             buidler.storeUint(src.balance, 64);
             buidler.storeUint(src.trackingSupplyIndex, 64);
             buidler.storeUint(src.trackingBorrowIndex, 64);
-            if (src.awaitedSupply) {
-                buidler.storeUint(src.awaitedSupply, 64);
-            }
+            buidler.storeUint(src.awaitedSupply, 64);
         },
         parse: (src: Slice) => {
             const sRate = BigInt(src.loadInt(64));
@@ -53,10 +51,7 @@ export function createAssetData(): DictionaryValue<AssetData> {
             const balance = BigInt(src.loadInt(64));
             const trackingSupplyIndex = BigInt(src.loadUint(64));
             const trackingBorrowIndex = BigInt(src.loadUint(64));
-            let awaitedSupply: bigint | undefined = undefined;
-            if (src.remainingBits == 64) {
-                awaitedSupply = BigInt(src.loadUint(64));   
-            }
+            const awaitedSupply = BigInt(src.loadUint(64));  
 
             return { sRate, bRate, totalSupply, totalBorrow, lastAccural, balance, trackingSupplyIndex, trackingBorrowIndex, awaitedSupply};
         },
@@ -205,7 +200,7 @@ export function parseUserLiteData(
     assetsData: ExtendedAssetsData,
     assetsConfig: ExtendedAssetsConfig,
     poolConfig: PoolConfig,
-    applyDust: boolean = true
+    applyDust: boolean = false
 ): UserLiteData {
     const poolAssetsConfig = poolConfig.poolAssetsConfig;
     const masterConstants = poolConfig.masterConstants;
@@ -283,7 +278,7 @@ export function parseUserData(
     assetsConfig: ExtendedAssetsConfig,
     prices: Dictionary<bigint, bigint>,
     poolConfig: PoolConfig,
-    applyDust: boolean = true
+    applyDust: boolean = false
 ): UserData {
     const poolAssetsConfig = poolConfig.poolAssetsConfig;
     const masterConstants = poolConfig.masterConstants;
