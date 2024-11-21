@@ -126,7 +126,8 @@ export type AgregatedBalances = {
 
 export type OracleNFT = {
     id: number,
-    address: string
+    address: string,
+    pubkey: Buffer
 }
 
 export type Oracle = {
