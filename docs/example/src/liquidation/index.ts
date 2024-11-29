@@ -1,7 +1,7 @@
 import { configDotenv } from 'dotenv';
 import { mnemonicToWalletKey } from '@ton/crypto';
 import { Cell, TonClient, WalletContractV4 } from '@ton/ton';
-import { Evaa, FEES, getPrices, TESTNET_POOL_CONFIG, TON_MAINNET, TONUSDT_DEDUST_MAINNET } from '@evaafi/sdk';
+import { Evaa, FEES, getPrices, MAINNET_LP_POOL_CONFIG, PricesCollector, TESTNET_POOL_CONFIG, TON_MAINNET, TONUSDT_DEDUST_MAINNET } from '@evaafi/sdk';
 
 async function main() {
     configDotenv();
@@ -20,7 +20,8 @@ async function main() {
         }),
     );
     await evaa.getSync();
-    const priceData = await evaa.getPrices();
+    const pricesCollector = new PricesCollector(TESTNET_POOL_CONFIG);
+    const priceData = await pricesCollector.getPrices();
 
     // get user contract that already opened by same client
     // alternative: openUserContract method, which return only instance of user contract without opening
@@ -28,6 +29,7 @@ async function main() {
     await user.getSync(evaa.data!.assetsData, evaa.data!.assetsConfig, priceData!.dict);
 
     if (user.isLiquidable) {
+        const liquidationPrices = await pricesCollector.getPricesForLiquidate(user.liteData?.principals!);
         const liquidationData = user.liquidationParameters!;
         // if user code version is outdated, includeUserCode should be true for upgrade this contract
         const includeUserCode = evaa.data!.upgradeConfig.userCodeVersion !== user.liteData!.codeVersion;
@@ -36,7 +38,7 @@ async function main() {
                 queryID: 0n,
                 liquidatorAddress: wallet.address,
                 includeUserCode: includeUserCode,
-                priceData: priceData!.dataCell,
+                priceData: liquidationPrices.dataCell,
                 ...liquidationData,
                 forwardAmount: FEES.LIQUIDATION_JETTON_FWD,
                 payload: Cell.EMPTY,
