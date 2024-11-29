@@ -6,7 +6,6 @@ import { DefaultPriceSourcesConfig, PriceSourcesConfig, RawPriceData } from "./T
 import { collectAndFilterPrices, generatePriceSources, getMedianPrice, packAssetsData, packOraclesData, packPrices, verifyPricesSign, verifyPricesTimestamp } from "./utils";
 import { delay } from "../utils/utils";
 import { Prices } from "./Prices";
-import { UserLiteData } from "../types/User";
 import { checkNotInDebtAtAll } from "../api/math";
 
 
@@ -80,20 +79,13 @@ export class PricesCollector {
         }
 
         if (this.#prices.length < this.#poolConfig.minimalOracles) {
-            throw new Error(`Prices are outdated, ${this.#prices.length} of ${this.#poolConfig.minimalOracles}`);  // if still not enough data after retries
+            throw new Error(`Error per updating prices, valid ${this.#prices.length} of ${this.#poolConfig.minimalOracles}`);  // if still not enough data after retries
         }
         const prices = this.#getPricesByAssetList(assets);
         return new Prices(prices.dict, prices.dataCell);
     }
 
     #getPricesByAssetList(assets: PoolAssetsConfig) {
-        /*is there need any sorting?... i think no
-
-        if (acceptedPrices.length != this.#_poolConfig.minimalOracles) {
-            const sortedByTimestamp = acceptedPrices.slice().sort((a, b) => b.timestamp - a.timestamp);
-            const newerPrices = sortedByTimestamp.slice(0, this.#_poolConfig.minimalOracles);
-            acceptedPrices = newerPrices.sort((a, b) => a.oracleId - b.oracleId);
-        }*/
         //console.debug('[getPricesByAssetList] start')
         let pricesFiltered = this.#prices.filter(x => assets.every(asset => x.dict.has(asset.assetId)));
 
@@ -101,9 +93,12 @@ export class PricesCollector {
             throw new Error("Not enough price data");
         }
 
-        if (pricesFiltered.length > this.#poolConfig.minimalOracles && pricesFiltered.length % 2 == 0) {
-            pricesFiltered = pricesFiltered.slice(0, pricesFiltered.length - 1);  // to reduce fees, MINIMAL_ORACLES_NUMBER should be odd
+        if (pricesFiltered.length > this.#poolConfig.minimalOracles) {
+            const sortedByTimestamp = pricesFiltered.slice().sort((a, b) => b.timestamp - a.timestamp);
+            const newerPrices = sortedByTimestamp.slice(0, this.#poolConfig.minimalOracles);
+            pricesFiltered = newerPrices.sort((a, b) => a.oracleId - b.oracleId);
         }
+
         const medianData = assets.map(asset => ({ assetId: asset.assetId, medianPrice: getMedianPrice(this.#prices, asset.assetId)}));
         const packedMedianData = packAssetsData(medianData);
 
@@ -111,8 +106,9 @@ export class PricesCollector {
         const packedOracleData = packOraclesData(oraclesData, assets.map(x => x.assetId));
 
         const dict = Dictionary.empty<bigint, bigint>();
-        medianData.forEach(x => dict.set(x.assetId, x.medianPrice));
-
+        for (const medianDataAsset of medianData) {
+            dict.set(medianDataAsset.assetId, medianDataAsset.medianPrice);
+        }
         return {
             dict: dict,
             dataCell: packPrices(packedMedianData, packedOracleData)
