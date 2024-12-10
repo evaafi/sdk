@@ -179,7 +179,6 @@ export function calculateLiquidationAmounts(
 
     const loanValue = toAssetWorth(loanInfo.balance, loanInfo.scale, loanInfo.price);
     const baseLiquidationValue = BigMath.min(
-        // deductReserve(loanValue, reserveFactor, reserveFactorScale),
         loanValue,
         deductLiquidationBonus(allowedCollateralValue, liquidationBonus, liquidationBonusScale)
     );

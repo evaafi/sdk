@@ -2,66 +2,56 @@ import { Address, beginCell, Cell, storeStateInit } from '@ton/core';
 import { PoolAssetConfig } from '../types/Master';
 import { UNDEFINED_ASSET } from '../constants/assets';
 
+function getUserJettonData(ownerAddress: Address, assetName: string, jettonWalletCode: Cell, jettonMasterAddress: Address) {
+  switch (assetName) {
+    case 'uTON':    
+      return beginCell()
+        .storeCoins(0)
+        .storeUint(0, 64)
+        .storeAddress(ownerAddress)
+        .storeAddress(jettonMasterAddress)
+        .storeRef(jettonWalletCode)
+        .endCell();
+    case 'DOGS':
+    case 'NOT':
+    case 'USDT':
+      return beginCell()
+        .storeUint(0, 4)
+        .storeCoins(0)
+        .storeAddress(ownerAddress)
+        .storeAddress(jettonMasterAddress)
+        .endCell();
+    case 'tsTON':
+        return beginCell()
+          .storeCoins(0)
+          .storeAddress(ownerAddress)
+          .storeAddress(jettonMasterAddress)
+          .storeRef(jettonWalletCode)
+          .storeCoins(0)
+          .storeUint(0, 48)
+          .endCell();
+    default:
+      return beginCell().storeCoins(0)
+        .storeAddress(ownerAddress)
+        .storeAddress(jettonMasterAddress)
+        .storeRef(jettonWalletCode)
+        .endCell();
+
+  }
+}
 export function getUserJettonWallet(ownerAddress: Address, poolAssetConfig: PoolAssetConfig) {
-  if (poolAssetConfig.name == 'TON' || poolAssetConfig.assetId === UNDEFINED_ASSET.assetId) {
+  const assetName = poolAssetConfig.name;
+  if (assetName == 'TON' || poolAssetConfig.assetId === UNDEFINED_ASSET.assetId) {
     throw new Error(`Cant getUserJettonWallet for ${poolAssetConfig.name} asset`)
   }
-    const jettonMasterAddress = poolAssetConfig.jettonMasterAddress;
-    const jettonWalletCode = poolAssetConfig.jettonWalletCode;
+  let jettonWalletCode = poolAssetConfig.jettonWalletCode;
 
-  if (poolAssetConfig.name === 'USDT') {
+  if (assetName === 'USDT' || assetName === 'tsTON') {
     const lib_prep = beginCell().storeUint(2, 8).storeBuffer(jettonWalletCode.hash()).endCell();
-    const jwallet_code = new Cell({ exotic: true, bits: lib_prep.bits, refs: lib_prep.refs });
-
-    const jettonData = beginCell()
-      .storeUint(0, 4)
-      .storeCoins(0)
-      .storeAddress(ownerAddress)
-      .storeAddress(jettonMasterAddress)
-      .endCell();
-
-    const stateInit = beginCell()
-      .store(
-        storeStateInit({
-          code: jwallet_code,
-          data: jettonData
-        })
-      )
-      .endCell();
-    return new Address(0, stateInit.hash());
+    jettonWalletCode = new Cell({ exotic: true, bits: lib_prep.bits, refs: lib_prep.refs });
   }
 
-  if (poolAssetConfig.name === 'tsTON') {
-    const lib_prep = beginCell().storeUint(2, 8).storeBuffer(jettonWalletCode.hash()).endCell();
-    const jwallet_code = new Cell({ exotic: true, bits: lib_prep.bits, refs: lib_prep.refs });
-
-    const jettonData = beginCell()
-      .storeCoins(0)
-      .storeAddress(ownerAddress)
-      .storeAddress(jettonMasterAddress)
-      .storeRef(jwallet_code)
-      .storeCoins(0)
-      .storeUint(0, 48)
-      .endCell();
-
-    const stateInit = beginCell()
-      .store(
-        storeStateInit({
-          code: jwallet_code,
-          data: jettonData
-        })
-      )
-      .endCell();
-
-    return new Address(0, stateInit.hash());
-  }
-
-  const jettonData = beginCell()
-    .storeCoins(0)
-    .storeAddress(ownerAddress)
-    .storeAddress(jettonMasterAddress)
-    .storeRef(jettonWalletCode)
-    .endCell();
+  const jettonData = getUserJettonData(ownerAddress, assetName, jettonWalletCode, poolAssetConfig.jettonMasterAddress);
 
   const stateInit = beginCell()
     .store(

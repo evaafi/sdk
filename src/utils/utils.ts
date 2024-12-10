@@ -8,3 +8,7 @@ export function isTonAsset(asset: PoolAssetConfig) {
 export function isTonAssetId(assetId: bigint) {
     return assetId === ASSET_ID.TON;
 }
+
+export function delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}

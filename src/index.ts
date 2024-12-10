@@ -56,7 +56,6 @@ export {
 export { EvaaUser } from './contracts/UserContract';
 
 // Types
-export { PriceData } from './types/Common';
 export {
     UpgradeConfig,
     AssetConfig,
@@ -124,6 +123,7 @@ export {
 
 export * from './constants/assets';
 export * from './utils/utils';
+export * from './prices';
 
 // Utils
 export { getLastSentBoc, getTonConnectSender } from './utils/tonConnectSender';

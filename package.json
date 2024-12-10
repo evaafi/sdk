@@ -1,6 +1,6 @@
 {
   "name": "@evaafi/sdk",
-  "version": "0.6.1-a",
+  "version": "0.6.2",
   "description": "The EVAA SDK is designed to easily integrate with the EVAA lending protocol on TON blockchain.",
   "main": "dist/index.js",
   "files": [
@@ -8,7 +8,8 @@
     "src"
   ],
   "scripts": {
-    "build": "tsc --declaration"
+    "build": "tsc --declaration",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -28,6 +29,7 @@
     "prettier": "^3.2.4",
     "ts-jest": "^29.2.4",
     "ts-node": "^10.9.1",
+    "typedoc": "^0.27.4",
     "typescript": "^5.3.3"
   },
   "peerDependencies": {

@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.6.2 - 2024-11-21
+### Added
+- ALTS Pool
+- PricesCollector class  
+  - Supports multiple prices sources [iota nft, evaa backend, internetcomputer (icp) http backend] (sources can be configured)
+  - Updates prices only when needed, prices may expire no earlier than a minute later
+  - Ability to cut prices and resign it and send only the necessary ones in order to reduce fee
+    - ```typescript
+      async getPricesForWithdraw(userPrincipals: Dictionary<bigint, bigint>, withdrawAsset: PoolAssetConfig, collateralToDebt = false, ....) 
+      ```
+      collateralToDebt param responsible for the fact that supply can go to borrow (there is no such case at the front end)
+    - ```typescript
+      async getPricesForLiquidate(userPrincipals: Dictionary<bigint, bigint> ...)
+      ```
+  - Price Signature Vrification
+  - Minimal Oracles Number Verification
+  - Independent and parallel loading of prices (now the fastest but invalid response won't break anything)
+  - Support for partial number of assets from price sources
+  - Updated examples in docs/examples
+  - PricesCollector test coverage
+  - If the price is missing (for example, for security reasons), then there will be no error, it will simply NOT be added to the result dict
+
+### Changed
+- getPrices is deprecated use PricesCollector instead
+
 ## 0.6.1-a - 2024-10-29
 ### Changed
 - updated `EVAA_LP_MAINNET_VERSION` to `3`

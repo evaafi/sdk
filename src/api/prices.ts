@@ -1,14 +1,27 @@
-import { Dictionary } from '@ton/core';
-import { PriceData, RawPriceData } from '../types/Common';
-import { getMedianPrice, loadPrices, packAssetsData, packOraclesData, packPrices, parsePrices, verifyPrices } from '../utils/priceUtils';
-import { OracleNFT, PoolConfig } from '../types/Master';
+import { PoolConfig } from '../types/Master';
 import { MAINNET_POOL_CONFIG } from '../constants/pools';
+import { DefaultPriceSourcesConfig, PriceData, PricesCollector, PriceSource, PriceSourcesConfig } from '../prices';
 
-export async function getPrices(endpoints: String[] = ["api.stardust-mainnet.iotaledger.net", "iota.evaa.finance"], poolConfig: PoolConfig = MAINNET_POOL_CONFIG): Promise<PriceData> {
+/**
+ * @deprecated Use PriceCollector istead of getPrices
+ */
+export async function getPrices(endpoints: string[] = ["api.stardust-mainnet.iotaledger.net"], poolConfig: PoolConfig = MAINNET_POOL_CONFIG): Promise<PriceData> {
     if (endpoints.length == 0) {
         throw new Error("Empty endpoint list");
     }
-    
+
+    const sources: PriceSourcesConfig = {
+        iotaEndpoints: endpoints,
+        icpEndpoints: DefaultPriceSourcesConfig.icpEndpoints,
+        backendEndpoints: DefaultPriceSourcesConfig.backendEndpoints,
+    }
+
+    const priceCollector = new PricesCollector(poolConfig, sources);
+    const prices = await priceCollector.getPrices();
+
+    return { dict: prices.dict, dataCell: prices.dataCell };
+    /*
+        Old code
     const prices = await Promise.all(poolConfig.oracles.map(async x => await parsePrices(await loadPrices(x.address, endpoints), x.id)));
     
     let acceptedPrices: RawPriceData[] = prices.filter(verifyPrices(poolConfig.poolAssetsConfig));
@@ -41,5 +54,5 @@ export async function getPrices(endpoints: String[] = ["api.stardust-mainnet.iot
     return {
         dict: dict,
         dataCell: packPrices(packedMedianData, packedOracleData)
-    };
+    };*/
 }
