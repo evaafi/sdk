@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## 0.6.2 - 2024-11-21
 ### Added
+- ALTS Pool
 - PricesCollector class  
   - Supports multiple prices sources [iota nft, evaa backend, internetcomputer (icp) http backend] (sources can be configured)
   - Updates prices only when needed, prices may expire no earlier than a minute later
@@ -23,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - Support for partial number of assets from price sources
   - Updated examples in docs/examples
   - PricesCollector test coverage
+  - If the price is missing (for example, for security reasons), then there will be no error, it will simply NOT be added to the result dict
 
 ### Changed
 - getPrices is deprecated use PricesCollector instead

@@ -1,5 +1,4 @@
 import { Address, Cell, toNano } from '@ton/core';
-import { sha256Hash } from '../utils/sha256BigInt';
 import { OracleNFT } from '../types/Master';
 
 
@@ -21,13 +20,14 @@ export const MASTER_CONSTANTS = {
 
 export const NULL_ADDRESS = Address.parse('UQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJKZ');
 
-
 export const EVAA_MASTER_MAINNET = Address.parse('EQC8rUZqR_pWV1BylWUlPNBzyiTYVoBEmQkMIQDZXICfnuRr');
 export const MAINNET_VERSION = 6;
 export const EVAA_MASTER_TESTNET = Address.parse('EQDLsg3w-iBj26Gww7neYoJAxiT2t77Zo8ro56b0yuHsPp3C');
 export const TESTNET_VERSION = 0;
 export const EVAA_LP_MAINNET = Address.parse('EQBIlZX2URWkXCSg3QF2MJZU-wC5XkBoLww-hdWk2G37Jc6N');
 export const EVAA_LP_MAINNET_VERSION = 3;
+export const EVAA_ALTS_MAINNET = Address.parse('EQBIlZX2URWkXCSg3QF2MJZU-wC5XkBoLww-hdWk2G37Jc6N');
+export const EVAA_ALTS_MAINNET_VERSION = 0;
 
 export const ORACLES_MAINNET: OracleNFT[] = [
     {id: 0, address: '0xd3a8c0b9fd44fd25a49289c631e3ac45689281f2f8cf0744400b4c65bed38e5d', pubkey: Buffer.from('b404f4a2ebb62f2623b370c89189748a0276c071965b1646b996407f10d72eb9', 'hex') }, 
@@ -39,6 +39,7 @@ export const ORACLES_MAINNET: OracleNFT[] = [
 export const ORACLES_TESTNET: OracleNFT[] = ORACLES_MAINNET;
 
 export const ORACLES_LP: OracleNFT[] = ORACLES_MAINNET;
+export const ORACLES_ALTS: OracleNFT[] = ORACLES_MAINNET;
 
 export const LENDING_CODE = Cell.fromBoc(
     Buffer.from(

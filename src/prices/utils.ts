@@ -36,13 +36,23 @@ export function verifyPricesSign(nfts: OracleNFT[]) {
     }
 } */
 
-export function getMedianPrice(pricesData: PriceData[], asset: bigint): bigint {
-    const sorted = pricesData.map(x => x.dict.get(asset)!).sort((a, b) => Number(a) - Number(b));
-    const mid = Math.floor(sorted.length / 2);
-    if (sorted.length % 2 === 0) {
-        return (sorted[mid - 1] + sorted[mid]) / 2n;
-    } else {
-        return sorted[mid];
+export function getMedianPrice(pricesData: PriceData[], asset: bigint): bigint | null {
+    try {
+        const sorted = pricesData.map(x => x.dict.get(asset)!).sort((a, b) => Number(a) - Number(b));
+        
+        if (sorted.length == 0) {
+            return null;
+        }
+
+        const mid = Math.floor(sorted.length / 2);
+        if (sorted.length % 2 === 0) {
+            return (sorted[mid - 1] + sorted[mid]) / 2n;
+        } else {
+            return sorted[mid];
+        }
+    }
+    catch {
+        return null;
     }
 }
 

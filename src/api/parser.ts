@@ -12,8 +12,6 @@ import {
 } from './math';
 import { loadMaybeMyRef, loadMyRef } from './helpers';
 import { BalanceType, UserBalance, UserData, UserLiteData, UserRewards } from '../types/User';
-import { MAINNET_POOL_CONFIG, TESTNET_POOL_CONFIG } from '../constants/pools';
-import { basename } from 'path';
 
 export function createUserRewards(): DictionaryValue<UserRewards> {
     return {

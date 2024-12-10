@@ -1,12 +1,13 @@
-import { BackendPriceSource, DefaultPriceSourcesConfig, generatePriceSources, getPrices, JUSDC_MAINNET, MAINNET_POOL_CONFIG, PriceData, Prices, PricesCollector, PriceSource, PriceSourcesConfig, RawPriceData, STTON_MAINNET, TON_MAINNET, USDT_MAINNET } from "../../src";
+import { BackendPriceSource, DefaultPriceSourcesConfig, generatePriceSources, getPrices, JUSDC_MAINNET, MAINNET_LP_POOL_CONFIG, MAINNET_POOL_CONFIG, PriceData, Prices, PricesCollector, PriceSource, PriceSourcesConfig, RawPriceData, STTON_MAINNET, TON_MAINNET, USDT_MAINNET } from "../../src";
 import { Cell, Dictionary } from "@ton/core";
 import { ORACLES_MAINNET } from "../../src/constants/general";
+import { MAINNET_ALTS_POOL_CONFIG } from "../../src/constants/pools";
 
 describe('PriceCollector tests', () => {
     test('test default price sources', async () => {
         expect.assertions(3);
 
-        const collector = new PricesCollector();
+        const collector = new PricesCollector(MAINNET_ALTS_POOL_CONFIG);
         let prices: Prices = new Prices(Dictionary.empty(), Cell.EMPTY);
         try {
             prices = await collector.getPrices();
@@ -16,7 +17,7 @@ describe('PriceCollector tests', () => {
             return;
         }
     
-        expect(prices.dict.values().length).toBeGreaterThan(5);
+        expect(prices.dict.values().length).toBeGreaterThan(4);
         expect(prices.dataCell).not.toEqual(Cell.EMPTY);
     });
 

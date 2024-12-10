@@ -87,7 +87,7 @@ export class PricesCollector {
 
     #getPricesByAssetList(assets: PoolAssetsConfig) {
         //console.debug('[getPricesByAssetList] start')
-        let pricesFiltered = this.#prices.filter(x => assets.every(asset => x.dict.has(asset.assetId)));
+        let pricesFiltered = this.#prices;  // for strict check this.#prices.filter(x => assets.every(asset => x.dict.has(asset.assetId)));
 
         if (pricesFiltered.length < this.#poolConfig.minimalOracles) {
             throw new Error("Not enough price data");
@@ -100,15 +100,19 @@ export class PricesCollector {
         }
 
         const medianData = assets.map(asset => ({ assetId: asset.assetId, medianPrice: getMedianPrice(this.#prices, asset.assetId)}));
-        const packedMedianData = packAssetsData(medianData);
+
+        const nonEmptymedianData = medianData.filter(x => x.medianPrice != null) as { assetId: bigint, medianPrice: bigint }[];
+
+        const packedMedianData = packAssetsData(nonEmptymedianData);
 
         const oraclesData = this.#prices.map(x => ({oracle: {id: x.oracleId, pubkey: x.pubkey}, data: {timestamp: x.timestamp, prices: x.dict}, signature: x.signature}));
-        const packedOracleData = packOraclesData(oraclesData, assets.map(x => x.assetId));
+        const packedOracleData = packOraclesData(oraclesData, nonEmptymedianData.map(x => x.assetId));
 
         const dict = Dictionary.empty<bigint, bigint>();
-        for (const medianDataAsset of medianData) {
+        for (const medianDataAsset of nonEmptymedianData) {
             dict.set(medianDataAsset.assetId, medianDataAsset.medianPrice);
         }
+
         return {
             dict: dict,
             dataCell: packPrices(packedMedianData, packedOracleData)
