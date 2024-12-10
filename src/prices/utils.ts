@@ -38,7 +38,8 @@ export function verifyPricesSign(nfts: OracleNFT[]) {
 
 export function getMedianPrice(pricesData: PriceData[], asset: bigint): bigint | null {
     try {
-        const sorted = pricesData.map(x => x.dict.get(asset)!).sort((a, b) => Number(a) - Number(b));
+        const usingPrices = pricesData.filter(x => x.dict.has(asset));
+        const sorted = usingPrices.map(x => x.dict.get(asset)!).sort((a, b) => Number(a) - Number(b));
         
         if (sorted.length == 0) {
             return null;

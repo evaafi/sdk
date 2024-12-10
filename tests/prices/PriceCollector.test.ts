@@ -7,7 +7,7 @@ describe('PriceCollector tests', () => {
     test('test default price sources', async () => {
         expect.assertions(3);
 
-        const collector = new PricesCollector(MAINNET_ALTS_POOL_CONFIG);
+        const collector = new PricesCollector(MAINNET_POOL_CONFIG);
         let prices: Prices = new Prices(Dictionary.empty(), Cell.EMPTY);
         try {
             prices = await collector.getPrices();
