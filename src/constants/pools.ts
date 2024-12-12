@@ -15,7 +15,7 @@ export const MAINNET_POOL_CONFIG: PoolConfig = {
         STTON_MAINNET,
         TSTON_MAINNET,
         USDT_MAINNET,
-        //UTON_MAINNET // announce
+        UTON_MAINNET // announce
     ],
     lendingCode: LENDING_CODE
 };
@@ -60,9 +60,9 @@ export const MAINNET_ALTS_POOL_CONFIG: PoolConfig = {
     poolAssetsConfig: [
         TON_MAINNET,
         USDT_MAINNET,
-//        DOGS_MAINNET,
         CATI_MAINNET,
-        NOT_MAINNET
+        NOT_MAINNET,
+        DOGS_MAINNET
     ],
     lendingCode: LENDING_CODE
 };
