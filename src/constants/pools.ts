@@ -60,7 +60,7 @@ export const MAINNET_ALTS_POOL_CONFIG: PoolConfig = {
     poolAssetsConfig: [
         TON_MAINNET,
         USDT_MAINNET,
-        DOGS_MAINNET,
+//        DOGS_MAINNET,
         CATI_MAINNET,
         NOT_MAINNET
     ],
