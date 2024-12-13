@@ -1,4 +1,4 @@
-import { Address, Cell, Dictionary } from '@ton/core';
+import { Address, BitBuilder, Cell, Dictionary } from '@ton/core';
 import { AssetConfig, ExtendedAssetData, ExtendedAssetsConfig, ExtendedAssetsData, MasterConfig, MasterConstants, PoolAssetConfig, PoolConfig } from './Master';
 
 export enum BalanceType {
@@ -38,6 +38,7 @@ export type UserLiteData = {
     masterAddress: Address;
     ownerAddress: Address;
     principals: Dictionary<bigint, bigint>;
+    realPrincipals: Dictionary<bigint, bigint>;  // principals before applying dusts
     state: number;
     balances: Dictionary<bigint, UserBalance>;
     trackingSupplyIndex: bigint;
@@ -59,7 +60,6 @@ export type UserDataActive = UserLiteData & {
     limitUsedPercent: number;
     limitUsed: bigint;
     healthFactor: number;
-
     liquidationData: LiquidationData;
 };
 
