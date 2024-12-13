@@ -1,7 +1,7 @@
 import { configDotenv } from 'dotenv';
 import { mnemonicToWalletKey } from '@ton/crypto';
 import { Cell, toNano, TonClient, WalletContractV5R1 } from '@ton/ton';
-import { Evaa, FEES, getPrices, JUSDC_MAINNET, JUSDC_TESTNET, MAINNET_POOL_CONFIG, STTON_TESTNET, TESTNET_POOL_CONFIG } from '@evaafi/sdk';
+import { Evaa, FEES, getPrices, JUSDC_MAINNET, JUSDC_TESTNET, MAINNET_POOL_CONFIG, PricesCollector, STTON_TESTNET, TESTNET_POOL_CONFIG } from '@evaafi/sdk';
 
 async function main() {
     configDotenv();
@@ -19,7 +19,9 @@ async function main() {
             publicKey: keyPair.publicKey,
         }),
     );
-    const priceData = await evaa.getPrices();
+    const pricesCollector = new PricesCollector(TESTNET_POOL_CONFIG);
+    const priceData = await pricesCollector.getPrices();
+
     await evaa.sendWithdraw(wallet.sender(keyPair.secretKey), FEES.WITHDRAW, {
         queryID: 0n,
         // we can set always to true, if we don't want to check user code version

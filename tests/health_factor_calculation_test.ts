@@ -19,14 +19,18 @@ beforeAll(async () => {
 });
 
 test('Health factor check example', async () => {
-    const evaa = client.open(new Evaa({poolConfig: MAINNET_POOL_CONFIG}));
+    const evaa = client.open(new Evaa({poolConfig: MAINNET_LP_POOL_CONFIG}));
     await evaa.getSync();
-    const user = client.open(await evaa.openUserContract(Address.parseFriendly("UQAGq-yoeamrTxhN-evc86KimMIbCfx7bnLzrvqr3DMtqoa_").address));
-
+    console.log(evaa.data?.assetsConfig);
+    const user = client.open(await evaa.openUserContract(Address.parseFriendly("UQDj8tpJve-heYWQcT8hbsCNO6vBn9LnZ0kpt-aC8Scu_HGq").address));
+   // await user.getSyncLite(evaa.data!.assetsData, evaa.data!.assetsConfig);
+    //console.log(user.liteData);
     const priceData = await evaa.getPrices();
 
+    /*
     console.log('priceData', priceData);
     await user.getSync(evaa.data!.assetsData, evaa.data!.assetsConfig, priceData!.dict);
+    console.log('userdata', (user.data as UserDataActive).balances);
     //console.log(evaa.data!.assetsConfig.get(sha256Hash("TON")));
     //console.log(user.data);
     const userPrincipals = (user.data! as UserDataActive).principals;
@@ -41,5 +45,5 @@ test('Health factor check example', async () => {
         assetsConfig: evaa.data!.assetsConfig,
         poolConfig: MAINNET_POOL_CONFIG
     }));
-    console.log(user.data);
+    console.log(user.data);*/
 });

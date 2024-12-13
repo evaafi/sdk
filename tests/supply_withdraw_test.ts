@@ -164,6 +164,7 @@ test('Get user info test', async () => {
         console.log('liquidata', user.data.liquidationData)
     }
 })
+/*
 
 test('Just supply testnet', async () => {
     await evaa.getSync();
@@ -205,25 +206,29 @@ test('Just supply mainnet', async () => {
     catch(e) {
         console.log(e);
     }
-})
+})*/
 
-test('Just withdraw max', async () => {
+test('Just withdraw', async () => {
+    console.log(priceData.dict);
     await evaaMainNet.getSync();
 
-    await waitForPrincipalChange(address_mainnet, TON_TESTNET,
-        async() => {
-            await evaaMainNet.sendWithdraw(sender_mainnet, toNano(1), {
-                queryID: 0n,
-                includeUserCode: true,
-                amount: 0xFFFFFFFFFFFFFFFFn,
-                userAddress: address3,
-                asset: TON_MAINNET,
-                priceData: priceDataLP.dataCell,
-                amountToTransfer: toNano(0),
-                payload: Cell.EMPTY
-            });
-        }, evaaMainNet, clientMainNet
-    );
+    const pricesCollector = await evaaMainNet.createPriceCollector();
+
+    const user = clientMainNet.open(await evaaMainNet.openUserContract(address_mainnet));
+    await user.getSync(evaaMainNet.data!.assetsData, evaaMainNet.data!.assetsConfig, (await pricesCollector.getPrices()).dict);
+    console.log(user.liteData?.principals)
+    const currentWithdrawPrices = await pricesCollector.getPricesForWithdraw(user.liteData?.principals!, TON_MAINNET);
+    console.log('currentWithdrawPrices', currentWithdrawPrices.dict)
+    await evaaMainNet.sendWithdraw(sender_mainnet, toNano(0.7), {
+        queryID: 0n,
+        includeUserCode: true,
+        amount: 100_000_000n,
+        userAddress: address,
+        asset: TON_MAINNET,
+        priceData: currentWithdrawPrices.dataCell,
+        amountToTransfer: toNano(0),
+        payload: Cell.EMPTY
+    });
 })
 
 /*test('Liquidate test', async () => {
@@ -248,7 +253,7 @@ test('Just withdraw max', async () => {
         priceData: priceData.dataCell,
         responseAddress: address,
     });
-})*/
+})
 
 test('Supply/withdraw all test', async () => {
     expect.assertions(1);
@@ -321,12 +326,6 @@ test('SupplyBorrowRepayMaxWithdrawMax test', async () => {
 
     //console.log('bal', changes.data.balances.get(JUSDT_TESTNET)!.amount);
     let amoundToRepay = changes.data.balances.get(JUSDT_TESTNET.assetId)!.amount;
-    /*let user = client.open(await evaa.openUserContract(address));
-    await user.getSync(evaa.data!.assetsData, evaa.data!.assetsConfig, priceData.dict);
-    if (user.data?.type != "active") {
-        return;
-    }
-    let amoundToRepay = user.data.balances.get(JUSDT_TESTNET)!.amount;*/
     console.log('amount to repay', amoundToRepay);
     changes = await waitForPrincipalChange(address, JUSDT_TESTNET,
         async() => {
@@ -416,17 +415,10 @@ test('Withdraw test', async () => {
         assetID: TESTNET_ASSETS_ID.TON,
         type: 'ton',
         payload: Cell.EMPTY
-    });*/
+    });
     
     //console.log(lastSentBoc);
     //console.log(
     //    `https://testnet.tonviewer.com/transaction/${Cell.fromBase64(lastSentBoc!.boc).hash().toString('hex')}`,
     //);
-    /*await user.getSync(evaa.data!.assetsData, evaa.data!.assetsConfig, priceData!.dict);
-    console.log(user);
-    console.log(evaa.data?.assetsConfig);
-    console.log(evaa.data?.assetsData);
-    //console.log(priceData!.dict);
-    //console.log(evaa.data!.assetsConfig.get(sha256Hash("USDT")));
-    return;*/
-}, 6 * 60 * 1000);
+}, 6 * 60 * 1000); */

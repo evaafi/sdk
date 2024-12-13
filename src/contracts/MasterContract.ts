@@ -20,7 +20,7 @@ import { parseMasterData } from '../api/parser';
 import { MasterData, PoolAssetConfig, PoolConfig} from '../types/Master';
 import { JettonWallet } from './JettonWallet';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
-import { getPrices, isTonAsset, isTonAssetId, MAINNET_POOL_CONFIG } from '..';
+import { DefaultPriceSourcesConfig, getPrices, isTonAsset, isTonAssetId, MAINNET_POOL_CONFIG, PricesCollector, PriceSourcesConfig } from '..';
 
 /**
  * Parameters for the Evaa contract
@@ -393,11 +393,18 @@ export class Evaa implements Contract {
         }
     }
 
+    /**
+     * @deprecated Use PriceCollector (createPriceCollector) istead of getPrices
+     */
     async getPrices(provider: ContractProvider, endpoints?: string[]) {
         if ((endpoints?.length ?? 0) > 0) {
             return await getPrices(endpoints, this._poolConfig);
         } else {
             return await getPrices(undefined, this._poolConfig);
         }
+    }
+
+    createPriceCollector(priceSourcesConfig: PriceSourcesConfig = DefaultPriceSourcesConfig) : PricesCollector {
+        return new PricesCollector(this._poolConfig, priceSourcesConfig);
     }
 }

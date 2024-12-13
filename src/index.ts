@@ -56,7 +56,6 @@ export {
 export { EvaaUser } from './contracts/UserContract';
 
 // Types
-export { PriceData } from './types/Common';
 export {
     UpgradeConfig,
     AssetConfig,
@@ -102,7 +101,8 @@ export {
 export {
     MAINNET_POOL_CONFIG,
     TESTNET_POOL_CONFIG,
-    MAINNET_LP_POOL_CONFIG
+    MAINNET_LP_POOL_CONFIG,
+    MAINNET_ALTS_POOL_CONFIG
 } from './constants/pools';
 
 export {
@@ -113,6 +113,10 @@ export {
     TONUSDT_DEDUST_MAINNET,
     TON_STORM_MAINNET,
     USDT_STORM_MAINNET,
+    DOGS_MAINNET,
+    CATI_MAINNET,
+    UTON_MAINNET,
+    NOT_MAINNET,
     JUSDT_MAINNET,
     JUSDC_MAINNET,
     STTON_MAINNET,
@@ -124,6 +128,7 @@ export {
 
 export * from './constants/assets';
 export * from './utils/utils';
+export * from './prices';
 
 // Utils
 export { getLastSentBoc, getTonConnectSender } from './utils/tonConnectSender';
