@@ -29,8 +29,8 @@ export class PricesCollector {
 
     // TODO Make UserData class and incapsulate raw bigintegers
 
-    async getPricesForLiquidate(userPrincipals: Dictionary<bigint, bigint>, retries: number = 1, timeout: number = 3000): Promise<Prices>  {
-        const assets = userPrincipals.keys().map(x => this.#poolConfig.poolAssetsConfig.find(asset => asset.assetId == x));
+    async getPricesForLiquidate(realPrincipals: Dictionary<bigint, bigint>, retries: number = 1, timeout: number = 3000): Promise<Prices>  {
+        const assets = this.#filterEmptyPrincipalsAndAssets(realPrincipals);
         if (assets.includes(undefined)) {
             throw new Error("User from another pool");
         }
@@ -38,9 +38,9 @@ export class PricesCollector {
     }
 
 
-    async getPricesForWithdraw(userPrincipals: Dictionary<bigint, bigint>, withdrawAsset: PoolAssetConfig, collateralToDebt = false, retries: number = 1, timeout: number = 3000): Promise<Prices>  {
-        let assets = userPrincipals.keys().map(x => this.#poolConfig.poolAssetsConfig.find(asset => asset.assetId == x));
-        if (checkNotInDebtAtAll(userPrincipals) && userPrincipals.has(withdrawAsset.assetId) && !collateralToDebt) {
+    async getPricesForWithdraw(realPrincipals: Dictionary<bigint, bigint>, withdrawAsset: PoolAssetConfig, collateralToDebt = false, retries: number = 1, timeout: number = 3000): Promise<Prices>  {
+        let assets = this.#filterEmptyPrincipalsAndAssets(realPrincipals);
+        if (checkNotInDebtAtAll(realPrincipals) && (realPrincipals.get(withdrawAsset.assetId) ?? 0n) > 0n && !collateralToDebt) {
             return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY);
         }
 
@@ -131,5 +131,9 @@ export class PricesCollector {
     #filterPrices(): number {  // filter again for expire check
         this.#prices = this.#prices.filter(verifyPricesTimestamp());
         return this.#prices.length;
+    }
+
+    #filterEmptyPrincipalsAndAssets(principals: Dictionary<bigint, bigint>) {
+        return principals.keys().filter(x => principals.get(x)! > 0n).map(x => this.#poolConfig.poolAssetsConfig.find(asset => asset.assetId == x));
     }
 }

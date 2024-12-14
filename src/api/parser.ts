@@ -208,7 +208,8 @@ export function parseUserLiteData(
     const codeVersion = userSlice.loadCoins();
     const masterAddress = userSlice.loadAddress();
     const userAddress = userSlice.loadAddress();
-    const principalsDict = userSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.BigInt(64));
+    const realPrincipals = userSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.BigInt(64));
+    const principalsDict = Dictionary.empty(Dictionary.Keys.BigUint(256), Dictionary.Values.BigInt(64));
     const userState = userSlice.loadInt(64);
 
     let trackingSupplyIndex = 0n;
@@ -237,7 +238,7 @@ export function parseUserLiteData(
         const assetData = assetsData.get(asset.assetId) as ExtendedAssetData;
         const assetConfig = assetsConfig.get(asset.assetId) as AssetConfig;
 
-        let principal = principalsDict.get(asset.assetId) || 0n;
+        let principal = realPrincipals.get(asset.assetId) || 0n;
         let balance = presentValue(assetData.sRate, assetData.bRate, principal, masterConstants);
 
         if (applyDust && (principal > 0 && (principal < assetConfig.dust))) {
@@ -247,6 +248,8 @@ export function parseUserLiteData(
                 type: BalanceType.supply,
             };
             principalsDict.set(asset.assetId, 0n);
+        } else {
+            principalsDict.set(asset.assetId, principal);
         }
         userBalances.set(asset.assetId, balance);
     }
@@ -257,6 +260,7 @@ export function parseUserLiteData(
         masterAddress: masterAddress,
         ownerAddress: userAddress,
         principals: principalsDict,
+        realPrincipals: realPrincipals,
         state: userState,
         balances: userBalances,
         trackingSupplyIndex: trackingSupplyIndex,
