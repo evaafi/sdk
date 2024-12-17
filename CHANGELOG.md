@@ -4,14 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.6.2-a - 2024-12-13
+## 0.6.2-b &mdash; 2024-12-17
+### Added
+ - new field in ```UserLiteData``` . ```fullyParsed```  
+   true if all prices for user parsing were provided
+   now user.getSync and parseUserData can work without some prices
+ - ```predictAPY``` - function that predicts a change in apy after supply or withdraw 
+
+## 0.6.2-a &mdash; 2024-12-13
 ### Added
  - new field in UserLiteData ```user.data.realPrincipals``` -
    principals before applying dusts
 ### Fixed
  - getPricesForWithdraw/getPricesForLiquidate they should now be called with a different argument 
 
-## 0.6.2 - 2024-11-21
+## 0.6.2 &mdash; 2024-11-21
 ### Added
 - ALTS Pool
 - PricesCollector class  
@@ -36,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 - getPrices is deprecated use PricesCollector instead
 
-## 0.6.1-a - 2024-10-29
+## 0.6.1-a &mdash; 2024-10-29
 ### Changed
 - updated `EVAA_LP_MAINNET_VERSION` to `3`
 - `awaitedSupply` is always defined
@@ -45,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `minimalOracles` is `3` in all pools
 
 
-## 0.6.1 - 2024-10-22
+## 0.6.1 &mdash; 2024-10-22
 ### Changed
 - added liquidation.ts with ```findAssetById```, ```calculateAssetsValues```, ```selectGreatestAssets```, ```calculateMinCollateralByTransferredAmount```, ```calculateLiquidationAmounts```, ```isLiquidatable```, ```isBadDebt```, ```addReserve```, ```deductReserve```, ```toAssetAmount```, ```toAssetWorth```, ```addLiquidationBonus```, ```deductLiquidationBonus```, ```PreparedAssetInfo```, ```prepareAssetInfo``` functions required or flexible liquidations calculation.
 - user. ```getSync``` and ```getSyncLite``` new argument ```applyDust``` by default is ```false```;
@@ -53,14 +60,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 
-## 0.6.0a - 2024-10-14
+## 0.6.0a &mdash; 2024-10-14
 ### Changed
 - user. ```getSync``` and ```getSyncLite``` new argument ```applyDust``` by default is ```false```
 ### Fixed
 - Healthfactor calculation minor bug
 - createLiquidationMessage fix new field payloadForwardAmount
 
-## 0.6.0 - 2024-10-10
+## 0.6.0 &mdash; 2024-10-10
 ### Added
 - SDK Supports Evaa v6 smart contracts
 ### Fixed
@@ -70,7 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 - Fix typo in ```calculateMaximumWithdrawAmount```
 
-## 0.5.6 - 2024-09-28
+## 0.5.6 &mdash; 2024-09-28
 
 ### Added
 - ```isTonAsset(PoolAssetConfig)``` function 
@@ -92,7 +99,7 @@ Dust is a small amount of principal that is ignored
 ### Fixed
 - parseUserLiteData (dust) & parseUserData (dust and withdrawLimits) calculations problem
 
-## 0.5.4 - 2024-09-09
+## 0.5.4 &mdash; 2024-09-09
 
 check ```tests\supply_withdraw_test.ts``` for new examples
 
@@ -136,23 +143,23 @@ await evaaMainNet.sendSupply(sender_mainnet, toNano(1), {
 - predictHealthFactor minor fixes
 - getUserJettonWallet all currencies support
 
-## 0.5.3 - 2024-08-20
+## 0.5.3 &mdash; 2024-08-20
 
 ### Fixed
 - getPrices now supports several endpoints (works on the principle of which one will answer faster, whose answer is used) and throws an exception if prices are not loaded
 
-## 0.5.2 - 2024-08-19
+## 0.5.2 &mdash; 2024-08-19
 
 ### Fixed
 - predictHealthFactor argument processing improving
 - getSync fixed parsing contract state, base64url was replaced to base64 encoding which has much higher support
 
-## 0.5.1 - 2024-07-05
+## 0.5.1 &mdash; 2024-07-05
 
 ### Added
 - predictHealthFactor function to predict a change in a health factor after repay, borrow, supply, withdraw
 
-## 0.5.0 - 2024-06-29
+## 0.5.0 &mdash; 2024-06-29
 This release contains breaking changes.  
 
 ### Added
@@ -170,7 +177,7 @@ This release contains breaking changes.
 ### Fixed
 - UserBalance calculation was fixed
 
-## 0.4.0 - 2024-06-01
+## 0.4.0 &mdash; 2024-06-01
 This release contains breaking changes.
 
 ### Added
@@ -191,15 +198,15 @@ This release contains breaking changes.
 - Jetton wallets address calculation
 - Field names in Assets Config and Assets Data serialization functions
 
-## 0.3.2 - 2024-04-20
+## 0.3.2 &mdash; 2024-04-20
 ### Added
 - New asset - Tether USD
 
-## 0.3.1 - 2024-04-19
+## 0.3.1 &mdash; 2024-04-19
 ### Added
 - New asset - tsTON
 
-## 0.3.0 - 2024-04-04
+## 0.3.0 &mdash; 2024-04-04
 ### Added
 - New asset - stTON
 
@@ -211,7 +218,7 @@ This release contains breaking changes.
 ### Removed
 - Ethereum dependencies
 
-## 0.2.0 - 2024-03-13
+## 0.2.0 &mdash; 2024-03-13
 This release contains breaking changes.
 
 ### Added
@@ -229,7 +236,7 @@ This release contains breaking changes.
 ### Fixed
 - Calculation of borrow limits
 
-## 0.1.0 - 2024-03-11
+## 0.1.0 &mdash; 2024-03-11
 ### Added
 - Parsing user lite data, which does not require prices
 - Assets reserves to `MasterData`
