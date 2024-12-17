@@ -387,5 +387,6 @@ export function parseUserData(
         limitUsed: limitUsed,
         liquidationData: liquidationData,
         healthFactor: healthFactor,
+        havePrincipalWithoutPrice: havePrincipalWithoutPrice
     };
 }

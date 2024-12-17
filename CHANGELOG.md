@@ -6,8 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## 0.6.2-b &mdash; 2024-12-17
 ### Added
- - new field in ```UserLiteData``` . ```fullyParsed```  
-   true if all prices for user parsing were provided
+ - new field in ```UserLiteData``` . ```fullyParsed``` and ```havePrincipalWithoutPrice```
+   true if all prices for user parsing were provided or true if have a principal without price 
    now user.getSync and parseUserData can work without some prices
  - ```predictAPY``` - function that predicts a change in apy after supply or withdraw 
 

@@ -62,6 +62,7 @@ export type UserDataActive = UserLiteData & {
     limitUsed: bigint;
     healthFactor: number;
     liquidationData: LiquidationData;
+    havePrincipalWithoutPrice: boolean;
 };
 
 export type UserDataInactive = {
