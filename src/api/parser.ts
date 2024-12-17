@@ -285,6 +285,7 @@ export function parseUserData(
     applyDust: boolean = false
 ): UserData {
     userLiteData.fullyParsed = true;
+    let havePrincipalWithoutPrice = false;
 
     const poolAssetsConfig = poolConfig.poolAssetsConfig;
     const masterConstants = poolConfig.masterConstants;
@@ -294,6 +295,16 @@ export function parseUserData(
 
     let supplyBalance = 0n;
     let borrowBalance = 0n;
+
+    for (const [assetId, principal] of userLiteData.realPrincipals) {
+        if (!prices.has(assetId)) {
+            userLiteData.fullyParsed = false;
+
+            if (principal != 0n) {
+                havePrincipalWithoutPrice = true;
+            }
+        }
+    }
 
     for (const [_, asset] of Object.entries(poolAssetsConfig)) {
         const assetData = assetsData.get(asset.assetId) as ExtendedAssetData;
@@ -312,9 +323,9 @@ export function parseUserData(
 
     for (const [_, asset] of Object.entries(poolAssetsConfig)) {
         if (!prices.has(asset.assetId)) {
-            userLiteData.fullyParsed = false;
             continue;
         }
+
         const assetConfig = assetsConfig.get(asset.assetId) as AssetConfig;
         const balance = userLiteData.balances.get(asset.assetId) as UserBalance;
 
@@ -359,8 +370,8 @@ export function parseUserData(
 
     let healthFactor = 1;
     let liquidationData;
-    if (userLiteData.fullyParsed) {
-        const liquidationData = calculateLiquidationData(assetsConfig, assetsData, userLiteData.realPrincipals, prices, poolConfig);
+    if (!havePrincipalWithoutPrice) {
+        liquidationData = calculateLiquidationData(assetsConfig, assetsData, userLiteData.realPrincipals, prices, poolConfig);
         if (liquidationData.totalLimit != 0n) {
             healthFactor = 1 - Number(liquidationData.totalDebt) / Number(liquidationData.totalLimit);
         } 
