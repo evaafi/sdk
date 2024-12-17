@@ -42,15 +42,15 @@ export function createAssetData(): DictionaryValue<AssetData> {
             buidler.storeUint(src.awaitedSupply, 64);
         },
         parse: (src: Slice) => {
-            const sRate = BigInt(src.loadInt(64));
-            const bRate = BigInt(src.loadInt(64));
-            const totalSupply = BigInt(src.loadInt(64));
-            const totalBorrow = BigInt(src.loadInt(64));
-            const lastAccural = BigInt(src.loadInt(32));
-            const balance = BigInt(src.loadInt(64));
-            const trackingSupplyIndex = BigInt(src.loadUint(64));
-            const trackingBorrowIndex = BigInt(src.loadUint(64));
-            const awaitedSupply = BigInt(src.loadUint(64));  
+            const sRate = BigInt(src.loadUintBig(64));
+            const bRate = BigInt(src.loadUintBig(64));
+            const totalSupply = BigInt(src.loadUintBig(64));
+            const totalBorrow = BigInt(src.loadUintBig(64));
+            const lastAccural = BigInt(src.loadUintBig(32));
+            const balance = BigInt(src.loadUintBig(64));
+            const trackingSupplyIndex = BigInt(src.loadUintBig(64));
+            const trackingBorrowIndex = BigInt(src.loadUintBig(64));
+            const awaitedSupply = BigInt(src.loadUintBig(64));  
 
             return { sRate, bRate, totalSupply, totalBorrow, lastAccural, balance, trackingSupplyIndex, trackingBorrowIndex, awaitedSupply};
         },
