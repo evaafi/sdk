@@ -33,8 +33,8 @@ export function createAssetData(): DictionaryValue<AssetData> {
         serialize: (src: any, buidler: any) => {
             buidler.storeUint(src.sRate, 64);
             buidler.storeUint(src.bRate, 64);
-            buidler.storeUint(src.totalSupply, 64);
-            buidler.storeUint(src.totalBorrow, 64);
+            buidler.storeInt(src.totalSupply, 64);
+            buidler.storeInt(src.totalBorrow, 64);
             buidler.storeUint(src.lastAccural, 32);
             buidler.storeUint(src.balance, 64);
             buidler.storeUint(src.trackingSupplyIndex, 64);
@@ -44,8 +44,8 @@ export function createAssetData(): DictionaryValue<AssetData> {
         parse: (src: Slice) => {
             const sRate = BigInt(src.loadUintBig(64));
             const bRate = BigInt(src.loadUintBig(64));
-            const totalSupply = BigInt(src.loadUintBig(64));
-            const totalBorrow = BigInt(src.loadUintBig(64));
+            const totalSupply = BigInt(src.loadIntBig(64));
+            const totalBorrow = BigInt(src.loadIntBig(64));
             const lastAccural = BigInt(src.loadUintBig(32));
             const balance = BigInt(src.loadUintBig(64));
             const trackingSupplyIndex = BigInt(src.loadUintBig(64));

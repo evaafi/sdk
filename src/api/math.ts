@@ -523,6 +523,13 @@ export function predictHealthFactor(args: PredictHealthFactorArgs): number {
     return Math.min(Math.max(1 - totalBorrow / totalLimit, 0), 1);  // let's limit a result to zero below and one above
 }
 
+/**
+ * Predicts how APY will change as a result of one of the actions Borrow, Supply, Withdraw or Repay. 
+ *
+ * Used on the front-end. 
+ *
+ * @returns Estimated APYs for Supply and Borrow
+ */
 export function predictAPY(args: PredictAPYArgs): AssetInterest {
     const assetConfig = args.assetConfig;
     const assetData = args.assetData;
