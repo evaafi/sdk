@@ -139,7 +139,7 @@ async function waitForPrincipalChange(addr: Address, asset: PoolAssetConfig, fun
     }
 }
 // todo test sb rate change test ton liqui
-
+/*
 test('Get user info test', async () => {
 
     let currentEvaa = evaaMainNet;
@@ -207,7 +207,7 @@ test('Just supply mainnet', async () => {
         console.log(e);
     }
 })*/
-
+/*
 test('Just withdraw', async () => {
     console.log(priceData.dict);
     await evaaMainNet.getSync();

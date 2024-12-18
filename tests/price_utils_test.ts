@@ -38,25 +38,7 @@ test('prices parsing test', async () => {
     {id: 1, address: '0x2c21cabdaa89739de16bde7bc44e86401fac334a3c7e55305fe5e7563043e191'},
     {id: 2, address: '0x2eb258ce7b5d02466ab8a178ad8b0ba6ffa7b58ef21de3dc3b6dd359a1e16af0'},
     {id: 3, address: '0xf9a0769954b4430bca95149fb3d876deb7799d8f74852e0ad4ccc5778ce68b52'},*/
-    await fetch('https://nlpzx-3qaaa-aaaaj-azvlq-cai.raw.icp0.io/prices/set/0xd3a8c0b9fd44fd25a49289c631e3ac45689281f2f8cf0744400b4c65bed38e5d', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        packedPrices: data.packedPrices,
-        signature: data.signature
-      })
-    })
-      .then(response => response.json())
-      .then(data => console.log(data))
-      .catch(error => console.error('Error:', error));
-    
-    const timestamp = Cell.fromBoc(Buffer.from(data['packedPrices'], 'hex'))[0].beginParse().loadUint(32);
-    console.log('ts', timestamp, Date.now() / 1000 - timestamp)
-    //console.log(data.packedPrices);
-
-    //console.log(data.signature);
+  
     /*const data = {
         "status": "ok",
         "timestamp": 1722946102,
