@@ -1,5 +1,5 @@
 import { Address, BitBuilder, Cell, Dictionary } from '@ton/core';
-import { AssetConfig, ExtendedAssetData, ExtendedAssetsConfig, ExtendedAssetsData, MasterConfig, MasterConstants, PoolAssetConfig, PoolConfig } from './Master';
+import { AssetConfig, AssetData, ExtendedAssetData, ExtendedAssetsConfig, ExtendedAssetsData, MasterConfig, MasterConstants, PoolAssetConfig, PoolConfig } from './Master';
 
 export enum BalanceType {
     supply = 'supply',
@@ -48,6 +48,7 @@ export type UserLiteData = {
     rewards: Dictionary<bigint, UserRewards>;
     backupCell1: Cell | null;
     backupCell2: Cell | null;
+    fullyParsed: boolean;
 };
 
 export type UserDataActive = UserLiteData & {
@@ -61,6 +62,7 @@ export type UserDataActive = UserLiteData & {
     limitUsed: bigint;
     healthFactor: number;
     liquidationData: LiquidationData;
+    havePrincipalWithoutPrice: boolean;
 };
 
 export type UserDataInactive = {
@@ -98,4 +100,12 @@ export type PredictHealthFactorArgs = {
     assetsData: ExtendedAssetsData;
     assetsConfig: ExtendedAssetsConfig;
     poolConfig: PoolConfig;
+};
+
+export type PredictAPYArgs = {
+    balanceChangeType: BalanceChangeType;
+    amount: bigint;  // always positive
+    assetData: AssetData;
+    assetConfig: AssetConfig;
+    masterConstants: MasterConstants;
 };

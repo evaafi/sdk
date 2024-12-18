@@ -12,6 +12,7 @@ import {
 } from './math';
 import { loadMaybeMyRef, loadMyRef } from './helpers';
 import { BalanceType, UserBalance, UserData, UserLiteData, UserRewards } from '../types/User';
+import { checkNotInDebtAtAll } from "../api/math";
 
 export function createUserRewards(): DictionaryValue<UserRewards> {
     return {
@@ -32,8 +33,8 @@ export function createAssetData(): DictionaryValue<AssetData> {
         serialize: (src: any, buidler: any) => {
             buidler.storeUint(src.sRate, 64);
             buidler.storeUint(src.bRate, 64);
-            buidler.storeUint(src.totalSupply, 64);
-            buidler.storeUint(src.totalBorrow, 64);
+            buidler.storeInt(src.totalSupply, 64);
+            buidler.storeInt(src.totalBorrow, 64);
             buidler.storeUint(src.lastAccural, 32);
             buidler.storeUint(src.balance, 64);
             buidler.storeUint(src.trackingSupplyIndex, 64);
@@ -41,15 +42,15 @@ export function createAssetData(): DictionaryValue<AssetData> {
             buidler.storeUint(src.awaitedSupply, 64);
         },
         parse: (src: Slice) => {
-            const sRate = BigInt(src.loadInt(64));
-            const bRate = BigInt(src.loadInt(64));
-            const totalSupply = BigInt(src.loadInt(64));
-            const totalBorrow = BigInt(src.loadInt(64));
-            const lastAccural = BigInt(src.loadInt(32));
-            const balance = BigInt(src.loadInt(64));
-            const trackingSupplyIndex = BigInt(src.loadUint(64));
-            const trackingBorrowIndex = BigInt(src.loadUint(64));
-            const awaitedSupply = BigInt(src.loadUint(64));  
+            const sRate = BigInt(src.loadUintBig(64));
+            const bRate = BigInt(src.loadUintBig(64));
+            const totalSupply = BigInt(src.loadIntBig(64));
+            const totalBorrow = BigInt(src.loadIntBig(64));
+            const lastAccural = BigInt(src.loadUintBig(32));
+            const balance = BigInt(src.loadUintBig(64));
+            const trackingSupplyIndex = BigInt(src.loadUintBig(64));
+            const trackingBorrowIndex = BigInt(src.loadUintBig(64));
+            const awaitedSupply = BigInt(src.loadUintBig(64));  
 
             return { sRate, bRate, totalSupply, totalBorrow, lastAccural, balance, trackingSupplyIndex, trackingBorrowIndex, awaitedSupply};
         },
@@ -267,6 +268,7 @@ export function parseUserLiteData(
         trackingBorrowIndex: trackingBorrowIndex,
         dutchAuctionStart: dutchAuctionStart,
         backupCell: backupCell,
+        fullyParsed: false,
         
         rewards: rewards,
         backupCell1: backupCell1,
@@ -282,6 +284,9 @@ export function parseUserData(
     poolConfig: PoolConfig,
     applyDust: boolean = false
 ): UserData {
+    userLiteData.fullyParsed = true;
+    let havePrincipalWithoutPrice = false;
+
     const poolAssetsConfig = poolConfig.poolAssetsConfig;
     const masterConstants = poolConfig.masterConstants;
 
@@ -290,6 +295,16 @@ export function parseUserData(
 
     let supplyBalance = 0n;
     let borrowBalance = 0n;
+
+    for (const [assetId, principal] of userLiteData.realPrincipals) {
+        if (!prices.has(assetId)) {
+            userLiteData.fullyParsed = false;
+
+            if (principal != 0n) {
+                havePrincipalWithoutPrice = true;
+            }
+        }
+    }
 
     for (const [_, asset] of Object.entries(poolAssetsConfig)) {
         const assetData = assetsData.get(asset.assetId) as ExtendedAssetData;
@@ -307,6 +322,10 @@ export function parseUserData(
     }
 
     for (const [_, asset] of Object.entries(poolAssetsConfig)) {
+        if (!prices.has(asset.assetId)) {
+            continue;
+        }
+
         const assetConfig = assetsConfig.get(asset.assetId) as AssetConfig;
         const balance = userLiteData.balances.get(asset.assetId) as UserBalance;
 
@@ -318,17 +337,23 @@ export function parseUserData(
         }
     }
 
-    const availableToBorrow = getAvailableToBorrow(assetsConfig, assetsData, userLiteData.principals, prices, masterConstants);
+    const availableToBorrow = getAvailableToBorrow(assetsConfig, assetsData, userLiteData.realPrincipals, prices, masterConstants);
+
     for (const [_, asset] of Object.entries(poolAssetsConfig)) {
+        const balance = userLiteData.balances.get(asset.assetId) as UserBalance;
         const assetConfig = assetsConfig.get(asset.assetId) as AssetConfig;
         const assetData = assetsData.get(asset.assetId) as ExtendedAssetData;
-        const balance = userLiteData.balances.get(asset.assetId) as UserBalance;
         
         if (balance.type === BalanceType.supply) {
             withdrawalLimits.set(
                 asset.assetId,
-                bigIntMin(calculateMaximumWithdrawAmount(assetsConfig, assetsData, userLiteData.principals, prices, masterConstants, asset.assetId), assetData.balance)
+                bigIntMin(calculateMaximumWithdrawAmount(assetsConfig, assetsData, userLiteData.realPrincipals, prices, masterConstants, asset.assetId), assetData.balance)
             );
+        }
+
+        if (!prices.has(asset.assetId)) {
+            borrowLimits.set(asset.assetId, 0n);
+            continue;
         }
 
         borrowLimits.set(
@@ -343,12 +368,14 @@ export function parseUserData(
             ? 0
             : Number(BigInt(1e9) - (availableToBorrow * BigInt(1e9)) / (borrowBalance + availableToBorrow)) / 1e7;
 
-    const liquidationData = calculateLiquidationData(assetsConfig, assetsData, userLiteData.principals, prices, poolConfig);
     let healthFactor = 1;
-    if (liquidationData.totalLimit != 0n) {
-        healthFactor = 1 - Number(liquidationData.totalDebt) / Number(liquidationData.totalLimit);
-    } 
-
+    let liquidationData;
+    if (!havePrincipalWithoutPrice) {
+        liquidationData = calculateLiquidationData(assetsConfig, assetsData, userLiteData.realPrincipals, prices, poolConfig);
+        if (liquidationData.totalLimit != 0n) {
+            healthFactor = 1 - Number(liquidationData.totalDebt) / Number(liquidationData.totalLimit);
+        } 
+    }
     return {
         ...userLiteData,
         withdrawalLimits: withdrawalLimits,
@@ -360,5 +387,6 @@ export function parseUserData(
         limitUsed: limitUsed,
         liquidationData: liquidationData,
         healthFactor: healthFactor,
+        havePrincipalWithoutPrice: havePrincipalWithoutPrice
     };
 }

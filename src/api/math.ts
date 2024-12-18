@@ -15,6 +15,7 @@ import {
     BalanceType,
     HealthParamsArgs,
     LiquidationData,
+    PredictAPYArgs,
     PredictHealthFactorArgs,
     UserBalance
 } from '../types/User';
@@ -109,9 +110,28 @@ export function calculateAssetData(
     };
 }
 
-export function calculateAssetInterest(assetConfig: AssetConfig, assetData: AssetData, masterConstants: MasterConstants): AssetInterest {
+export function calculateAssetInterest(
+    assetConfig: AssetConfig,
+    assetData: AssetData,
+    masterConstants: MasterConstants
+): AssetInterest {
     const totalSupply = calculatePresentValue(assetData.sRate, assetData.totalSupply, masterConstants);
     const totalBorrow = calculatePresentValue(assetData.bRate, assetData.totalBorrow, masterConstants);
+
+    return calculateInterestWithSupplyBorrow(
+        totalSupply,
+        totalBorrow,
+        assetConfig,
+        masterConstants
+    );
+}
+
+export function calculateInterestWithSupplyBorrow(
+    totalSupply: bigint,
+    totalBorrow: bigint,
+    assetConfig: AssetConfig,
+    masterConstants: MasterConstants
+): AssetInterest {
     let utilization = 0n;
     let supplyInterest = 0n;
     let borrowInterest = 0n;
@@ -146,6 +166,7 @@ export function calculateAssetInterest(assetConfig: AssetConfig, assetData: Asse
         borrowInterest
     };
 }
+
 
 export function checkNotInDebtAtAll(principals: Dictionary<bigint, bigint>): boolean {
     return principals.values().every(x => x >= 0n);
@@ -250,10 +271,19 @@ export function getAvailableToBorrow(
     let borrowAmount = 0n;
 
     for (const assetID of principals.keys()) {
+        const principal = principals.get(assetID) as bigint;
+        
+        if (principal == 0n) {
+            continue;
+        }
+
+        if (!prices.has(assetID)) {
+            return 0n;
+        }
+
         const assetConfig = assetsConfig.get(assetID) as AssetConfig;
         const assetData = assetsData.get(assetID) as ExtendedAssetData;
         const price = prices.get(assetID) as bigint;
-        const principal = principals.get(assetID) as bigint;
 
         if (principal < 0n) {
             borrowAmount += mulDiv(calculatePresentValue(assetData.bRate, -principal, masterConstants), price, 10n ** assetConfig.decimals);
@@ -464,7 +494,6 @@ export function predictHealthFactor(args: PredictHealthFactorArgs): number {
 
     const assetConfig = args.assetsConfig.get(assetId)!;
     const assetPrice = Number(args.prices.get(assetId)!);
-const assetData = args.assetsData.get(assetId)!;
 
     let totalLimit = Number(healthParams.totalLimit);
     let totalBorrow = Number(healthParams.totalDebt);
@@ -492,4 +521,37 @@ const assetData = args.assetsData.get(assetId)!;
     }
 
     return Math.min(Math.max(1 - totalBorrow / totalLimit, 0), 1);  // let's limit a result to zero below and one above
+}
+
+/**
+ * Predicts how APY will change as a result of one of the actions Borrow, Supply, Withdraw or Repay. 
+ *
+ * Used on the front-end. 
+ *
+ * @returns Estimated APYs for Supply and Borrow
+ */
+export function predictAPY(args: PredictAPYArgs): AssetInterest {
+    const assetConfig = args.assetConfig;
+    const assetData = args.assetData;
+    const masterConstants = args.masterConstants;
+
+    let totalSupply = calculatePresentValue(assetData.sRate, assetData.totalSupply, masterConstants);
+    let totalBorrow = calculatePresentValue(assetData.bRate, assetData.totalBorrow, masterConstants);
+
+    const currentAmount = args.amount;
+    const changeType = args.balanceChangeType;
+
+    if (currentAmount != null && currentAmount != 0n) {
+        if (changeType == BalanceChangeType.Borrow) {
+            totalBorrow += currentAmount;
+        } else if (changeType == BalanceChangeType.Repay) {
+            totalBorrow -= currentAmount;
+        } else if (changeType == BalanceChangeType.Withdraw) {
+            totalSupply -= currentAmount;
+        } else if (changeType == BalanceChangeType.Supply) {
+            totalSupply += currentAmount;
+        }
+    }
+
+    return calculateInterestWithSupplyBorrow(totalSupply, totalBorrow, assetConfig, masterConstants);
 }

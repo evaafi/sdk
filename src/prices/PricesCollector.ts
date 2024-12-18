@@ -134,6 +134,6 @@ export class PricesCollector {
     }
 
     #filterEmptyPrincipalsAndAssets(principals: Dictionary<bigint, bigint>) {
-        return principals.keys().filter(x => principals.get(x)! > 0n).map(x => this.#poolConfig.poolAssetsConfig.find(asset => asset.assetId == x));
+        return principals.keys().filter(x => principals.get(x)! != 0n).map(x => this.#poolConfig.poolAssetsConfig.find(asset => asset.assetId == x));
     }
 }

@@ -14,6 +14,8 @@ export {
     calculateLiquidationData,
     predictHealthFactor,
     calculateHealthParams,
+    calculateInterestWithSupplyBorrow,
+    predictAPY,
     BigMath,
 } from './api/math';
 
