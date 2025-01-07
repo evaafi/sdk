@@ -17,6 +17,7 @@ export {
     calculateInterestWithSupplyBorrow,
     predictAPY,
     BigMath,
+    getAssetLiquidityMinusReserves,
 } from './api/math';
 
 export {

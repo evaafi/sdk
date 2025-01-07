@@ -54,6 +54,12 @@ export function calculatePresentValue(index: bigint, principalValue: bigint, mas
     return (principalValue * index) / masterConstants.FACTOR_SCALE;
 }
 
+export function getAssetLiquidityMinusReserves(assetData: AssetData, masterConstants: MasterConstants) {
+    const total_supply = calculatePresentValue(assetData.sRate, assetData.totalSupply, masterConstants);
+    const total_borrow = calculatePresentValue(assetData.bRate, assetData.totalBorrow, masterConstants);
+    return bigIntMin(total_supply - total_borrow, assetData.balance);
+}
+
 export function calculateCurrentRates(assetConfig: AssetConfig, assetData: AssetData, masterConstants: MasterConstants) {
     const now = BigInt(Math.floor(Date.now() / 1000));
     const timeElapsed = now - assetData.lastAccural;
