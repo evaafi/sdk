@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
  - ```getAssetLiquidityMinusReserves``` function needed to count the amount of free amount for withdrawal
 ### Fixed
- - ```withdrawalLimits``` and ```borrowLimits``` functions now take into account the amount available for withdrawal
+ - ```borrowLimits``` function now take into account the amount available for withdrawal
 
 ## 0.6.2-b &mdash; 2024-12-17
 ### Added
