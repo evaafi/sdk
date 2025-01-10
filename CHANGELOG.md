@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.6.2-c &mdash; 2025-01-07
+### Added
+ - ```getAssetLiquidityMinusReserves``` function needed to count the amount of free amount for withdrawal
+### Fixed
+ - ```borrowLimits``` function now take into account the amount available for withdrawal
+
 ## 0.6.2-b &mdash; 2024-12-17
 ### Added
  - new field in ```UserLiteData``` . ```fullyParsed``` and ```havePrincipalWithoutPrice```

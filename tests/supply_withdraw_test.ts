@@ -207,8 +207,8 @@ test('Just supply mainnet', async () => {
         console.log(e);
     }
 })*/
-/*
-test('Just withdraw', async () => {
+
+/*test('Just withdraw', async () => {
     console.log(priceData.dict);
     await evaaMainNet.getSync();
 
@@ -222,14 +222,14 @@ test('Just withdraw', async () => {
     await evaaMainNet.sendWithdraw(sender_mainnet, toNano(0.7), {
         queryID: 0n,
         includeUserCode: true,
-        amount: 100_000_000n,
+        amount: 200_000n,
         userAddress: address,
-        asset: TON_MAINNET,
+        asset: USDT_MAINNET,
         priceData: currentWithdrawPrices.dataCell,
         amountToTransfer: toNano(0),
         payload: Cell.EMPTY
     });
-})
+})*/
 
 /*test('Liquidate test', async () => {
     await evaa.getSync();

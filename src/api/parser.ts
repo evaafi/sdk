@@ -7,6 +7,7 @@ import {
     calculateLiquidationData,
     calculateMaximumWithdrawAmount,
     calculatePresentValue,
+    getAssetLiquidityMinusReserves,
     getAvailableToBorrow,
     presentValue,
 } from './math';
@@ -344,6 +345,8 @@ export function parseUserData(
         const assetConfig = assetsConfig.get(asset.assetId) as AssetConfig;
         const assetData = assetsData.get(asset.assetId) as ExtendedAssetData;
         
+        const assetLiquidityMinusReserves = getAssetLiquidityMinusReserves(assetData, masterConstants);
+
         if (balance.type === BalanceType.supply) {
             withdrawalLimits.set(
                 asset.assetId,
@@ -358,7 +361,7 @@ export function parseUserData(
 
         borrowLimits.set(
             asset.assetId,
-            bigIntMax(0n, bigIntMin((availableToBorrow * 10n ** assetConfig.decimals) / prices.get(asset.assetId)!, assetData.balance, assetData.totalSupply - assetData.totalBorrow)),
+            bigIntMax(0n, bigIntMin((availableToBorrow * 10n ** assetConfig.decimals) / prices.get(asset.assetId)!, assetLiquidityMinusReserves)),
         );
     }
 
