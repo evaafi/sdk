@@ -1,4 +1,4 @@
-import { AssetConfig, AssetData, BalanceChangeType, calculatePresentValue, Evaa, EvaaUser, MAINNET_POOL_CONFIG, MASTER_CONSTANTS, MasterConfig, MasterConstants, mulFactor, predictAPY, Prices, PricesCollector, RawPriceData, TON_MAINNET, UserDataActive, verifyPricesSign, verifyRawPriceDataSign } from "../../src";
+import { AssetConfig, AssetData, BalanceChangeType, calculatePresentValue, Evaa, EvaaUser, ExtendedAssetData, MAINNET_POOL_CONFIG, MASTER_CONSTANTS, MasterConfig, MasterConstants, mulFactor, predictAPY, Prices, PricesCollector, RawPriceData, TON_MAINNET, UserDataActive, verifyPricesSign, verifyRawPriceDataSign } from "../../src";
 import { Dictionary, OpenedContract, TonClient } from "@ton/ton";
 
 import dotenv from 'dotenv';
@@ -7,10 +7,10 @@ describe('parseUserData test', () => {
     dotenv.config();
     let clientMainNet;
     let evaaMainNet: OpenedContract<Evaa>;
-    let assetsData: Dictionary<bigint, AssetData>;
+    let assetsData: Dictionary<bigint, ExtendedAssetData>;
     let assetsConfig: Dictionary<bigint, AssetConfig>;
     let masterConstants: MasterConstants;
-    let tonData: AssetData;
+    let tonData: ExtendedAssetData;
     let tonConfig: AssetConfig;
     let totalSupply: bigint;
     let totalBorrow: bigint;
@@ -62,5 +62,16 @@ describe('parseUserData test', () => {
         });
 
         expect(predicted.borrowInterest).toEqual(tonConfig.baseBorrowRate);
+    });
+
+    test('test 0 value', () => {        
+        const predicted = predictAPY({
+            amount: 0n,
+            balanceChangeType: BalanceChangeType.Repay,
+            assetData: tonData,
+            assetConfig: tonConfig,
+            masterConstants: masterConstants
+        });
+        expect(predicted.borrowInterest).toEqual(tonData.borrowInterest);
     });
 });

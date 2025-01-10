@@ -1,5 +1,6 @@
 import {
     AgregatedBalances,
+    AssetApy,
     AssetConfig,
     AssetData,
     AssetInterest,
@@ -536,7 +537,7 @@ export function predictHealthFactor(args: PredictHealthFactorArgs): number {
  *
  * @returns Estimated APYs for Supply and Borrow
  */
-export function predictAPY(args: PredictAPYArgs): AssetInterest {
+export function predictAPY(args: PredictAPYArgs): AssetInterest & AssetApy {
     const assetConfig = args.assetConfig;
     const assetData = args.assetData;
     const masterConstants = args.masterConstants;
@@ -559,5 +560,11 @@ export function predictAPY(args: PredictAPYArgs): AssetInterest {
         }
     }
 
-    return calculateInterestWithSupplyBorrow(totalSupply, totalBorrow, assetConfig, masterConstants);
+    const interest = calculateInterestWithSupplyBorrow(totalSupply, totalBorrow, assetConfig, masterConstants);
+
+    return {
+        ...interest,
+        supplyApy: (1 + (Number(interest.supplyInterest) / 1e12) * 24 * 3600) ** 365 - 1,
+        borrowApy: (1 + (Number(interest.borrowInterest) / 1e12) * 24 * 3600) ** 365 - 1
+    }
 }
