@@ -128,7 +128,7 @@ export async function collectAndFilterPrices(priceSource: PriceSource, poolConfi
     const prices = await priceSource.getPrices();
          
     //console.debug('[FILTERING] before filtering prices len ', priceSource.sourceName, prices.length);
-    return await (async () => {
+    return (async () => {
             const acceptedPrices: RawPriceData[] = prices.filter(
             price => verifyPricesTimestamp()(price) && verifyPricesSign(poolConfig.oracles)(price)
         );
