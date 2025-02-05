@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.6.2-d &mdash; 2025-02-03
+### Fixed
+ - ```getPricesByAssetList``` function uses pricesFiltered instead of prices
+### Improved
+ - ```collectAndFilterPrices``` function have less promise chains
+
 ## 0.6.2-c &mdash; 2025-01-07
 ### Added
  - ```getAssetLiquidityMinusReserves``` function needed to count the amount of free amount for withdrawal
