@@ -22,8 +22,8 @@ export const NULL_ADDRESS = Address.parse('UQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 export const EVAA_MASTER_MAINNET = Address.parse('EQC8rUZqR_pWV1BylWUlPNBzyiTYVoBEmQkMIQDZXICfnuRr');
 export const MAINNET_VERSION = 6;
-export const EVAA_MASTER_TESTNET = Address.parse('EQDLsg3w-iBj26Gww7neYoJAxiT2t77Zo8ro56b0yuHsPp3C');
-export const TESTNET_VERSION = 1;
+export const EVAA_MASTER_TESTNET = Address.parse('kQBae_Pt-NcxX0yhNnsYyK-Kh6ZBnIUQhxheKTvNLTgZf7AV');
+export const TESTNET_VERSION = 0;
 export const EVAA_LP_MAINNET = Address.parse('EQBIlZX2URWkXCSg3QF2MJZU-wC5XkBoLww-hdWk2G37Jc6N');
 export const EVAA_LP_MAINNET_VERSION = 3;
 export const EVAA_ALTS_MAINNET = Address.parse('EQANURVS3fhBO9bivig34iyJQi97FhMbpivo1aUEAS2GYSu-');
@@ -36,7 +36,12 @@ export const ORACLES_MAINNET: OracleNFT[] = [
     {id: 3, address: '0xf9a0769954b4430bca95149fb3d876deb7799d8f74852e0ad4ccc5778ce68b52', pubkey: Buffer.from('9cbf8374cf1f2cf17110134871d580198416e101683f4a61f54cf2a3e4e32070', 'hex') },
 ];
 
-export const ORACLES_TESTNET: OracleNFT[] = ORACLES_MAINNET;
+export const ORACLES_TESTNET: OracleNFT[] = [
+    {id: 0, address: '0x3bb147a37b7a7f874c39320440f352bddd2c9337e31a778731910f0266391650', pubkey: Buffer.from('ee3f4f45c2f656eb760bfc54df59e0dcdf152785bcf3f227b90493429c32bd07', 'hex') }, 
+    {id: 1, address: '0x676767e93b05a21aec9023a65f73cffe1c725709c3c964a7c3f0fd4229089bfe', pubkey: Buffer.from('473a72ac2bbfc14da3a77314c2cb73e755b88e7d1d6eae05ea88b4ce176a46c9', 'hex') },
+    {id: 2, address: '0x9c9e65951b0c5920c286bdb3410babcaf21f85bc9c90c13172988630f1244e0f', pubkey: Buffer.from('ed1e630258c472cf3516c5a1cab2b3efeb27f4166877dbdd66988f98d2072d72', 'hex') },
+    {id: 3, address: '0x9dcf880229bfb68d7344fd294624b64f1e0b43b9d858f0fdb1bc6434616c08f5', pubkey: Buffer.from('567d4d689053771991693e919f5bcf1275941ce3fca9cadcdf06632b794fe9e4', 'hex') },
+];
 
 export const ORACLES_LP: OracleNFT[] = ORACLES_MAINNET;
 export const ORACLES_ALTS: OracleNFT[] = ORACLES_MAINNET;
