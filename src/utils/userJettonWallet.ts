@@ -14,6 +14,7 @@ function getUserJettonData(ownerAddress: Address, assetName: string, jettonWalle
               .endCell();
       case 'DOGS':
       case 'NOT':
+      case 'tgBTC':
       case 'USDT':
           return beginCell()
               .storeUint(0, 4)
@@ -29,13 +30,6 @@ function getUserJettonData(ownerAddress: Address, assetName: string, jettonWalle
               .storeRef(jettonWalletCode)
               .storeCoins(0)
               .storeUint(0, 48)
-              .endCell();
-      case 'tgBTC':
-          return beginCell()
-              .storeUint(0, 4)
-              .storeCoins(0)
-              .storeAddress(ownerAddress)
-              .storeAddress(jettonMasterAddress)
               .endCell();
       default:
           return beginCell().storeCoins(0)
