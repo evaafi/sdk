@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## 0.6.2-d &mdash; 2025-02-03
+### Added
+- `TGBTC_TESTNET` new asset tgBTC on testnet
 ### Fixed
  - ```getPricesByAssetList``` function uses pricesFiltered instead of prices
 ### Improved
