@@ -58,6 +58,12 @@ export {
 } from './contracts/MasterContract';
 export { EvaaUser } from './contracts/UserContract';
 
+// Rewards contracts wrappers
+export { RewardMaster, type RewardMasterConfig } from './rewards/RewardMaster';
+export { RewardUser, type RewardUserConfig } from './rewards/RewardUser';
+export { JettonMinter as RewardJettonMinter, type JettonMinterConfig, type MintMessage } from './rewards/JettonMinter';
+export { JettonWallet as RewardJettonWallet, type JettonWalletConfig } from './rewards/JettonWallet';
+
 // Types
 export {
     UpgradeConfig,
@@ -98,7 +104,10 @@ export {
     LENDING_CODE,
     OPCODES,
     FEES,
-    MASTER_CONSTANTS
+    MASTER_CONSTANTS,
+    EVAA_REWARDS_MASTER_TESTNET,
+    EVAA_REWARDS_MASTER_CODE_TESTNET,
+    EVAA_REWARDS_USER_CODE_TESTNET,
 } from './constants/general';
 
 export {

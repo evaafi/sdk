@@ -1,4 +1,4 @@
-import { Address, Cell, Dictionary } from '@ton/core';
+import { Address, Cell, Dictionary } from '@ton/core'
 
 export type MasterConstants = {
     FACTOR_SCALE: bigint,
