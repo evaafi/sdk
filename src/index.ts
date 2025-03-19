@@ -118,7 +118,9 @@ export {
     MAINNET_POOL_CONFIG,
     TESTNET_POOL_CONFIG,
     MAINNET_LP_POOL_CONFIG,
-    MAINNET_ALTS_POOL_CONFIG
+    MAINNET_ALTS_POOL_CONFIG,
+    // Reward Pools
+    TESTNET_MASTER_REWARD_CONFIG,
 } from './constants/pools';
 
 export {
