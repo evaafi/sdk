@@ -1,7 +1,6 @@
-import { Address } from '@ton/core'
-import { EvaaMasterRewardsConfig } from '../rewards/EvaaMasterRewards'
-import { EvaaUserRewardsConfig } from '../rewards/EvaaUserRewards'
-import { PoolConfig } from '../types/Master'
+import { Address } from '@ton/core';
+import { PoolConfig } from '../types/Master';
+import { EvaaMasterRewardsConfig } from '../types/MasterRewards';
 import {
     CATI_MAINNET,
     DOGS_MAINNET,
@@ -17,7 +16,7 @@ import {
     TSTON_MAINNET,
     USDT_MAINNET,
     USDT_STORM_MAINNET,
-} from './assets'
+} from './assets';
 import {
     EVAA_ALTS_MAINNET,
     EVAA_ALTS_MAINNET_VERSION,
@@ -36,7 +35,7 @@ import {
     ORACLES_MAINNET,
     ORACLES_TESTNET,
     TESTNET_VERSION,
-} from './general'
+} from './general';
 
 export const MAINNET_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_MASTER_MAINNET,
@@ -91,17 +90,7 @@ export const TESTNET_MASTER_REWARD_CONFIG: EvaaMasterRewardsConfig = {
     evaaMasterAddress: new Address(0, Buffer.alloc(32, 0)),
     rewardMasterCode: EVAA_REWARDS_MASTER_CODE_TESTNET,
     rewardUserCode: EVAA_REWARDS_USER_CODE_TESTNET,
+    asset: TON_TESTNET,
     availableReward: 0,
-    assetId: Buffer.from('1a4219fe5e60d63af2a3cc7dce6fec69b45c6b5718497a6148e7c232ac87bd8a', 'hex'), // TON
-    rewardTokenJettonWalletAddress: null,
-    publicKey: Buffer.from('9813725d6cead1c9bbc0e24b21d4fc62a7fa8ac4bb01b6758df30169a71dba67', 'hex'), // adminAddress publicKey
-};
-
-export const TESTNET_USER_REWARD_CONFIG: EvaaUserRewardsConfig = {
-    userAddress: EVAA_REWARDS_MASTER_TESTNET,
-    rewardUserCode: EVAA_REWARDS_USER_CODE_TESTNET,
-    baseTrackingAccrued: 0,
-    rewardMasterAddress: EVAA_REWARDS_MASTER_TESTNET,
-    assetId: Buffer.from('1a4219fe5e60d63af2a3cc7dce6fec69b45c6b5718497a6148e7c232ac87bd8a', 'hex'), // TON
-    publicKey: Buffer.from('9813725d6cead1c9bbc0e24b21d4fc62a7fa8ac4bb01b6758df30169a71dba67', 'hex'),
+    publicKey: Buffer.from('c38be45e033419b49cd22c97fbd23610fbc851a931208f8b4a1817dd11cb63ac', 'hex'), // adminAddress publicKey
 };

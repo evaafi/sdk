@@ -1,3 +1,4 @@
+import { sign } from '@ton/crypto';
 import {
     Address,
     beginCell,
@@ -10,18 +11,11 @@ import {
     SendMode,
     StateInit,
     toNano,
-} from '@ton/core';
-import { Maybe } from '@ton/core/dist/utils/maybe';
-import { sign } from '@ton/crypto';
-import { FEES } from '../constants/general';
-
-export type RewardUserConfig = {
-    userAddress: Address;
-    baseTrackingAccrued: number;
-    rewardMasterAddress: Address;
-    assetId: Buffer;
-    publicKey: Buffer;
-};
+} from '@ton/ton';
+import { Maybe } from '@ton/ton/dist/utils/maybe';
+import { FEES, OPCODES } from '../constants/general';
+import { EvaaUserRewardsConfig } from '../types/UserRewards';
+import { bigIntToBuffer } from '../utils/sha256BigInt';
 
 export class RewardUser implements Contract {
     constructor(
@@ -33,23 +27,23 @@ export class RewardUser implements Contract {
         return new RewardUser(address);
     }
 
-    static rewardUserConfigToCell(config: RewardUserConfig): Cell {
+    static rewardUserConfigToCell(config: EvaaUserRewardsConfig): Cell {
         return beginCell()
             .storeAddress(config.userAddress)
-            .storeCoins(config.baseTrackingAccrued)
+            .storeCoins(0)
             .storeRef(
                 beginCell()
                     .storeAddress(config.rewardMasterAddress)
-                    .storeBuffer(config.assetId, 256 / 8)
+                    .storeBuffer(bigIntToBuffer(config.asset.assetId), 256 / 8)
                     .storeBuffer(config.publicKey, 256 / 8)
                     .endCell(),
             )
             .endCell();
     }
 
-    static createFromConfig(config: RewardUserConfig, code: Cell, workchain = 0) {
+    static createFromConfig(config: EvaaUserRewardsConfig, workchain = 0) {
         const data = this.rewardUserConfigToCell(config);
-        const init = { code, data };
+        const init = { code: config.rewardUserCode, data };
         return new RewardUser(contractAddress(workchain, init), init);
     }
 
@@ -61,14 +55,13 @@ export class RewardUser implements Contract {
         });
     }
 
-    signClaimMessage(address: Address, claimAmount: bigint, privateKey: Buffer): Cell {
-        const claimBody = beginCell()
-            .storeAddress(address)
-            .storeCoins(toNano(claimAmount))
-            .endCell();
+    claimMessageToCell(claimAmount: bigint): Cell {
+        return beginCell().storeAddress(this.address).storeCoins(toNano(claimAmount)).endCell();
+    }
 
+    signClaimMessage(claimBody: Cell, privateKey: Buffer): Cell {
         return beginCell()
-            .storeUint(2, 32)
+            .storeUint(OPCODES.REWARD_CLAIM, 32)
             .storeUint(0, 64)
             .storeBuffer(sign(claimBody.hash(), privateKey))
             .storeRef(claimBody)
@@ -85,7 +78,8 @@ export class RewardUser implements Contract {
 
     async getData(provider: ContractProvider) {
         const result = await provider.get('load_data', []);
-        const data: RewardUserConfig = {
+        // TODO: maybe it will be typed
+        const data = {
             userAddress: result.stack.readAddress(),
             baseTrackingAccrued: Number(fromNano(result.stack.readBigNumber())),
             rewardMasterAddress: result.stack.readAddress(),

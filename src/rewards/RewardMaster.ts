@@ -10,19 +10,11 @@ import {
     SendMode,
     StateInit,
     toNano,
-} from '@ton/core';
-import { Maybe } from '@ton/core/dist/utils/maybe';
+} from '@ton/ton';
+import { Maybe } from '@ton/ton/dist/utils/maybe';
 import { FEES, OPCODES } from '../constants/general';
-
-export type RewardMasterConfig = {
-    adminAddress: Address;
-    availableReward: number;
-    rewardUserCode: Cell;
-    evaaMasterAddress: Address;
-    rewardTokenJettonWalletAddress: Address | null;
-    assetId: Buffer;
-    publicKey: Buffer;
-};
+import { EvaaMasterRewardsConfig } from '../types/MasterRewards';
+import { bigIntToBuffer } from '../utils/sha256BigInt';
 
 export class RewardMaster implements Contract {
     constructor(
@@ -34,25 +26,25 @@ export class RewardMaster implements Contract {
         return new RewardMaster(address);
     }
 
-    static rewardMasterConfigToCell(config: RewardMasterConfig): Cell {
+    static rewardMasterConfigToCell(config: EvaaMasterRewardsConfig): Cell {
         return beginCell()
             .storeAddress(config.adminAddress)
             .storeCoins(config.availableReward)
-            .storeAddress(config.rewardTokenJettonWalletAddress)
+            .storeAddress(null) // The addres null for TON
             .storeRef(config.rewardUserCode)
             .storeRef(
                 beginCell()
                     .storeAddress(config.evaaMasterAddress)
-                    .storeBuffer(config.assetId, 256 / 8)
+                    .storeBuffer(bigIntToBuffer(config.asset.assetId), 256 / 8)
                     .storeBuffer(config.publicKey, 256 / 8)
                     .endCell(),
             )
             .endCell();
     }
 
-    static createFromConfig(config: RewardMasterConfig, code: Cell, workchain = 0) {
+    static createFromConfig(config: EvaaMasterRewardsConfig, workchain = 0) {
         const data = this.rewardMasterConfigToCell(config);
-        const init = { code, data };
+        const init = { code: config.rewardMasterCode, data };
         return new RewardMaster(contractAddress(workchain, init), init);
     }
 
@@ -96,7 +88,8 @@ export class RewardMaster implements Contract {
 
     async getData(provider: ContractProvider) {
         const result = await provider.get('load_data', []);
-        const data: RewardMasterConfig = {
+        const data = {
+            // TODO: maybe it will be typed
             adminAddress: result.stack.readAddress(),
             availableReward: Number(fromNano(result.stack.readBigNumber())),
             rewardUserCode: result.stack.readCell(),

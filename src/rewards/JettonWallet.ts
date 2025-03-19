@@ -1,4 +1,4 @@
-import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Sender, SendMode } from '@ton/core';
+import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Sender, SendMode } from '@ton/ton';
 import { OPCODES } from '../constants/general';
 
 export type JettonWalletConfig = {
@@ -19,7 +19,7 @@ export class JettonWallet implements Contract {
 
     static jettonWalletConfigToCell(config: JettonWalletConfig): Cell {
         return beginCell()
-            .storeCoins(0)
+            .storeCoins(0) // baseTrackingAccured always is 0, check smartcontract
             .storeAddress(config.owner)
             .storeAddress(config.minter)
             .storeRef(config.walletCode)
