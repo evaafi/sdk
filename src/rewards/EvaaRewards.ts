@@ -1,4 +1,4 @@
-import { Address, Contract, ContractProvider } from '@ton/ton';
+import { Address, Contract } from '@ton/ton';
 import { EvaaRewardsConfig } from '../types/MasterRewards';
 import { RewardUser } from './RewardUser';
 
@@ -11,15 +11,13 @@ export class EvaaUserRewards implements Contract {
         this.address = this.userAddress;
     }
 
-    openContract(provider: ContractProvider) {
-        return provider.open(
-            RewardUser.createFromConfig({
-                asset: this.config.asset,
-                rewardMasterAddress: this.config.adminAddress,
-                rewardUserCode: this.config.rewardUserCode,
-                userAddress: this.userAddress,
-                publicKey: this.config.publicKey,
-            }),
-        );
+    openContract() {
+        return RewardUser.createFromConfig({
+            asset: this.config.asset,
+            rewardMasterAddress: this.config.adminAddress,
+            rewardUserCode: this.config.rewardUserCode,
+            userAddress: this.userAddress,
+            publicKey: this.config.publicKey,
+        });
     }
 }
