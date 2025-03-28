@@ -1,7 +1,7 @@
 import { Address, Cell } from '@ton/ton';
 import { PoolAssetConfig } from './Master';
 
-export type EvaaMasterRewardsConfig = {
+export type EvaaRewardsConfig = {
     workchain?: number;
     adminAddress: Address;
     evaaMasterAddress: Address;

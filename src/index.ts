@@ -60,13 +60,12 @@ export { EvaaUser } from './contracts/UserContract';
 
 // Rewards contracts wrappers
 export { RewardMaster } from './rewards/RewardMaster';
-export { type EvaaMasterRewardsConfig } from './types/MasterRewards';
+export { type EvaaRewardsConfig } from './types/MasterRewards';
 export { RewardUser } from './rewards/RewardUser';
 export { type EvaaUserRewardsConfig } from './types/UserRewards';
 export { JettonMinter as RewardJettonMinter, type JettonMinterConfig, type MintMessage } from './rewards/JettonMinter';
 export { JettonWallet as RewardJettonWallet, type JettonWalletConfig } from './rewards/JettonWallet';
-export { EvaaMasterRewards } from './rewards/EvaaMasterRewards';
-export { EvaaUserRewards } from './rewards/EvaaUserRewards';
+export { EvaaUserRewards } from './rewards/EvaaRewards';
 
 // Types
 export {

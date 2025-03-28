@@ -13,7 +13,7 @@ import {
 } from '@ton/ton';
 import { Maybe } from '@ton/ton/dist/utils/maybe';
 import { FEES, OPCODES } from '../constants/general';
-import { EvaaMasterRewardsConfig } from '../types/MasterRewards';
+import { EvaaRewardsConfig } from '../types/MasterRewards';
 import { bigIntToBuffer } from '../utils/sha256BigInt';
 
 export class RewardMaster implements Contract {
@@ -26,7 +26,7 @@ export class RewardMaster implements Contract {
         return new RewardMaster(address);
     }
 
-    static rewardMasterConfigToCell(config: EvaaMasterRewardsConfig): Cell {
+    static rewardMasterConfigToCell(config: EvaaRewardsConfig): Cell {
         return beginCell()
             .storeAddress(config.adminAddress)
             .storeCoins(config.availableReward)
@@ -42,7 +42,7 @@ export class RewardMaster implements Contract {
             .endCell();
     }
 
-    static createFromConfig(config: EvaaMasterRewardsConfig, workchain = 0) {
+    static createFromConfig(config: EvaaRewardsConfig, workchain = 0) {
         const data = this.rewardMasterConfigToCell(config);
         const init = { code: config.rewardMasterCode, data };
         return new RewardMaster(contractAddress(workchain, init), init);
