@@ -4,6 +4,7 @@ import { EvaaMasterRewardsConfig } from '../types/MasterRewards';
 import {
     CATI_MAINNET,
     DOGS_MAINNET,
+    EUSDT_TESTNET,
     JUSDC_MAINNET,
     JUSDT_MAINNET,
     NOT_MAINNET,
@@ -91,6 +92,16 @@ export const TESTNET_MASTER_REWARD_CONFIG: EvaaMasterRewardsConfig = {
     rewardMasterCode: EVAA_REWARDS_MASTER_CODE_TESTNET,
     rewardUserCode: EVAA_REWARDS_USER_CODE_TESTNET,
     asset: TON_TESTNET,
+    availableReward: 0,
+    publicKey: Buffer.from('c38be45e033419b49cd22c97fbd23610fbc851a931208f8b4a1817dd11cb63ac', 'hex'), // adminAddress publicKey
+};
+
+export const TESTNET_MASTER_EUSDT_REWARD_CONFIG: EvaaMasterRewardsConfig = {
+    adminAddress: EVAA_REWARDS_MASTER_TESTNET,
+    evaaMasterAddress: new Address(0, Buffer.alloc(32, 0)),
+    rewardMasterCode: EVAA_REWARDS_MASTER_CODE_TESTNET,
+    rewardUserCode: EVAA_REWARDS_USER_CODE_TESTNET,
+    asset: EUSDT_TESTNET,
     availableReward: 0,
     publicKey: Buffer.from('c38be45e033419b49cd22c97fbd23610fbc851a931208f8b4a1817dd11cb63ac', 'hex'), // adminAddress publicKey
 };
