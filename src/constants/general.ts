@@ -29,8 +29,8 @@ export const EVAA_ALTS_MAINNET = Address.parse('EQANURVS3fhBO9bivig34iyJQi97FhMb
 export const EVAA_ALTS_MAINNET_VERSION = 0;
 
 export const EVAA_REWARDS_MASTER_TESTNET = Address.parse('EQCnp0iRGcfDJAvnKhAEN9sB-nPYSPuc83Ff4y75s8AtoSW1');
-export const EVAA_USDT_REWARDS_MASTER_MAINNET = Address.parse('EQD22Fhylp1tX-xoVX81aMTSJNPV8j9klwApTLgjGmofISVD');
-export const EVAA_TON_REWARDS_MASTER_MAINNET = Address.parse('EQCsgKzdybfPotaoeQIX1e7Va11AlICSSQv0WK4fTYVUs3h1');
+export const EVAA_USDT_REWARDS_MASTER_MAINNET = Address.parse('EQBkBzVfIMP2r1xzxAAFSkTicCpZ5P1xOSZIHeHFaHExoZ0U');
+export const EVAA_TON_REWARDS_MASTER_MAINNET = Address.parse('EQBkBzVfIMP2r1xzxAAFSkTicCpZ5P1xOSZIHeHFaHExoZ0U');
 
 export const ORACLES_MAINNET: OracleNFT[] = [
     {id: 0, address: '0xd3a8c0b9fd44fd25a49289c631e3ac45689281f2f8cf0744400b4c65bed38e5d', pubkey: Buffer.from('b404f4a2ebb62f2623b370c89189748a0276c071965b1646b996407f10d72eb9', 'hex') }, 
