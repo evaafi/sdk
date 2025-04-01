@@ -25,9 +25,13 @@ import {
     EVAA_LP_MAINNET_VERSION,
     EVAA_MASTER_MAINNET,
     EVAA_MASTER_TESTNET,
+    EVAA_REWARDS_MASTER_CODE_MAINNET,
     EVAA_REWARDS_MASTER_CODE_TESTNET,
     EVAA_REWARDS_MASTER_TESTNET,
+    EVAA_REWARDS_USER_CODE_MAINNET,
     EVAA_REWARDS_USER_CODE_TESTNET,
+    EVAA_TON_REWARDS_MASTER_MAINNET,
+    EVAA_USDT_REWARDS_MASTER_MAINNET,
     LENDING_CODE,
     MAINNET_VERSION,
     MASTER_CONSTANTS,
@@ -102,6 +106,26 @@ export const TESTNET_MASTER_EUSDT_REWARD_CONFIG: EvaaRewardsConfig = {
     rewardMasterCode: EVAA_REWARDS_MASTER_CODE_TESTNET,
     rewardUserCode: EVAA_REWARDS_USER_CODE_TESTNET,
     asset: EUSDT_TESTNET,
+    availableReward: 0,
+    publicKey: Buffer.from('c38be45e033419b49cd22c97fbd23610fbc851a931208f8b4a1817dd11cb63ac', 'hex'), // adminAddress publicKey
+};
+
+export const MAINNET_MASTER_TON_REWARD_CONFIG: EvaaRewardsConfig = {
+    adminAddress: EVAA_TON_REWARDS_MASTER_MAINNET,
+    evaaMasterAddress: new Address(0, Buffer.alloc(32, 0)),
+    rewardMasterCode: EVAA_REWARDS_MASTER_CODE_MAINNET,
+    rewardUserCode: EVAA_REWARDS_USER_CODE_MAINNET,
+    asset: TON_MAINNET,
+    availableReward: 0,
+    publicKey: Buffer.from('c38be45e033419b49cd22c97fbd23610fbc851a931208f8b4a1817dd11cb63ac', 'hex'), // adminAddress publicKey
+};
+
+export const MAINNET_MASTER_USDT_REWARD_CONFIG: EvaaRewardsConfig = {
+    adminAddress: EVAA_USDT_REWARDS_MASTER_MAINNET,
+    evaaMasterAddress: new Address(0, Buffer.alloc(32, 0)),
+    rewardMasterCode: EVAA_REWARDS_MASTER_CODE_MAINNET,
+    rewardUserCode: EVAA_REWARDS_USER_CODE_MAINNET,
+    asset: USDT_MAINNET,
     availableReward: 0,
     publicKey: Buffer.from('c38be45e033419b49cd22c97fbd23610fbc851a931208f8b4a1817dd11cb63ac', 'hex'), // adminAddress publicKey
 };
