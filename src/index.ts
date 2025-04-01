@@ -120,6 +120,8 @@ export {
     MAINNET_ALTS_POOL_CONFIG,
     // Reward Pools
     TESTNET_MASTER_REWARD_CONFIG,
+    MAINNET_MASTER_TON_REWARD_CONFIG,
+    MAINNET_MASTER_USDT_REWARD_CONFIG,
 } from './constants/pools';
 
 export {
