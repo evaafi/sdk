@@ -1,9 +1,9 @@
 import { TonClient, WalletContractV4 } from '@ton/ton';
 import { configDotenv } from 'dotenv';
-import { TESTNET_MASTER_REWARD_CONFIG } from '../../src/constants/pools';
+import { MAINNET_MASTER_TON_REWARD_CONFIG } from '../../src/constants/pools';
 
 import { KeyPair, mnemonicToWalletKey } from '@ton/crypto';
-import { EVAA_REWARDS_USER_CODE_TESTNET } from '../../src/constants/general';
+import { EVAA_REWARDS_USER_CODE_MAINNET } from '../../src/constants/general';
 import { RewardUser } from '../../src/rewards/RewardUser';
 
 let client: TonClient;
@@ -11,7 +11,7 @@ let client: TonClient;
 beforeAll(async () => {
     configDotenv();
     client = new TonClient({
-        endpoint: 'https://testnet.toncenter.com/api/v2/jsonRPC',
+        endpoint: 'https://toncenter.com/api/v2/jsonRPC',
         apiKey: process.env.TONCENTER_API_KEY,
     });
 });
@@ -30,15 +30,14 @@ test('rewards claim ton', async () => {
     console.log(userWallet.address);
 
     const userConfig = {
-        asset: TESTNET_MASTER_REWARD_CONFIG.asset,
-        publicKey: TESTNET_MASTER_REWARD_CONFIG.publicKey,
-        rewardMasterAddress: TESTNET_MASTER_REWARD_CONFIG.adminAddress,
-        rewardUserCode: EVAA_REWARDS_USER_CODE_TESTNET,
+        asset: MAINNET_MASTER_TON_REWARD_CONFIG.asset,
+        publicKey: MAINNET_MASTER_TON_REWARD_CONFIG.publicKey,
+        rewardMasterAddress: MAINNET_MASTER_TON_REWARD_CONFIG.adminAddress,
+        rewardUserCode: EVAA_REWARDS_USER_CODE_MAINNET,
         userAddress: userWallet.address,
     };
 
     const userRewardOpened = client.open(RewardUser.createFromConfig(userConfig));
-
     const claimAmount = BigInt(1);
 
     console.log(RewardUser.createFromConfig(userConfig).address);
