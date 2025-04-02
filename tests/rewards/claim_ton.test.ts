@@ -3,8 +3,7 @@ import { configDotenv } from 'dotenv';
 import { MAINNET_MASTER_TON_REWARD_CONFIG } from '../../src/constants/pools';
 
 import { KeyPair, mnemonicToWalletKey } from '@ton/crypto';
-import { EVAA_REWARDS_USER_CODE_MAINNET } from '../../src/constants/general';
-import { RewardUser } from '../../src/rewards/RewardUser';
+import { EvaaUserRewards } from '../../src/rewards/EvaaRewards';
 
 let client: TonClient;
 
@@ -20,6 +19,8 @@ test('rewards claim ton', async () => {
     const userKeyPair: KeyPair = await mnemonicToWalletKey(process.env.WALLET_MNEMONIC!.split(' '));
     const adminKeyPair: KeyPair = await mnemonicToWalletKey(process.env.ADMIN_MNEMONIC!.split(' '));
 
+    console.log('admin publickey', adminKeyPair.publicKey.toString('hex'));
+
     const userWallet = client.open(
         WalletContractV4.create({
             workchain: 0,
@@ -29,26 +30,14 @@ test('rewards claim ton', async () => {
 
     console.log(userWallet.address);
 
-    const userConfig = {
-        asset: MAINNET_MASTER_TON_REWARD_CONFIG.asset,
-        publicKey: MAINNET_MASTER_TON_REWARD_CONFIG.publicKey,
-        rewardMasterAddress: MAINNET_MASTER_TON_REWARD_CONFIG.adminAddress,
-        rewardUserCode: EVAA_REWARDS_USER_CODE_MAINNET,
-        userAddress: userWallet.address,
-    };
+    const userRewardOpened = client.open(
+        new EvaaUserRewards(userWallet.address, MAINNET_MASTER_TON_REWARD_CONFIG).openContract(),
+    );
+    console.log(userRewardOpened.address);
 
-    const userRewardOpened = client.open(RewardUser.createFromConfig(userConfig));
-    const claimAmount = BigInt(1);
-
-    console.log(RewardUser.createFromConfig(userConfig).address);
+    const claimAmount = 1_100_000_000n;
     const claimBody = userRewardOpened.claimMessageToCell(claimAmount);
     const signedCell = userRewardOpened.signClaimMessage(claimBody, adminKeyPair.secretKey);
 
-    // await userRewardOpened.sendDeploy(userWallet.sender(userKeyPair.secretKey));
-
-    await userRewardOpened.sendClaim(
-        userWallet.sender(userKeyPair.secretKey),
-        signedCell,
-        // claimBody.toBoc().toString('base64'),
-    );
+    await userRewardOpened.sendClaim(userWallet.sender(userKeyPair.secretKey), signedCell);
 });

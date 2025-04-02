@@ -10,7 +10,6 @@ import {
     Sender,
     SendMode,
     StateInit,
-    toNano,
 } from '@ton/ton';
 import { Maybe } from '@ton/ton/dist/utils/maybe';
 import { FEES, OPCODES } from '../constants/general';
@@ -56,7 +55,7 @@ export class RewardUser implements Contract {
     }
 
     claimMessageToCell(claimAmount: bigint): Cell {
-        return beginCell().storeAddress(this.address).storeCoins(toNano(claimAmount)).endCell();
+        return beginCell().storeAddress(this.address).storeCoins(claimAmount).endCell();
     }
 
     signClaimMessage(claimBody: Cell, privateKey: Buffer): Cell {
