@@ -117,7 +117,7 @@ export const MAINNET_MASTER_TON_REWARD_CONFIG: EvaaRewardsConfig = {
     rewardUserCode: EVAA_REWARDS_USER_CODE_MAINNET,
     asset: TON_MAINNET,
     availableReward: 0,
-    publicKey: Buffer.from('9813725d6cead1c9bbc0e24b21d4fc62a7fa8ac4bb01b6758df30169a71dba67', 'hex'), // adminAddress publicKey
+    publicKey: Buffer.from('7d95ea582b019beb07bbab8f325f1b45930e2b45375aa5345ed95f49e814dc34', 'hex'), // adminAddress publicKey
 };
 
 export const MAINNET_MASTER_USDT_REWARD_CONFIG: EvaaRewardsConfig = {
