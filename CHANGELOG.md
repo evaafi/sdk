@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.6.3 &mdash; 2025-04-01
+### Added
+ - ```EvaaRewards``` wrapper of RewardUser contract with ```PoolAssetConfig```
+ - ```RewardUser``` wrapper of reward user contract
+ - ```RewardMaster``` wrapper of reward master contract
+ - ```JettonMinget``` wrapper of jetton master contract
+ - ```JettonWallet``` wrapper of jetton wallet contract
+ - ```EVAA_REWARDS_MASTER_CODE_MAINNET``` and ```EVAA_REWARDS_MASTER_CODE_TESTNET``` is constants for reward master code
+ - ```EVAA_REWARDS_USER_CODE_TESTNET``` and ```EVAA_REWARDS_USER_CODE_MAINNET``` is constants for reward user code
+ - ```TESTNET_MASTER_REWARD_CONFIG``` testnet TON config of reward 
+ - ```TESTNET_MASTER_EUSDT_REWARD_CONFIG``` testnet EUSDT config of reward
+ - ```MAINNET_MASTER_TON_REWARD_CONFIG``` mainnet TON config of reward
+ - ```MAINNET_MASTER_USDT_REWARD_CONFIG``` mainnet USDT config of reward
+
 ## 0.6.2-c &mdash; 2025-01-07
 ### Added
  - ```getAssetLiquidityMinusReserves``` function needed to count the amount of free amount for withdrawal

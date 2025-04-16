@@ -58,6 +58,15 @@ export {
 } from './contracts/MasterContract';
 export { EvaaUser } from './contracts/UserContract';
 
+// Rewards contracts wrappers
+export { RewardMaster } from './rewards/RewardMaster';
+export { type EvaaRewardsConfig } from './types/MasterRewards';
+export { RewardUser } from './rewards/RewardUser';
+export { type EvaaUserRewardsConfig } from './types/UserRewards';
+export { JettonMinter as RewardJettonMinter, type JettonMinterConfig, type MintMessage } from './rewards/JettonMinter';
+export { JettonWallet as RewardJettonWallet, type JettonWalletConfig } from './rewards/JettonWallet';
+export { EvaaUserRewards } from './rewards/EvaaRewards';
+
 // Types
 export {
     UpgradeConfig,
@@ -98,14 +107,23 @@ export {
     LENDING_CODE,
     OPCODES,
     FEES,
-    MASTER_CONSTANTS
+    MASTER_CONSTANTS,
+    EVAA_REWARDS_MASTER_TESTNET,
+    EVAA_REWARDS_MASTER_CODE_TESTNET,
+    EVAA_REWARDS_USER_CODE_TESTNET,
+    EVAA_REWARDS_MASTER_CODE_MAINNET,
+    EVAA_REWARDS_USER_CODE_MAINNET,
 } from './constants/general';
 
 export {
     MAINNET_POOL_CONFIG,
     TESTNET_POOL_CONFIG,
     MAINNET_LP_POOL_CONFIG,
-    MAINNET_ALTS_POOL_CONFIG
+    MAINNET_ALTS_POOL_CONFIG,
+    // Reward Pools
+    TESTNET_MASTER_REWARD_CONFIG,
+    MAINNET_MASTER_TON_REWARD_CONFIG,
+    MAINNET_MASTER_USDT_REWARD_CONFIG,
 } from './constants/pools';
 
 export {

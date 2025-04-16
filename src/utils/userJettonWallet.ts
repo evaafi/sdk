@@ -4,39 +4,45 @@ import { UNDEFINED_ASSET } from '../constants/assets';
 
 function getUserJettonData(ownerAddress: Address, assetName: string, jettonWalletCode: Cell, jettonMasterAddress: Address) {
   switch (assetName) {
-    case 'uTON':    
-      return beginCell()
-        .storeCoins(0)
-        .storeUint(0, 64)
-        .storeAddress(ownerAddress)
-        .storeAddress(jettonMasterAddress)
-        .storeRef(jettonWalletCode)
-        .endCell();
-    case 'DOGS':
-    case 'NOT':
-    case 'USDT':
-      return beginCell()
-        .storeUint(0, 4)
-        .storeCoins(0)
-        .storeAddress(ownerAddress)
-        .storeAddress(jettonMasterAddress)
-        .endCell();
-    case 'tsTON':
-        return beginCell()
-          .storeCoins(0)
-          .storeAddress(ownerAddress)
-          .storeAddress(jettonMasterAddress)
-          .storeRef(jettonWalletCode)
-          .storeCoins(0)
-          .storeUint(0, 48)
-          .endCell();
-    default:
-      return beginCell().storeCoins(0)
-        .storeAddress(ownerAddress)
-        .storeAddress(jettonMasterAddress)
-        .storeRef(jettonWalletCode)
-        .endCell();
-
+      case 'uTON':
+          return beginCell()
+              .storeCoins(0)
+              .storeUint(0, 64)
+              .storeAddress(ownerAddress)
+              .storeAddress(jettonMasterAddress)
+              .storeRef(jettonWalletCode)
+              .endCell();
+      case 'DOGS':
+      case 'NOT':
+      case 'USDT':
+          return beginCell()
+              .storeUint(0, 4)
+              .storeCoins(0)
+              .storeAddress(ownerAddress)
+              .storeAddress(jettonMasterAddress)
+              .endCell();
+      case 'tsTON':
+          return beginCell()
+              .storeCoins(0)
+              .storeAddress(ownerAddress)
+              .storeAddress(jettonMasterAddress)
+              .storeRef(jettonWalletCode)
+              .storeCoins(0)
+              .storeUint(0, 48)
+              .endCell();
+      case 'tgBTC':
+          return beginCell()
+              .storeUint(0, 4)
+              .storeCoins(0)
+              .storeAddress(ownerAddress)
+              .storeAddress(jettonMasterAddress)
+              .endCell();
+      default:
+          return beginCell().storeCoins(0)
+              .storeAddress(ownerAddress)
+              .storeAddress(jettonMasterAddress)
+              .storeRef(jettonWalletCode)
+              .endCell();
   }
 }
 export function getUserJettonWallet(ownerAddress: Address, poolAssetConfig: PoolAssetConfig) {
