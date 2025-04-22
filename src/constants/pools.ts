@@ -15,6 +15,7 @@ import {
     TON_TESTNET,
     TONUSDT_DEDUST_MAINNET,
     TSTON_MAINNET,
+    USDE_MAINNET,
     USDT_MAINNET,
     USDT_STORM_MAINNET,
 } from './assets';
@@ -50,11 +51,12 @@ export const MAINNET_POOL_CONFIG: PoolConfig = {
     minimalOracles: 3,
     poolAssetsConfig: [
         TON_MAINNET,
-        JUSDT_MAINNET,
-        JUSDC_MAINNET,
-        STTON_MAINNET,
-        TSTON_MAINNET,
-        USDT_MAINNET,
+        //JUSDT_MAINNET,
+        //JUSDC_MAINNET,
+        //STTON_MAINNET,
+        //TSTON_MAINNET,
+        //USDT_MAINNET,
+        USDE_MAINNET,
         // UTON_MAINNET // announce
     ],
     lendingCode: LENDING_CODE,

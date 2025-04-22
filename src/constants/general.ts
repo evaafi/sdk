@@ -19,8 +19,8 @@ export const MASTER_CONSTANTS = {
 
 export const NULL_ADDRESS = Address.parse('UQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJKZ');
 
-export const EVAA_MASTER_MAINNET = Address.parse('EQC8rUZqR_pWV1BylWUlPNBzyiTYVoBEmQkMIQDZXICfnuRr');
-export const MAINNET_VERSION = 6;
+export const EVAA_MASTER_MAINNET = Address.parse('EQCn95X_qLJa5VUXfyIQkWDH2iq3PTatsO4esunMaIsnyyeW');
+export const MAINNET_VERSION = 0;
 export const EVAA_MASTER_TESTNET = Address.parse('kQBae_Pt-NcxX0yhNnsYyK-Kh6ZBnIUQhxheKTvNLTgZf7AV');
 export const TESTNET_VERSION = 0;
 export const EVAA_LP_MAINNET = Address.parse('EQBIlZX2URWkXCSg3QF2MJZU-wC5XkBoLww-hdWk2G37Jc6N');
