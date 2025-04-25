@@ -70,8 +70,9 @@ export type AssetConfig = {
 export type MasterConfig = {
     ifActive: number;
     admin: Address;
-    oraclesInfo: OraclesInfo
+    oraclesInfo: OraclesInfo;
     tokenKeys: Cell | null;
+    supervisor: Address | null;
 };
 
 export type OraclesInfo = {
