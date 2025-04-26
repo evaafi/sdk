@@ -81,6 +81,7 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
             refBuild.storeUint(src.minPrincipalForRewards, 64);
             refBuild.storeUint(src.baseTrackingSupplySpeed, 64);
             refBuild.storeUint(src.baseTrackingBorrowSpeed, 64);
+            refBuild.storeInt(src.borrowCap, 64);
             builder.storeRef(refBuild.endCell());
         },
         parse: (src: Slice) => {
@@ -104,6 +105,7 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
             const minPrincipalForRewards = ref.loadUintBig(64);
             const baseTrackingSupplySpeed = ref.loadUintBig(64);
             const baseTrackingBorrowSpeed = ref.loadUintBig(64);
+            const borrowCap = ref.loadInt(64);
 
             return {
                 oracle,
@@ -124,7 +126,8 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
                 liquidationReserveFactor,
                 minPrincipalForRewards,
                 baseTrackingSupplySpeed,
-                baseTrackingBorrowSpeed
+                baseTrackingBorrowSpeed,
+                borrowCap,
             };
         },
     };

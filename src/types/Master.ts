@@ -65,6 +65,7 @@ export type AssetConfig = {
     minPrincipalForRewards: bigint;
     baseTrackingSupplySpeed: bigint;
     baseTrackingBorrowSpeed: bigint;
+    borrowCap: number | bigint;
 };
 
 export type MasterConfig = {
