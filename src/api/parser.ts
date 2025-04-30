@@ -175,7 +175,6 @@ export function parseMasterData(masterDataBOC: string, poolAssetsConfig: PoolAss
     masterConfigSlice.endParse();
 
     for (const [_, asset] of Object.entries(poolAssetsConfig)) {
-        try {
         const assetData = assetsExtendedData.get(asset.assetId) as ExtendedAssetData;
         const totalSupply = calculatePresentValue(assetData.sRate, assetData.totalSupply, masterConstants);
         const totalBorrow = calculatePresentValue(assetData.bRate, assetData.totalBorrow, masterConstants);
@@ -183,8 +182,6 @@ export function parseMasterData(masterDataBOC: string, poolAssetsConfig: PoolAss
 
         apy.supply.set(asset.assetId, (1 + (Number(assetData.supplyInterest) / 1e12) * 24 * 3600) ** 365 - 1);
         apy.borrow.set(asset.assetId, (1 + (Number(assetData.borrowInterest) / 1e12) * 24 * 3600) ** 365 - 1);
-        }
-        catch (e) { } 
     }
 
     return {
