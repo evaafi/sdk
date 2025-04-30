@@ -15,6 +15,8 @@ function getUserJettonData(ownerAddress: Address, assetName: string, jettonWalle
       case 'DOGS':
       case 'NOT':
       case 'USDT':
+      case 'USDe':
+      case 'tsUSDe':
           return beginCell()
               .storeUint(0, 4)
               .storeCoins(0)
