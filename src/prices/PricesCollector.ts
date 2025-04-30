@@ -99,8 +99,8 @@ export class PricesCollector {
             pricesFiltered = newerPrices.sort((a, b) => a.oracleId - b.oracleId);
         }
 
-        const medianData = assets.map(asset => ({ assetId: asset.assetId, medianPrice: getMedianPrice(this.#prices, asset.assetId)}));
-
+        const medianData = assets.map(asset => ({ assetId: asset.assetId, medianPrice: getMedianPrice(pricesFiltered, asset.assetId)}));
+        
         const nonEmptymedianData = medianData.filter(x => x.medianPrice != null) as { assetId: bigint, medianPrice: bigint }[];
 
         const packedMedianData = packAssetsData(nonEmptymedianData);

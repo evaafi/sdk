@@ -1,4 +1,4 @@
-import {AssetConfig, calculatePresentValue, createAssetConfig, Evaa, EVAA_MASTER_MAINNET, EvaaUser, FEES, getPrices, getTonConnectSender, JUSDC_MAINNET, JUSDT_MAINNET, JUSDT_TESTNET, PoolAssetConfig, PoolConfig, PriceData, STTON_TESTNET, TESTNET_POOL_CONFIG, TON_MAINNET, TON_STORM_MAINNET, TON_TESTNET, TONUSDT_DEDUST_MAINNET, USDT_MAINNET, USDT_STORM_MAINNET, UserData, UserDataActive} from '../src';
+import {AssetConfig, calculatePresentValue, createAssetConfig, Evaa, EVAA_MASTER_MAINNET, EvaaUser, FEES, getPrices, getTonConnectSender, JUSDC_MAINNET, JUSDT_MAINNET, JUSDT_TESTNET, PoolAssetConfig, PoolConfig, PriceData, STTON_TESTNET, TESTNET_POOL_CONFIG, TON_MAINNET, TON_STORM_MAINNET, TON_TESTNET, TONUSDT_DEDUST_MAINNET, USDE_MAINNET, USDT_MAINNET, USDT_STORM_MAINNET, UserData, UserDataActive, MAINNET_TEST_ETHENA_POOL_CONFIG} from '../src';
 import {Address, beginCell, Cell, CellType, Dictionary, OpenedContract, Sender, toNano, TonClient, WalletContractV4, WalletContractV5Beta, WalletContractV5R1} from '@ton/ton';
 import dotenv from 'dotenv';
 import { mnemonicToWalletKey } from '@ton/crypto';
@@ -88,7 +88,7 @@ beforeAll(async () => {
     exit(0);*/
     
     evaa = client.open(new Evaa({poolConfig: TESTNET_POOL_CONFIG}));
-    evaaMainNet = clientMainNet.open(new Evaa({poolConfig: MAINNET_POOL_CONFIG}));
+    evaaMainNet = clientMainNet.open(new Evaa({poolConfig: MAINNET_TEST_ETHENA_POOL_CONFIG}));
     sender = {
         address: address,
         send: wallet.sender(keyPair.secretKey).send
@@ -186,6 +186,7 @@ test('Just supply testnet', async () => {
         console.log(e);
     }
 })
+*/
 
 test('Just supply mainnet', async () => {
     await evaaMainNet.getSync();
@@ -197,7 +198,7 @@ test('Just supply mainnet', async () => {
                 includeUserCode: true,
                 amount: 50_000n,
                 userAddress: address_mainnet,
-                asset: JUSDT_MAINNET,
+                asset: USDE_MAINNET,
                 amountToTransfer: toNano(0),
                 payload: Cell.EMPTY
             });
@@ -206,9 +207,9 @@ test('Just supply mainnet', async () => {
     catch(e) {
         console.log(e);
     }
-})*/
+})
 
-/*test('Just withdraw', async () => {
+test('Just withdraw', async () => {
     console.log(priceData.dict);
     await evaaMainNet.getSync();
 
@@ -217,19 +218,19 @@ test('Just supply mainnet', async () => {
     const user = clientMainNet.open(await evaaMainNet.openUserContract(address_mainnet));
     await user.getSync(evaaMainNet.data!.assetsData, evaaMainNet.data!.assetsConfig, (await pricesCollector.getPrices()).dict);
     console.log(user.liteData?.principals)
-    const currentWithdrawPrices = await pricesCollector.getPricesForWithdraw(user.liteData?.principals!, TON_MAINNET);
+    const currentWithdrawPrices = await pricesCollector.getPricesForWithdraw(user.liteData?.principals!, USDE_MAINNET);
     console.log('currentWithdrawPrices', currentWithdrawPrices.dict)
     await evaaMainNet.sendWithdraw(sender_mainnet, toNano(0.7), {
         queryID: 0n,
         includeUserCode: true,
-        amount: 200_000n,
+        amount: 0xFFFFFFFFFFFFFFFFn,
         userAddress: address,
-        asset: USDT_MAINNET,
+        asset: USDE_MAINNET,
         priceData: currentWithdrawPrices.dataCell,
         amountToTransfer: toNano(0),
         payload: Cell.EMPTY
     });
-})*/
+})
 
 /*test('Liquidate test', async () => {
     await evaa.getSync();
