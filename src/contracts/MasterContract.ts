@@ -50,6 +50,7 @@ export type SupplyParameters = {
     forwardAmount?: bigint;
     amountToTransfer: bigint;
     payload: Cell;
+    returnRepayRemainingsFlag: boolean;
 };
 
 /**
@@ -159,6 +160,7 @@ export class Evaa implements Contract {
                         .storeAddress(parameters.userAddress)
                         .storeUint(parameters.amountToTransfer, 64)
                         .storeRef(parameters.payload)
+                        .storeInt(parameters.returnRepayRemainingsFlag ? -1 : 0, 2)
                         .endCell(),
                 )
                 .endCell();
@@ -171,6 +173,7 @@ export class Evaa implements Contract {
                 .storeAddress(parameters.userAddress)
                 .storeUint(parameters.amountToTransfer, 64)
                 .storeRef(parameters.payload)
+                .storeInt(parameters.returnRepayRemainingsFlag ? -1 : 0, 2)
                 .endCell();
         }
     }
