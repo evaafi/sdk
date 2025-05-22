@@ -218,12 +218,12 @@ test('Just withdraw', async () => {
     const user = clientMainNet.open(await evaaMainNet.openUserContract(address_mainnet));
     await user.getSync(evaaMainNet.data!.assetsData, evaaMainNet.data!.assetsConfig, (await pricesCollector.getPrices()).dict);
     console.log(user.liteData?.principals)
-    const currentWithdrawPrices = await pricesCollector.getPricesForWithdraw(user.liteData?.principals!, USDE_MAINNET);
+    const currentWithdrawPrices = await pricesCollector.getPricesForWithdraw(user.liteData?.realPrincipals!, USDE_MAINNET, true);
     console.log('currentWithdrawPrices', currentWithdrawPrices.dict)
     await evaaMainNet.sendWithdraw(sender_mainnet, toNano(0.7), {
         queryID: 0n,
         includeUserCode: true,
-        amount: 0xFFFFFFFFFFFFFFFFn,
+        amount: 50_000n,
         userAddress: address,
         asset: USDE_MAINNET,
         priceData: currentWithdrawPrices.dataCell,
