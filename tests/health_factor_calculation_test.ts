@@ -22,11 +22,14 @@ test('Health factor check example', async () => {
     const evaa = client.open(new Evaa({poolConfig: MAINNET_POOL_CONFIG}));
     await evaa.getSync();
     console.log(evaa.data?.assetsConfig);
-    const user = client.open(await evaa.openUserContract(Address.parseFriendly("UQDj8tpJve-heYWQcT8hbsCNO6vBn9LnZ0kpt-aC8Scu_HGq").address));
+    const user = client.open(await evaa.openUserContract(Address.parseFriendly("UQDN5CpSs8HT2GO4IymOXPS5zTDzHtY-s8VTuUVAsCTwWJzM").address));
    // await user.getSyncLite(evaa.data!.assetsData, evaa.data!.assetsConfig);
     //console.log(user.liteData);
     const priceData = await evaa.getPrices();
-
+    await user.getSync(evaa.data!.assetsData, evaa.data!.assetsConfig, priceData!.dict);
+    console.log('userdata', (user.data as UserDataActive).principals);
+    console.log('userdata', (user.data as UserDataActive).balances);
+    console.log('userdata')
     /*
     console.log('priceData', priceData);
     await user.getSync(evaa.data!.assetsData, evaa.data!.assetsConfig, priceData!.dict);

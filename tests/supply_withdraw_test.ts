@@ -1,4 +1,4 @@
-import {AssetConfig, calculatePresentValue, createAssetConfig, Evaa, EVAA_MASTER_MAINNET, EvaaUser, FEES, getPrices, getTonConnectSender, JUSDC_MAINNET, JUSDT_MAINNET, JUSDT_TESTNET, PoolAssetConfig, PoolConfig, PriceData, STTON_TESTNET, TESTNET_POOL_CONFIG, TON_MAINNET, TON_STORM_MAINNET, TON_TESTNET, TONUSDT_DEDUST_MAINNET, USDE_MAINNET, USDT_MAINNET, USDT_STORM_MAINNET, UserData, UserDataActive, MAINNET_TEST_ETHENA_POOL_CONFIG} from '../src';
+import {AssetConfig, calculatePresentValue, createAssetConfig, Evaa, EVAA_MASTER_MAINNET, EvaaUser, FEES, getPrices, getTonConnectSender, JUSDC_MAINNET, JUSDT_MAINNET, JUSDT_TESTNET, PoolAssetConfig, PoolConfig, PriceData, STTON_TESTNET, TESTNET_POOL_CONFIG, TON_MAINNET, TON_STORM_MAINNET, TON_TESTNET, TONUSDT_DEDUST_MAINNET, USDE_MAINNET, USDT_MAINNET, USDT_STORM_MAINNET, UserData, UserDataActive, MAINNET_TEST_ETHENA_POOL_CONFIG, TSUSDE_MAINNET} from '../src';
 import {Address, beginCell, Cell, CellType, Dictionary, OpenedContract, Sender, toNano, TonClient, WalletContractV4, WalletContractV5Beta, WalletContractV5R1} from '@ton/ton';
 import dotenv from 'dotenv';
 import { mnemonicToWalletKey } from '@ton/crypto';
@@ -88,7 +88,7 @@ beforeAll(async () => {
     exit(0);*/
     
     evaa = client.open(new Evaa({poolConfig: TESTNET_POOL_CONFIG}));
-    evaaMainNet = clientMainNet.open(new Evaa({poolConfig: MAINNET_TEST_ETHENA_POOL_CONFIG}));
+    evaaMainNet = clientMainNet.open(new Evaa({poolConfig: MAINNET_POOL_CONFIG}));
     sender = {
         address: address,
         send: wallet.sender(keyPair.secretKey).send
@@ -191,14 +191,14 @@ test('Just supply testnet', async () => {
 test('Just supply mainnet', async () => {
     await evaaMainNet.getSync();
 
-    try{
-        await waitForPrincipalChange(address_mainnet, TON_MAINNET, async () => {
+    try {
+        await waitForPrincipalChange(address_mainnet, TSUSDE_MAINNET, async () => {
             await evaaMainNet.sendSupply(sender_mainnet, toNano(1), {
                 queryID: 0n,
                 includeUserCode: true,
                 amount: 50_000n,
                 userAddress: address_mainnet,
-                asset: USDE_MAINNET,
+                asset: TSUSDE_MAINNET,
                 amountToTransfer: toNano(0),
                 payload: Cell.EMPTY
             });

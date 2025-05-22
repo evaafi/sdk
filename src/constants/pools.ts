@@ -59,8 +59,8 @@ export const MAINNET_POOL_CONFIG: PoolConfig = {
         STTON_MAINNET,
         TSTON_MAINNET,
         USDT_MAINNET,
-        // USDE_MAINNET,
-        // TSUSDE_MAINNET,
+        USDE_MAINNET,
+        TSUSDE_MAINNET,
         // UTON_MAINNET // announce xdddd fake announce 
     ],
     lendingCode: LENDING_CODE,
