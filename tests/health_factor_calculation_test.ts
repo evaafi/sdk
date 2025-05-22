@@ -1,4 +1,4 @@
-import {BalanceChangeType, createAssetConfig, Evaa, EVAA_MASTER_MAINNET, getPrices, JUSDC_TESTNET, MAINNET_LP_POOL_CONFIG, MAINNET_POOL_CONFIG, TESTNET_POOL_CONFIG, TONUSDT_DEDUST_MAINNET, USDT_MAINNET, UserDataActive} from '../src';
+import {BalanceChangeType, createAssetConfig, Evaa, EVAA_MASTER_MAINNET, getPrices, JUSDC_TESTNET, MAINNET_LP_POOL_CONFIG, MAINNET_POOL_CONFIG, MAINNET_TEST_ETHENA_POOL_CONFIG, TESTNET_POOL_CONFIG, TONUSDT_DEDUST_MAINNET, USDT_MAINNET, UserDataActive} from '../src';
 import {Address, beginCell, Dictionary, TonClient} from '@ton/ton';
 import dotenv from 'dotenv';
 import { predictHealthFactor } from '../src/api/math';
@@ -19,14 +19,17 @@ beforeAll(async () => {
 });
 
 test('Health factor check example', async () => {
-    const evaa = client.open(new Evaa({poolConfig: MAINNET_LP_POOL_CONFIG}));
+    const evaa = client.open(new Evaa({poolConfig: MAINNET_POOL_CONFIG}));
     await evaa.getSync();
     console.log(evaa.data?.assetsConfig);
-    const user = client.open(await evaa.openUserContract(Address.parseFriendly("UQDj8tpJve-heYWQcT8hbsCNO6vBn9LnZ0kpt-aC8Scu_HGq").address));
+    const user = client.open(await evaa.openUserContract(Address.parseFriendly("UQDN5CpSs8HT2GO4IymOXPS5zTDzHtY-s8VTuUVAsCTwWJzM").address));
    // await user.getSyncLite(evaa.data!.assetsData, evaa.data!.assetsConfig);
     //console.log(user.liteData);
     const priceData = await evaa.getPrices();
-
+    await user.getSync(evaa.data!.assetsData, evaa.data!.assetsConfig, priceData!.dict);
+    console.log('userdata', (user.data as UserDataActive).principals);
+    console.log('userdata', (user.data as UserDataActive).balances);
+    console.log('userdata')
     /*
     console.log('priceData', priceData);
     await user.getSync(evaa.data!.assetsData, evaa.data!.assetsConfig, priceData!.dict);

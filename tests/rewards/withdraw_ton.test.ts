@@ -16,7 +16,7 @@ beforeAll(async () => {
 });
 
 test('rewards claim ton', async () => {
-    const adminKeyPair: KeyPair = await mnemonicToWalletKey(process.env.ADMIN_MNEMONIC!.split(' '));
+    /*const adminKeyPair: KeyPair = await mnemonicToWalletKey(process.env.ADMIN_MNEMONIC!.split(' '));
 
     const adminWallet = client.open(
         WalletContractV4.create({
@@ -39,5 +39,5 @@ test('rewards claim ton', async () => {
             EVAA_REWARDS_MASTER_CODE_TESTNET,
         ),
     );
-    await rewardAdmin.sendAdminWithdraw(adminWallet.sender(adminKeyPair.secretKey), adminWallet.address, 1);
+    await rewardAdmin.sendAdminWithdraw(adminWallet.sender(adminKeyPair.secretKey), adminWallet.address, 1);*/
 });

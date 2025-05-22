@@ -15,12 +15,16 @@ import {
     TON_TESTNET,
     TONUSDT_DEDUST_MAINNET,
     TSTON_MAINNET,
+    TSUSDE_MAINNET,
+    USDE_MAINNET,
     USDT_MAINNET,
     USDT_STORM_MAINNET,
 } from './assets';
 import {
     EVAA_ALTS_MAINNET,
     EVAA_ALTS_MAINNET_VERSION,
+    EVAA_ETHENA_MAINNET,
+    EVAA_ETHENA_VERSION,
     EVAA_LP_MAINNET,
     EVAA_LP_MAINNET_VERSION,
     EVAA_MASTER_MAINNET,
@@ -55,7 +59,22 @@ export const MAINNET_POOL_CONFIG: PoolConfig = {
         STTON_MAINNET,
         TSTON_MAINNET,
         USDT_MAINNET,
-        // UTON_MAINNET // announce
+        USDE_MAINNET,
+        TSUSDE_MAINNET,
+        // UTON_MAINNET // announce xdddd fake announce 
+    ],
+    lendingCode: LENDING_CODE,
+};
+
+export const MAINNET_TEST_ETHENA_POOL_CONFIG: PoolConfig = {
+    masterAddress: EVAA_ETHENA_MAINNET,
+    masterVersion: EVAA_ETHENA_VERSION,
+    masterConstants: MASTER_CONSTANTS,
+    oracles: ORACLES_MAINNET,
+    minimalOracles: 3,
+    poolAssetsConfig: [
+        TON_MAINNET,
+        USDE_MAINNET,
     ],
     lendingCode: LENDING_CODE,
 };
