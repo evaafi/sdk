@@ -17,7 +17,7 @@ import {
 import { Maybe } from '@ton/core/dist/utils/maybe';
 import { EvaaUser } from './UserContract';
 import { parseMasterData } from '../api/parser';
-import { MasterData, PoolAssetConfig, PoolConfig} from '../types/Master';
+import { MasterData, PoolAssetConfig, PoolConfig } from '../types/Master';
 import { JettonWallet } from './JettonWallet';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
 import { DefaultPriceSourcesConfig, getPrices, isTonAsset, isTonAssetId, MAINNET_POOL_CONFIG, PricesCollector, PriceSourcesConfig } from '..';
@@ -51,6 +51,7 @@ export type SupplyParameters = {
     amountToTransfer: bigint;
     payload: Cell;
     returnRepayRemainingsFlag: boolean;
+    subaccountId?: number;
 };
 
 /**
@@ -69,9 +70,10 @@ export type WithdrawParameters = {
     userAddress: Address;
     includeUserCode: boolean;
     asset: PoolAssetConfig
-    priceData: Cell; 
+    priceData: Cell;
     amountToTransfer: bigint;
     payload: Cell;
+    subaccountId?: number;
 };
 
 /**
@@ -91,6 +93,7 @@ export type LiquidationBaseData = {
     liquidationAmount: bigint;
     tonLiquidation: boolean;
     forwardAmount?: bigint;
+    subaccountId?: number;
 };
 
 /**
@@ -143,6 +146,8 @@ export class Evaa implements Contract {
      * @returns supply message as a cell
      */
     createSupplyMessage(parameters: SupplyParameters): Cell {
+        const subaccountId = parameters.subaccountId ?? 0;
+        const subaccount = subaccountId != 0 ? beginCell().storeInt(subaccountId, 16) : beginCell();
         if (!isTonAsset(parameters.asset)) {
             return beginCell()
                 .storeUint(OPCODES.JETTON_TRANSFER, 32)
@@ -161,6 +166,7 @@ export class Evaa implements Contract {
                         .storeUint(parameters.amountToTransfer, 64)
                         .storeRef(parameters.payload)
                         .storeInt(parameters.returnRepayRemainingsFlag ? -1 : 0, 2)
+                        .storeBuilder(subaccount)
                         .endCell(),
                 )
                 .endCell();
@@ -174,6 +180,7 @@ export class Evaa implements Contract {
                 .storeUint(parameters.amountToTransfer, 64)
                 .storeRef(parameters.payload)
                 .storeInt(parameters.returnRepayRemainingsFlag ? -1 : 0, 2)
+                .storeBuilder(subaccount)
                 .endCell();
         }
     }
@@ -183,6 +190,8 @@ export class Evaa implements Contract {
      * @returns withdraw message as a cell
      */
     createWithdrawMessage(parameters: WithdrawParameters): Cell {
+        const subaccountId = parameters.subaccountId ?? 0;
+        const subaccount = subaccountId != 0 ? beginCell().storeInt(subaccountId, 16) : beginCell();
         return beginCell()
             .storeUint(OPCODES.WITHDRAW, 32)
             .storeUint(parameters.queryID, 64)
@@ -193,6 +202,7 @@ export class Evaa implements Contract {
             .storeUint(parameters.amountToTransfer, 64)
             .storeRef(parameters.payload)
             .storeRef(parameters.priceData)
+            .storeBuilder(subaccount)
             .endCell();
     }
 
@@ -201,6 +211,8 @@ export class Evaa implements Contract {
      * @returns liquidation message as a cell
      */
     createLiquidationMessage(parameters: LiquidationParameters): Cell {
+        const subaccountId = parameters.subaccountId ?? 0;
+        const subaccount = subaccountId != 0 ? beginCell().storeInt(subaccountId, 16) : beginCell();
         if (!isTonAsset(parameters.asset)) {
             return beginCell()
                 .storeUint(OPCODES.JETTON_TRANSFER, 32)
@@ -225,7 +237,8 @@ export class Evaa implements Contract {
                         .storeRef(beginCell()
                             .storeUint(parameters.payloadForwardAmount ?? 0, 64)
                             .storeRef(parameters.payload)
-                        .endCell())
+                            .storeBuilder(subaccount)
+                            .endCell())
                         .storeRef(parameters.priceData)
                         .endCell(),
                 )
@@ -243,7 +256,8 @@ export class Evaa implements Contract {
                 .storeRef(beginCell()
                     .storeUint(parameters.payloadForwardAmount ?? 0, 64)
                     .storeRef(parameters.payload)
-                .endCell())
+                    .storeBuilder(subaccount)
+                    .endCell())
                 .storeRef(parameters.priceData)
                 .endCell();
         }
@@ -252,14 +266,19 @@ export class Evaa implements Contract {
     /**
      * Calculate user contract address
      * @param userAddress
+     * @param lendingCode
+     * @param subaccountId
      * @returns user contract address
      */
-    calculateUserSCAddr(userAddress: Address, lendingCode: Cell): Address {
+    calculateUserSCAddr(userAddress: Address, lendingCode: Cell, subaccountId: number = 0): Address {
+        const subaccount = subaccountId != 0 ? beginCell().storeInt(subaccountId, 16) : beginCell();
+
         const lendingData = beginCell()
             .storeAddress(this.address)
             .storeAddress(userAddress)
             .storeUint(0, 8)
             .storeBit(0)
+            .storeBuilder(subaccount)
             .endCell();
 
         const stateInit = beginCell()
@@ -276,14 +295,15 @@ export class Evaa implements Contract {
     /**
      * Open user contract wrapper
      * @param userAddress
+     * @param subaccountId
      * @returns user contract
      */
-    openUserContract(userAddress: Address): EvaaUser {
-        return EvaaUser.createFromAddress(this.calculateUserSCAddr(userAddress, this._poolConfig.lendingCode), this._poolConfig);
+    openUserContract(userAddress: Address, subaccountId: number = 0): EvaaUser {
+        return EvaaUser.createFromAddress(this.calculateUserSCAddr(userAddress, this._poolConfig.lendingCode, subaccountId), this._poolConfig);
     }
 
-    getOpenedUserContract(provider: ContractProvider, userAddress: Address): OpenedContract<EvaaUser> {
-        return provider.open(this.openUserContract(userAddress));
+    getOpenedUserContract(provider: ContractProvider, userAddress: Address, subaccountId: number = 0): OpenedContract<EvaaUser> {
+        return provider.open(this.openUserContract(userAddress, subaccountId));
     }
 
     /**
@@ -342,7 +362,7 @@ export class Evaa implements Contract {
             if (!via.address) {
                 throw Error('Via address is required for jetton liquidation');
             }
-            
+
             const jettonWallet = provider.open(
                 JettonWallet.createFromAddress(getUserJettonWallet(via.address, parameters.asset)),
             );
@@ -407,7 +427,7 @@ export class Evaa implements Contract {
         }
     }
 
-    createPriceCollector(priceSourcesConfig: PriceSourcesConfig = DefaultPriceSourcesConfig) : PricesCollector {
+    createPriceCollector(priceSourcesConfig: PriceSourcesConfig = DefaultPriceSourcesConfig): PricesCollector {
         return new PricesCollector(this._poolConfig, priceSourcesConfig);
     }
 }
