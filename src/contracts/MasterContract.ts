@@ -50,8 +50,8 @@ export type SupplyParameters = {
     forwardAmount?: bigint;
     amountToTransfer: bigint;
     payload: Cell;
-    returnRepayRemainingsFlag: boolean;
     subaccountId?: number;
+    returnRepayRemainingsFlag: boolean;
 };
 
 /**
@@ -147,7 +147,7 @@ export class Evaa implements Contract {
      */
     createSupplyMessage(parameters: SupplyParameters): Cell {
         const subaccountId = parameters.subaccountId ?? 0;
-        const subaccount = subaccountId != 0 ? beginCell().storeInt(subaccountId, 16) : beginCell();
+        const subaccount = beginCell().storeInt(subaccountId, 16);
         if (!isTonAsset(parameters.asset)) {
             return beginCell()
                 .storeUint(OPCODES.JETTON_TRANSFER, 32)
@@ -165,8 +165,8 @@ export class Evaa implements Contract {
                         .storeAddress(parameters.userAddress)
                         .storeUint(parameters.amountToTransfer, 64)
                         .storeRef(parameters.payload)
-                        .storeInt(parameters.returnRepayRemainingsFlag ? -1 : 0, 2)
                         .storeBuilder(subaccount)
+                        .storeInt(parameters.returnRepayRemainingsFlag ? -1 : 0, 2)
                         .endCell(),
                 )
                 .endCell();
@@ -179,8 +179,8 @@ export class Evaa implements Contract {
                 .storeAddress(parameters.userAddress)
                 .storeUint(parameters.amountToTransfer, 64)
                 .storeRef(parameters.payload)
-                .storeInt(parameters.returnRepayRemainingsFlag ? -1 : 0, 2)
                 .storeBuilder(subaccount)
+                .storeInt(parameters.returnRepayRemainingsFlag ? -1 : 0, 2)
                 .endCell();
         }
     }
@@ -191,7 +191,7 @@ export class Evaa implements Contract {
      */
     createWithdrawMessage(parameters: WithdrawParameters): Cell {
         const subaccountId = parameters.subaccountId ?? 0;
-        const subaccount = subaccountId != 0 ? beginCell().storeInt(subaccountId, 16) : beginCell();
+        const subaccount = beginCell().storeInt(subaccountId, 16);
         return beginCell()
             .storeUint(OPCODES.WITHDRAW, 32)
             .storeUint(parameters.queryID, 64)
@@ -212,7 +212,7 @@ export class Evaa implements Contract {
      */
     createLiquidationMessage(parameters: LiquidationParameters): Cell {
         const subaccountId = parameters.subaccountId ?? 0;
-        const subaccount = subaccountId != 0 ? beginCell().storeInt(subaccountId, 16) : beginCell();
+        const subaccount = beginCell().storeInt(subaccountId, 16);
         if (!isTonAsset(parameters.asset)) {
             return beginCell()
                 .storeUint(OPCODES.JETTON_TRANSFER, 32)
