@@ -20,7 +20,16 @@ import { parseMasterData } from '../api/parser';
 import { MasterData, PoolAssetConfig, PoolConfig} from '../types/Master';
 import { JettonWallet } from './JettonWallet';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
-import { DefaultPriceSourcesConfig, getPrices, isTonAsset, isTonAssetId, MAINNET_POOL_CONFIG, PricesCollector, PriceSourcesConfig } from '..';
+import { DefaultPriceSourcesConfig, isTonAsset, isTonAssetId, MAINNET_POOL_CONFIG, PricesCollector, PriceSourcesConfig } from '..';
+import {HexString} from "@pythnetwork/hermes-client";
+import {
+    composeFeedsCell,
+    DEFAULT_HERMES_ENDPOINT,
+    getPythFeedsUpdates,
+    packPythUpdatesData
+} from "../api/prices"
+
+import {makeOnchainGetterMasterMessage, makePythProxyMessage} from "../api/pyth";
 
 /**
  * Parameters for the Evaa contract
@@ -53,10 +62,34 @@ export type SupplyParameters = {
 };
 
 /**
+ * pyth specific parameters
+ */
+export type PythBaseData = {
+    priceData: Buffer | Cell
+    targetFeeds: HexString[];
+};
+
+export type TonSpecificPythParams = {
+    pythAddress: Address;
+    attachedValue: bigint;
+    minPublishTime: number | bigint;
+    maxPublishTime: number | bigint;
+};
+
+export type JettonSpecificPythParams = {
+    publishGap: number | bigint;
+    maxStaleness: number | bigint;
+}
+
+export type JettonPythParams = PythBaseData & JettonSpecificPythParams;
+
+export type TonPythParams = PythBaseData & TonSpecificPythParams;
+
+/**
  * Parameters for the withdraw message
  * @property queryID - unique query ID
  *  * @property assetID - asset ID
- * @property assetID - asset ID
+ * @property asset - asset config
  * @property amount - amount to withdraw
  * @property userAddress - user address
  * @property includeUserCode - true to include user code for update (needed when user contract code version is outdated)
@@ -68,10 +101,20 @@ export type WithdrawParameters = {
     userAddress: Address;
     includeUserCode: boolean;
     asset: PoolAssetConfig
-    priceData: Cell; 
     amountToTransfer: bigint;
     payload: Cell;
 };
+
+export type PythWithdrawParameters = {
+    queryID: bigint;
+    amount: bigint;
+    userAddress: Address;
+    includeUserCode: boolean;
+    asset: PoolAssetConfig
+    pyth: TonPythParams;
+    amountToTransfer: bigint;
+    payload: Cell;
+}
 
 /**
  * Base data for liquidation. Can be obtained from the user contract liquidationParameters getter
@@ -97,7 +140,9 @@ export type LiquidationBaseData = {
  * @property queryID - unique query ID
  * @property liquidatorAddress - liquidator address, where and collateral will be sent
  * @property includeUserCode - true to include user code for update (needed when user contract code version is outdated)
- * @property priceData - price data cell. Can be obtained from the getPrices function
+ * @property pyth - pyth related params.
+ * @property payload - liquidation operation custom payload
+ * @property payloadForwardAmount - amount of coins to forward with payload
  */
 export type LiquidationParameters = LiquidationBaseData & {
     asset: PoolAssetConfig;
@@ -105,7 +150,7 @@ export type LiquidationParameters = LiquidationBaseData & {
     liquidatorAddress: Address;
     responseAddress: Address;
     includeUserCode: boolean;
-    priceData: Cell;
+    pyth: PythBaseData & (TonSpecificPythParams | JettonSpecificPythParams);
     payload: Cell;
     payloadForwardAmount: bigint;
 };
@@ -179,6 +224,42 @@ export class Evaa implements Contract {
      * Create withdraw message
      * @returns withdraw message as a cell
      */
+    createPythWithdrawMessage(parameters: PythWithdrawParameters): Cell {
+
+        const {
+            pythAddress, priceData, targetFeeds,
+            minPublishTime, maxPublishTime,
+            attachedValue
+        } = parameters.pyth as TonPythParams;
+
+        const wrappedOperationPayload = beginCell()
+            .storeUint(OPCODES.WITHDRAW, 32)
+            .storeUint(parameters.queryID, 64)
+            .storeRef(
+                beginCell().storeUint(parameters.asset.assetId, 256)
+                    .storeUint(parameters.amount, 64)
+                    .storeAddress(parameters.userAddress)
+                    .storeInt(parameters.includeUserCode ? -1 : 0, 2)
+                    .storeUint(parameters.amountToTransfer, 64)
+                    .storeRef(parameters.payload)
+                    .endCell()
+            )
+            .endCell();
+
+        // pyth message will be sent to pyth for prices validation and then payload will be sent to evaa master
+        return  makePythProxyMessage(
+            pythAddress,
+            this.address, // master contract address
+            attachedValue,
+            packPythUpdatesData(priceData), composeFeedsCell(targetFeeds), minPublishTime, maxPublishTime,
+            wrappedOperationPayload
+        );
+    }
+
+    /**
+     * Create withdraw no prices message
+     * @returns withdraw message as a cell
+     */
     createWithdrawMessage(parameters: WithdrawParameters): Cell {
         return beginCell()
             .storeUint(OPCODES.WITHDRAW, 32)
@@ -189,7 +270,6 @@ export class Evaa implements Contract {
             .storeInt(parameters.includeUserCode ? -1 : 0, 2)
             .storeUint(parameters.amountToTransfer, 64)
             .storeRef(parameters.payload)
-            .storeRef(parameters.priceData)
             .endCell();
     }
 
@@ -198,57 +278,94 @@ export class Evaa implements Contract {
      * @returns liquidation message as a cell
      */
     createLiquidationMessage(parameters: LiquidationParameters): Cell {
+
         if (!isTonAsset(parameters.asset)) {
+            const {
+                priceData, targetFeeds,
+                publishGap, maxStaleness
+            } = parameters.pyth as JettonPythParams;
+
+            // this cell contains liquidation operation info to be parsed in operation processor method
+            const operationPayload = beginCell()
+                    .storeAddress(parameters.borrowerAddress)
+                    .storeAddress(parameters.liquidatorAddress)
+                    .storeUint(parameters.collateralAsset, 256)
+                    .storeUint(parameters.minCollateralAmount, 64)
+                    .storeInt(parameters.includeUserCode ? -1 : 0, 2)
+                    // do not need liquidationAmount in case of jetton liquidation because
+                    // the exact amount of transferred jettons for liquidation is known
+                    .storeUint(0, 64)
+                    .storeRef(beginCell()
+                        .storeUint(parameters.payloadForwardAmount ?? 0, 64)
+                        .storeRef(parameters.payload)
+                        .endCell())
+                    .endCell();
+
+            // this message master contract receives on
+            const masterMessage = makeOnchainGetterMasterMessage({
+                queryId: parameters.queryID,
+                opCode: OPCODES.LIQUIDATE,
+                updateDataCell: packPythUpdatesData(priceData),
+                targetFeedsCell: composeFeedsCell(targetFeeds),
+                publishGap,
+                maxStaleness,
+                operationPayload,
+            });
+
+            // jetton transfer message
             return beginCell()
                 .storeUint(OPCODES.JETTON_TRANSFER, 32)
                 .storeUint(parameters.queryID, 64)
                 .storeCoins(parameters.liquidationAmount)
-                .storeAddress(this.address)
+                .storeAddress(this.address) // notify master
                 .storeAddress(parameters.responseAddress ?? parameters.liquidatorAddress)
                 .storeBit(0)
                 .storeCoins(parameters.forwardAmount ?? FEES.LIQUIDATION_JETTON_FWD)
                 .storeBit(1)
+                .storeRef(masterMessage)
+                .endCell();
+
+        } else {
+            const {
+                pythAddress, priceData, targetFeeds,
+                minPublishTime, maxPublishTime,
+                attachedValue
+            } = parameters.pyth as TonPythParams;
+
+            const wrappedOperationPayload = beginCell()
+                .storeUint(OPCODES.LIQUIDATE, 32)
+                .storeUint(parameters.queryID, 64)
                 .storeRef(
-                    beginCell()
-                        .storeUint(OPCODES.LIQUIDATE, 32)
+                    beginCell() // real operation payload, which will be parsed in ton liquidate method
                         .storeAddress(parameters.borrowerAddress)
                         .storeAddress(parameters.liquidatorAddress)
                         .storeUint(parameters.collateralAsset, 256)
                         .storeUint(parameters.minCollateralAmount, 64)
                         .storeInt(parameters.includeUserCode ? -1 : 0, 2)
-                        // do not need liquidationAmount in case of jetton liquidation because
-                        // the exact amount of transferred jettons for liquidation is known
-                        .storeUint(0, 64)
+                        .storeUint(parameters.liquidationAmount, 64)
                         .storeRef(beginCell()
                             .storeUint(parameters.payloadForwardAmount ?? 0, 64)
                             .storeRef(parameters.payload)
-                        .endCell())
-                        .storeRef(parameters.priceData)
-                        .endCell(),
+                            .endCell())
+                        .endCell()
                 )
                 .endCell();
-        } else {
-            return beginCell()
-                .storeUint(OPCODES.LIQUIDATE, 32)
-                .storeUint(parameters.queryID, 64)
-                .storeAddress(parameters.borrowerAddress)
-                .storeAddress(parameters.liquidatorAddress)
-                .storeUint(parameters.collateralAsset, 256)
-                .storeUint(parameters.minCollateralAmount, 64)
-                .storeInt(parameters.includeUserCode ? -1 : 0, 2)
-                .storeUint(parameters.liquidationAmount, 64)
-                .storeRef(beginCell()
-                    .storeUint(parameters.payloadForwardAmount ?? 0, 64)
-                    .storeRef(parameters.payload)
-                .endCell())
-                .storeRef(parameters.priceData)
-                .endCell();
+
+            // pyth message will be sent to pyth for prices validation and then payload will be sent to evaa master
+            return  makePythProxyMessage(
+                pythAddress,
+                this.address, // master contract address
+                attachedValue,
+                packPythUpdatesData(priceData), composeFeedsCell(targetFeeds), minPublishTime, maxPublishTime,
+                wrappedOperationPayload
+            );
         }
     }
 
     /**
      * Calculate user contract address
      * @param userAddress
+     * @param lendingCode
      * @returns user contract address
      */
     calculateUserSCAddr(userAddress: Address, lendingCode: Cell): Address {
@@ -313,13 +430,24 @@ export class Evaa implements Contract {
                 sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
                 body: message,
             });
-
         }
     }
 
+    // no prices left for merge to make it clear
     async sendWithdraw(provider: ContractProvider, via: Sender, value: bigint, parameters: WithdrawParameters) {
         const message = this.createWithdrawMessage(parameters);
 
+        await provider.internal(via, {
+            value,
+            sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
+            body: message,
+        });
+    }
+
+    async sendWithdrawPyth(provider: ContractProvider, via: Sender, value: bigint, parameters: PythWithdrawParameters) {
+        const _parameters = {...parameters}; // make a copy
+        _parameters.pyth = {...parameters.pyth, ...{attachedValue: value}};
+        const message = this.createPythWithdrawMessage(_parameters);
         await provider.internal(via, {
             value,
             sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
@@ -333,7 +461,9 @@ export class Evaa implements Contract {
         value: bigint,
         parameters: LiquidationParameters,
     ) {
-        const message = this.createLiquidationMessage(parameters);
+        const _parameters = {...parameters}; // make a copy
+        _parameters.pyth = {...parameters.pyth, ...{attachedValue: value}};
+        const message = this.createLiquidationMessage(_parameters);
 
         if (!isTonAssetId(parameters.loanAsset)) {
             if (!via.address) {
@@ -394,17 +524,12 @@ export class Evaa implements Contract {
     }
 
     /**
-     * @deprecated Use PriceCollector (createPriceCollector) istead of getPrices
+     * Fetches pyth price updates from specified endpoint
+     * @param provider
+     * @param targetFeeds
+     * @param endpoint
      */
-    async getPrices(provider: ContractProvider, endpoints?: string[]) {
-        if ((endpoints?.length ?? 0) > 0) {
-            return await getPrices(endpoints, this._poolConfig);
-        } else {
-            return await getPrices(undefined, this._poolConfig);
-        }
-    }
-
-    createPriceCollector(priceSourcesConfig: PriceSourcesConfig = DefaultPriceSourcesConfig) : PricesCollector {
-        return new PricesCollector(this._poolConfig, priceSourcesConfig);
+    async getPrices(provider: ContractProvider, targetFeeds: HexString[], endpoint?: string) {
+        return getPythFeedsUpdates(targetFeeds, endpoint ?? DEFAULT_HERMES_ENDPOINT);
     }
 }

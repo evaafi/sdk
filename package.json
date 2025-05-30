@@ -20,6 +20,7 @@
   "homepage": "https://github.com/evaafi/sdk#readme",
   "devDependencies": {
     "@orbs-network/ton-access": "^2.3.3",
+    "@pythnetwork/hermes-client": "^2.0.0",
     "@ton/core": "0.56.0",
     "@ton/crypto": "3.3.0",
     "@tonconnect/sdk": "3.0.5",

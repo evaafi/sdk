@@ -1,4 +1,6 @@
 import { Address, Cell, Dictionary } from '@ton/core';
+import {FeedMapItem, parseFeedsMapDict} from "../api/parser";
+import {loadMaybeMyRef} from "../api/helpers";
 
 export type MasterConstants = {
     FACTOR_SCALE: bigint,
@@ -69,15 +71,18 @@ export type AssetConfig = {
 
 export type MasterConfig = {
     ifActive: number;
-    admin: Address;
     oraclesInfo: OraclesInfo
+    admin: Address;
     tokenKeys: Cell | null;
 };
 
 export type OraclesInfo = {
-    numOracles: number;
-    threshold: number;
-    oracles: Cell | null;
+    pythAddress: Address,
+    feedsMap: Map<bigint, FeedMapItem>,
+    pricesTtl: number,
+    pythComputeBaseGas: bigint,
+    pythComputePerUpdateGas: bigint,
+    pythSingleUpdateFee: bigint,
 };
 
 export type AssetData = {

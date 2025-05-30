@@ -45,7 +45,13 @@ export {
 export { createAssetData, createAssetConfig, parseMasterData, parseUserData, parseUserLiteData } from './api/parser';
 
 // Prices
-export { getPrices } from './api/prices';
+export {
+    DEFAULT_HERMES_ENDPOINT,
+    getPythFeedsUpdates,
+    composeFeedsCell,
+    packPythUpdatesData,
+    createRequiredFeedsList,
+} from './api/prices';
 
 // Contracts' wrappers
 export { JettonWallet } from './contracts/JettonWallet';
