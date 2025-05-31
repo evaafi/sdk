@@ -52,6 +52,8 @@ export type SupplyParameters = {
     payload: Cell;
     subaccountId?: number;
     returnRepayRemainingsFlag: boolean;
+    customPayloadRecipient: Address;
+    customPayloadSaturationFlag: boolean;
 };
 
 /**
@@ -74,6 +76,7 @@ export type WithdrawParameters = {
     amountToTransfer: bigint;
     payload: Cell;
     subaccountId?: number;
+    customPayloadSaturationFlag: boolean;
 };
 
 /**
@@ -94,6 +97,8 @@ export type LiquidationBaseData = {
     tonLiquidation: boolean;
     forwardAmount?: bigint;
     subaccountId?: number;
+    customPayloadRecipient: Address;
+    customPayloadSaturationFlag: boolean;
 };
 
 /**
@@ -167,6 +172,8 @@ export class Evaa implements Contract {
                         .storeRef(parameters.payload)
                         .storeBuilder(subaccount)
                         .storeInt(parameters.returnRepayRemainingsFlag ? -1 : 0, 2)
+                        .storeAddress(parameters.customPayloadRecipient)
+                        .storeUint(parameters.customPayloadSaturationFlag ? -1 : 0, 2)
                         .endCell(),
                 )
                 .endCell();
@@ -181,6 +188,8 @@ export class Evaa implements Contract {
                 .storeRef(parameters.payload)
                 .storeBuilder(subaccount)
                 .storeInt(parameters.returnRepayRemainingsFlag ? -1 : 0, 2)
+                .storeAddress(parameters.customPayloadRecipient)
+                .storeUint(parameters.customPayloadSaturationFlag ? -1 : 0, 2)
                 .endCell();
         }
     }
@@ -203,6 +212,7 @@ export class Evaa implements Contract {
             .storeRef(parameters.payload)
             .storeRef(parameters.priceData)
             .storeBuilder(subaccount)
+            .storeUint(parameters.customPayloadSaturationFlag ? -1 : 0, 2)
             .endCell();
     }
 
@@ -238,6 +248,8 @@ export class Evaa implements Contract {
                             .storeUint(parameters.payloadForwardAmount ?? 0, 64)
                             .storeRef(parameters.payload)
                             .storeBuilder(subaccount)
+                            .storeAddress(parameters.customPayloadRecipient)
+                            .storeUint(parameters.customPayloadSaturationFlag ? -1 : 0, 2)
                             .endCell())
                         .storeRef(parameters.priceData)
                         .endCell(),
@@ -257,6 +269,8 @@ export class Evaa implements Contract {
                     .storeUint(parameters.payloadForwardAmount ?? 0, 64)
                     .storeRef(parameters.payload)
                     .storeBuilder(subaccount)
+                    .storeAddress(parameters.customPayloadRecipient)
+                    .storeUint(parameters.customPayloadSaturationFlag ? -1 : 0, 2)
                     .endCell())
                 .storeRef(parameters.priceData)
                 .endCell();
