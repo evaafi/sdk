@@ -6,8 +6,7 @@ export const MAINNET_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_MASTER_MAINNET,
     masterVersion: MAINNET_VERSION,
     masterConstants: MASTER_CONSTANTS,
-    oracles: ORACLES_MAINNET,
-    minimalOracles: 3,
+    // oracleInfo: OracleInfo,
     poolAssetsConfig: [
         TON_MAINNET,
         JUSDT_MAINNET,
@@ -24,8 +23,8 @@ export const TESTNET_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_MASTER_TESTNET,
     masterVersion: TESTNET_VERSION,
     masterConstants: MASTER_CONSTANTS,
-    oracles: ORACLES_TESTNET,
-    minimalOracles: 3,
+    // oracles: ORACLES_TESTNET,
+    // minimalOracles: 3,
     poolAssetsConfig: [
         TON_MAINNET,
         JUSDT_TESTNET,
@@ -39,8 +38,8 @@ export const MAINNET_LP_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_LP_MAINNET,
     masterVersion: EVAA_LP_MAINNET_VERSION,
     masterConstants: MASTER_CONSTANTS,
-    oracles: ORACLES_LP,
-    minimalOracles: 3,
+    // oracles: ORACLES_LP,
+    // minimalOracles: 3,
     poolAssetsConfig: [
         TON_MAINNET,
         USDT_MAINNET,
@@ -55,8 +54,8 @@ export const MAINNET_ALTS_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_ALTS_MAINNET,
     masterVersion: EVAA_ALTS_MAINNET_VERSION,
     masterConstants: MASTER_CONSTANTS,
-    oracles: ORACLES_ALTS,
-    minimalOracles: 3,
+    // oracles: ORACLES_ALTS,
+    // minimalOracles: 3,
     poolAssetsConfig: [
         TON_MAINNET,
         USDT_MAINNET,

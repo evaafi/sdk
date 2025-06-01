@@ -1,5 +1,15 @@
-import { beginCell, Cell, Dictionary, DictionaryValue, Slice } from '@ton/core';
-import { AssetConfig, AssetData, ExtendedAssetData, ExtendedAssetsConfig, ExtendedAssetsData, MasterConfig, MasterConstants, MasterData, PoolAssetsConfig, PoolConfig } from '../types/Master';
+import {beginCell, Cell, Dictionary, DictionaryValue, Slice} from '@ton/core';
+import {
+    AssetConfig,
+    AssetData,
+    ExtendedAssetData,
+    ExtendedAssetsConfig,
+    ExtendedAssetsData,
+    MasterConstants,
+    MasterData,
+    PoolAssetsConfig,
+    PoolConfig
+} from '../types/Master';
 import {
     bigIntMax,
     bigIntMin,
@@ -11,10 +21,9 @@ import {
     getAvailableToBorrow,
     presentValue,
 } from './math';
-import { loadMaybeMyRef, loadMyRef } from './helpers';
-import { BalanceType, UserBalance, UserData, UserLiteData, UserRewards } from '../types/User';
-import { checkNotInDebtAtAll } from "../api/math";
-import {HexString} from "@pythnetwork/hermes-client";
+import {loadMaybeMyRef, loadMyRef} from './helpers';
+import {BalanceType, UserBalance, UserData, UserLiteData, UserRewards} from '../types/User';
+import {parseFeedsMapDict} from "./feeds";
 
 export function createUserRewards(): DictionaryValue<UserRewards> {
     return {
@@ -131,28 +140,6 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
     };
 }
 
-export type FeedMapItem = {
-    evaaId: bigint,
-    referredPythFeed: bigint
-};
-
-export function parseFeedsMapDict(dict: Dictionary<bigint, Buffer>) {
-    const parsedData = new Map<bigint, FeedMapItem>();
-    for (const key of dict.keys()) {
-        const buffer = dict.get(key)!
-
-        const hex1 = '0x' + buffer.toString('hex', 0, 32);
-        const hex2 = '0x' + buffer.toString('hex', 32);
-
-        const evaaId = BigInt(hex1);
-        const referredPythFeed = BigInt(hex2);
-
-        parsedData.set(key, {evaaId, referredPythFeed});
-    }
-
-    return parsedData;
-}
-
 export function parseMasterData(masterDataBOC: string, poolAssetsConfig: PoolAssetsConfig, masterConstants: MasterConstants): MasterData {
     const masterSlice = Cell.fromBase64(masterDataBOC).beginParse();
     const meta = masterSlice.loadRef().beginParse().loadStringTail();
@@ -191,7 +178,7 @@ export function parseMasterData(masterDataBOC: string, poolAssetsConfig: PoolAss
         ifActive: masterConfigSlice.loadInt(8),
         oraclesInfo:  {
             pythAddress: oraclesSlice.loadAddress(),
-            feedsMap: parseFeedsMapDict(oraclesSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.Buffer(64))),
+            feedsMap: oraclesSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.Buffer(64)),
             pricesTtl: oraclesSlice.loadUint(32),
             pythComputeBaseGas: oraclesSlice.loadUintBig(64),
             pythComputePerUpdateGas: oraclesSlice.loadUintBig(64),

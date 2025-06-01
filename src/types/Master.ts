@@ -1,6 +1,6 @@
 import { Address, Cell, Dictionary } from '@ton/core';
-import {FeedMapItem, parseFeedsMapDict} from "../api/parser";
 import {loadMaybeMyRef} from "../api/helpers";
+import {FeedMapItem, parseFeedsMapDict} from "../api/feeds";
 
 export type MasterConstants = {
     FACTOR_SCALE: bigint,
@@ -29,8 +29,6 @@ export type PoolConfig = {
     masterAddress: Address;
     masterVersion: number;
     masterConstants: MasterConstants;
-    oracles: OracleNFT[];
-    minimalOracles: number;
     poolAssetsConfig: PoolAssetsConfig;
     lendingCode: Cell;
 };
@@ -71,19 +69,20 @@ export type AssetConfig = {
 
 export type MasterConfig = {
     ifActive: number;
-    oraclesInfo: OraclesInfo
+    oraclesInfo: OracleInfo
     admin: Address;
     tokenKeys: Cell | null;
 };
 
-export type OraclesInfo = {
-    pythAddress: Address,
-    feedsMap: Map<bigint, FeedMapItem>,
+export type OracleConfig = {
+    feedsMap: Dictionary<bigint, Buffer>,
     pricesTtl: number,
     pythComputeBaseGas: bigint,
     pythComputePerUpdateGas: bigint,
     pythSingleUpdateFee: bigint,
 };
+
+export type OracleInfo = {pythAddress: Address} & OracleConfig;
 
 export type AssetData = {
     sRate: bigint;

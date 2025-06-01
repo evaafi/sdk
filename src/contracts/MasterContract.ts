@@ -20,7 +20,7 @@ import { parseMasterData } from '../api/parser';
 import { MasterData, PoolAssetConfig, PoolConfig} from '../types/Master';
 import { JettonWallet } from './JettonWallet';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
-import { DefaultPriceSourcesConfig, isTonAsset, isTonAssetId, MAINNET_POOL_CONFIG, PricesCollector, PriceSourcesConfig } from '..';
+import { isTonAsset, isTonAssetId, MAINNET_POOL_CONFIG } from '..';
 import {HexString} from "@pythnetwork/hermes-client";
 import {
     composeFeedsCell,
@@ -69,21 +69,21 @@ export type PythBaseData = {
     targetFeeds: HexString[];
 };
 
-export type TonSpecificPythParams = {
+export type ProxySpecificPythParams = {
     pythAddress: Address;
     attachedValue: bigint;
     minPublishTime: number | bigint;
     maxPublishTime: number | bigint;
 };
 
-export type JettonSpecificPythParams = {
+export type OnchainSpecificPythParams = {
     publishGap: number | bigint;
     maxStaleness: number | bigint;
 }
 
-export type JettonPythParams = PythBaseData & JettonSpecificPythParams;
+export type JettonPythParams = PythBaseData & OnchainSpecificPythParams;
 
-export type TonPythParams = PythBaseData & TonSpecificPythParams;
+export type TonPythParams = PythBaseData & ProxySpecificPythParams;
 
 /**
  * Parameters for the withdraw message
@@ -150,7 +150,7 @@ export type LiquidationParameters = LiquidationBaseData & {
     liquidatorAddress: Address;
     responseAddress: Address;
     includeUserCode: boolean;
-    pyth: PythBaseData & (TonSpecificPythParams | JettonSpecificPythParams);
+    pyth: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams);
     payload: Cell;
     payloadForwardAmount: bigint;
 };
@@ -180,6 +180,12 @@ export class Evaa implements Contract {
      */
     get poolConfig(): PoolConfig {
         return this._poolConfig;
+    }
+
+    get pythData() {
+        const data = this._data;
+        if (!data) return null;
+        return data!.masterConfig.oraclesInfo;
     }
 
     /**
