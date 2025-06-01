@@ -65,6 +65,7 @@ export type AssetConfig = {
     minPrincipalForRewards: bigint;
     baseTrackingSupplySpeed: bigint;
     baseTrackingBorrowSpeed: bigint;
+    borrowCap: number | bigint;
 };
 
 export type MasterConfig = {
@@ -72,6 +73,7 @@ export type MasterConfig = {
     oraclesInfo: OracleInfo
     admin: Address;
     tokenKeys: Cell | null;
+    supervisor: Address | null;
 };
 
 export type OracleConfig = {

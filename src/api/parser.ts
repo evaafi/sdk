@@ -30,7 +30,7 @@ export function createUserRewards(): DictionaryValue<UserRewards> {
         serialize: (src: any, buidler: any) => {
             buidler.storeUint(src.trackingIndex, 64);
             buidler.storeUint(src.trackingAccured, 64);
-    },
+        },
         parse: (src: Slice) => {
             const trackingIndex = BigInt(src.loadUint(64));
             const trackingAccured = BigInt(src.loadUint(64));
@@ -61,9 +61,9 @@ export function createAssetData(): DictionaryValue<AssetData> {
             const balance = BigInt(src.loadUintBig(64));
             const trackingSupplyIndex = BigInt(src.loadUintBig(64));
             const trackingBorrowIndex = BigInt(src.loadUintBig(64));
-            const awaitedSupply = BigInt(src.loadUintBig(64));  
+            const awaitedSupply = BigInt(src.loadUintBig(64));
 
-            return { sRate, bRate, totalSupply, totalBorrow, lastAccural, balance, trackingSupplyIndex, trackingBorrowIndex, awaitedSupply};
+            return { sRate, bRate, totalSupply, totalBorrow, lastAccural, balance, trackingSupplyIndex, trackingBorrowIndex, awaitedSupply };
         },
     };
 }
@@ -91,6 +91,7 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
             refBuild.storeUint(src.minPrincipalForRewards, 64);
             refBuild.storeUint(src.baseTrackingSupplySpeed, 64);
             refBuild.storeUint(src.baseTrackingBorrowSpeed, 64);
+            refBuild.storeInt(src.borrowCap, 64);
             builder.storeRef(refBuild.endCell());
         },
         parse: (src: Slice) => {
@@ -114,6 +115,7 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
             const minPrincipalForRewards = ref.loadUintBig(64);
             const baseTrackingSupplySpeed = ref.loadUintBig(64);
             const baseTrackingBorrowSpeed = ref.loadUintBig(64);
+            const borrowCap = ref.loadInt(64);
 
             return {
                 oracle,
@@ -134,7 +136,8 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
                 liquidationReserveFactor,
                 minPrincipalForRewards,
                 baseTrackingSupplySpeed,
-                baseTrackingBorrowSpeed
+                baseTrackingBorrowSpeed,
+                borrowCap,
             };
         },
     };
@@ -167,7 +170,7 @@ export function parseMasterData(masterDataBOC: string, poolAssetsConfig: PoolAss
         supply: Dictionary.empty<bigint, number>(),
         borrow: Dictionary.empty<bigint, number>(),
     };
-    
+
     for (const [tokenSymbol, asset] of Object.entries(poolAssetsConfig)) {
         const assetData = calculateAssetData(assetsConfigDict, assetsDataDict, asset.assetId, masterConstants);
         assetsExtendedData.set(asset.assetId, assetData);
@@ -186,6 +189,7 @@ export function parseMasterData(masterDataBOC: string, poolAssetsConfig: PoolAss
         },
         admin: masterConfigSlice.loadAddress(),
         tokenKeys: loadMaybeMyRef(masterConfigSlice),
+        supervisor: masterConfigSlice.loadMaybeAddress(),
     };
     masterConfigSlice.endParse();
 
@@ -247,7 +251,7 @@ export function parseUserLiteData(
         backupCell1 = userSlice.loadMaybeRef();
         backupCell2 = userSlice.loadMaybeRef();
     }
-    
+
     userSlice.endParse();
     const userBalances = Dictionary.empty<bigint, UserBalance>();
 
@@ -285,7 +289,7 @@ export function parseUserLiteData(
         dutchAuctionStart: dutchAuctionStart,
         backupCell: backupCell,
         fullyParsed: false,
-        
+
         rewards: rewards,
         backupCell1: backupCell1,
         backupCell2: backupCell2,
@@ -359,7 +363,7 @@ export function parseUserData(
         const balance = userLiteData.balances.get(asset.assetId) as UserBalance;
         const assetConfig = assetsConfig.get(asset.assetId) as AssetConfig;
         const assetData = assetsData.get(asset.assetId) as ExtendedAssetData;
-        
+
         const assetLiquidityMinusReserves = getAssetLiquidityMinusReserves(assetData, masterConstants);
 
         if (balance.type === BalanceType.supply) {
@@ -392,7 +396,7 @@ export function parseUserData(
         liquidationData = calculateLiquidationData(assetsConfig, assetsData, userLiteData.realPrincipals, prices, poolConfig);
         if (liquidationData.totalLimit != 0n) {
             healthFactor = 1 - Number(liquidationData.totalDebt) / Number(liquidationData.totalLimit);
-        } 
+        }
     }
     return {
         ...userLiteData,
