@@ -175,10 +175,12 @@ export function parseMasterData(masterDataBOC: string, poolAssetsConfig: PoolAss
         const assetData = calculateAssetData(assetsConfigDict, assetsDataDict, asset.assetId, masterConstants);
         assetsExtendedData.set(asset.assetId, assetData);
     }
-    const oraclesSlice = masterSlice.loadRef().beginParse();
+
+    const ifActive = masterConfigSlice.loadInt(8);
+    const oraclesSlice = masterConfigSlice.loadRef().beginParse();
 
     const masterConfig = {
-        ifActive: masterConfigSlice.loadInt(8),
+        ifActive: ifActive,
         oraclesInfo:  {
             pythAddress: oraclesSlice.loadAddress(),
             feedsMap: oraclesSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.Buffer(64)),

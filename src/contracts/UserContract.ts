@@ -149,18 +149,18 @@ export class EvaaUser implements Contract {
      * Get liquidation parameters for passing to liquidation message
      * @returns liquidation parameters if user is liquidable, otherwise undefined
      */
-    get liquidationParameters(): LiquidationBaseData | undefined {
-        if (!this._data || this._data.type === 'inactive' || !this._data.liquidationData.liquidable) {
-            return undefined;
-        }
-
-        return {
-            borrowerAddress: this._data.ownerAddress,
-            loanAsset: this._data.liquidationData.greatestLoanAsset.assetId,
-            collateralAsset: this._data.liquidationData.greatestCollateralAsset.assetId,
-            minCollateralAmount: this._data.liquidationData.minCollateralAmount,
-            liquidationAmount: this._data.liquidationData.liquidationAmount,
-            tonLiquidation: this._data.liquidationData.greatestLoanAsset.assetId === TON_MAINNET.assetId,
-        };
-    }
+    // get liquidationParameters(): LiquidationBaseData | undefined {
+    //     if (!this._data || this._data.type === 'inactive' || !this._data.liquidationData.liquidable) {
+    //         return undefined;
+    //     }
+    //
+    //     return {
+    //         borrowerAddress: this._data.ownerAddress,
+    //         loanAsset: this._data.liquidationData.greatestLoanAsset.assetId,
+    //         collateralAsset: this._data.liquidationData.greatestCollateralAsset.assetId,
+    //         minCollateralAmount: this._data.liquidationData.minCollateralAmount,
+    //         liquidationAmount: this._data.liquidationData.liquidationAmount,
+    //         tonLiquidation: this._data.liquidationData.greatestLoanAsset.assetId === TON_MAINNET.assetId,
+    //     };
+    // }
 }
