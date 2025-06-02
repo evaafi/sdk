@@ -40,6 +40,7 @@
   "dependencies": {
     "@ton/ton": "14.0.0",
     "@pythnetwork/hermes-client": "^2.0.0",
+    "@pythnetwork/pyth-ton-js": "^0.1.2",
     "dotenv": "16.4.5"
   }
 }
