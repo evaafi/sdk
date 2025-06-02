@@ -254,6 +254,12 @@ export class Evaa implements Contract {
      */
     createPythWithdrawMessage(parameters: PythWithdrawParameters): Cell {
 
+        const extraDataTail = ((parameters.subaccountId ?? 0) == 0) ?
+            beginCell().endCell() :
+            beginCell().storeInt(parameters.subaccountId ?? 0, 16)
+                .storeUint(0, 2) // custom_payload_saturation_flag = false (default)
+                .endCell();
+
         const {
             pythAddress, priceData, targetFeeds,
             minPublishTime, maxPublishTime,
@@ -299,6 +305,7 @@ export class Evaa implements Contract {
                             .storeInt(parameters.includeUserCode ? -1 : 0, 2)
                             .storeUint(parameters.amountToTransfer, 64)
                             .storeRef(parameters.payload)
+                            .storeSlice(extraDataTail.beginParse())
                             .endCell()
                     )
                     .endCell()
