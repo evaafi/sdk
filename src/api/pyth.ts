@@ -3,9 +3,7 @@ import {Address, beginCell} from "@ton/ton";
 import {Cell, Slice} from "@ton/core";
 
 export function makePythProxyMessage(
-    pythAddress: Address,
     targetAddress: Address,
-    attachedTons: bigint,
     priceUpdateData: Cell,
     targetPythFeeds: Cell,
     minPublishTime: number|bigint,
@@ -13,10 +11,6 @@ export function makePythProxyMessage(
     operationPayload: Cell): Cell {
 
     return beginCell()
-        .storeUint(0x18, 6)
-        .storeAddress(pythAddress)
-        .storeCoins(attachedTons)
-        .storeUint(0, 107)
         .storeUint(5, 32)   // pyth::op_parse_price_feed_updates
         .storeRef(priceUpdateData)
         .storeRef(targetPythFeeds)

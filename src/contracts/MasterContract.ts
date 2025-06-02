@@ -260,28 +260,59 @@ export class Evaa implements Contract {
             attachedValue
         } = parameters.pyth as TonPythParams;
 
-        const wrappedOperationPayload = beginCell()
-            .storeUint(OPCODES.WITHDRAW, 32)
-            .storeUint(parameters.queryID, 64)
+        // const wrappedOperationPayload =
+        //     beginCell()
+        //     .storeUint(OPCODES.WITHDRAW, 32)
+        //     .storeUint(parameters.queryID, 64)
+        //     .storeRef(
+        //         beginCell().storeUint(parameters.asset.assetId, 256)
+        //             .storeUint(parameters.amount, 64)
+        //             .storeAddress(parameters.userAddress)
+        //             .storeInt(parameters.includeUserCode ? -1 : 0, 2)
+        //             .storeUint(parameters.amountToTransfer, 64)
+        //             .storeRef(parameters.payload)
+        //             .endCell()
+        //     )
+        //     .endCell();
+
+        const priceDataCell = packPythUpdatesData(priceData);
+        const priceFeedsCell = composeFeedsCell(targetFeeds);
+        return beginCell()
+            // .storeUint(0x18, 6)
+            // .storeAddress(pythAddress)
+            // .storeCoins(attachedValue)
+            // .storeUint(0, 107)
+            .storeUint(5, 32)   // pyth::op_parse_price_feed_updates
+            .storeRef(priceDataCell)
+            .storeRef(priceFeedsCell)
+            .storeUint(minPublishTime, 64)
+            .storeUint(maxPublishTime, 64)
+            .storeAddress(this.address)    // send payload to master
             .storeRef(
-                beginCell().storeUint(parameters.asset.assetId, 256)
-                    .storeUint(parameters.amount, 64)
-                    .storeAddress(parameters.userAddress)
-                    .storeInt(parameters.includeUserCode ? -1 : 0, 2)
-                    .storeUint(parameters.amountToTransfer, 64)
-                    .storeRef(parameters.payload)
+                beginCell()
+                    .storeUint(OPCODES.WITHDRAW, 32)
+                    .storeUint(parameters.queryID, 64)
+                    .storeRef(
+                        beginCell().storeUint(parameters.asset.assetId, 256)
+                            .storeUint(parameters.amount, 64)
+                            .storeAddress(parameters.userAddress)
+                            .storeInt(parameters.includeUserCode ? -1 : 0, 2)
+                            .storeUint(parameters.amountToTransfer, 64)
+                            .storeRef(parameters.payload)
+                            .endCell()
+                    )
                     .endCell()
             )
             .endCell();
 
         // pyth message will be sent to pyth for prices validation and then payload will be sent to evaa master
-        return  makePythProxyMessage(
-            pythAddress,
-            this.address, // master contract address
-            attachedValue,
-            packPythUpdatesData(priceData), composeFeedsCell(targetFeeds), minPublishTime, maxPublishTime,
-            wrappedOperationPayload
-        );
+        // return  makePythProxyMessage(
+        //     pythAddress,
+        //     this.address, // master contract address
+        //     attachedValue,
+        //     packPythUpdatesData(priceData), composeFeedsCell(targetFeeds), minPublishTime, maxPublishTime,
+        //     wrappedOperationPayload
+        // );
     }
 
     /**
@@ -395,9 +426,7 @@ export class Evaa implements Contract {
 
             // pyth message will be sent to pyth for prices validation and then payload will be sent to evaa master
             return  makePythProxyMessage(
-                pythAddress,
                 this.address, // master contract address
-                attachedValue,
                 packPythUpdatesData(priceData), composeFeedsCell(targetFeeds), minPublishTime, maxPublishTime,
                 wrappedOperationPayload
             );
@@ -495,8 +524,11 @@ export class Evaa implements Contract {
         const _parameters = {...parameters}; // make a copy
         _parameters.pyth = {...parameters.pyth, ...{attachedValue: value}};
         const message = this.createPythWithdrawMessage(_parameters);
-        await provider.internal(via, {
-            value,
+        console.log('message: ', message);
+
+        await via.send({
+            value: value,
+            to: _parameters.pyth.pythAddress,
             sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
             body: message,
         });
