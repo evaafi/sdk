@@ -57,7 +57,6 @@ export type SupplyParameters = {
     userAddress: Address;
     responseAddress?: Address;
     forwardAmount?: bigint;
-    amountToTransfer: bigint;
     payload: Cell;
     subaccountId?: number;
     returnRepayRemainingsFlag: boolean;
@@ -164,7 +163,6 @@ export type LiquidationParameters = LiquidationBaseData & {
     includeUserCode: boolean;
     pyth: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams);
     payload: Cell;
-    payloadForwardAmount: bigint;
 };
 
 /**
@@ -222,7 +220,6 @@ export class Evaa implements Contract {
                         .storeUint(OPCODES.SUPPLY, 32)
                         .storeInt(parameters.includeUserCode ? -1 : 0, 2)
                         .storeAddress(parameters.userAddress)
-                        .storeUint(parameters.amountToTransfer, 64)
                         .storeRef(parameters.payload)
                         .storeBuilder(subaccount)
                         .storeInt(parameters.returnRepayRemainingsFlag ? -1 : 0, 2)
@@ -238,7 +235,6 @@ export class Evaa implements Contract {
                 .storeInt(parameters.includeUserCode ? -1 : 0, 2)
                 .storeUint(parameters.amount, 64)
                 .storeAddress(parameters.userAddress)
-                .storeUint(parameters.amountToTransfer, 64)
                 .storeRef(parameters.payload)
                 .storeBuilder(subaccount)
                 .storeInt(parameters.returnRepayRemainingsFlag ? -1 : 0, 2)
@@ -370,7 +366,6 @@ export class Evaa implements Contract {
                     // the exact amount of transferred jettons for liquidation is known
                     .storeUint(0, 64)
                     .storeRef(beginCell()
-                        .storeUint(parameters.payloadForwardAmount ?? 0, 64)
                         .storeRef(parameters.payload)
                         .storeBuilder(subaccount)
                         .storeAddress(parameters.customPayloadRecipient)
@@ -421,7 +416,6 @@ export class Evaa implements Contract {
                         .storeInt(parameters.includeUserCode ? -1 : 0, 2)
                         .storeUint(parameters.liquidationAmount, 64)
                         .storeRef(beginCell()
-                            .storeUint(parameters.payloadForwardAmount ?? 0, 64)
                             .storeRef(parameters.payload)
                             .storeBuilder(subaccount)
                             .storeAddress(parameters.customPayloadRecipient)
