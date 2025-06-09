@@ -58,6 +58,8 @@ export const OPCODES = {
     SUPPLY: 0x1,
     WITHDRAW: 0x2,
     LIQUIDATE: 0x3,
+    SUPPLY_WITHDRAW_NO_PRICES: 0x4,
+    SUPPLY_WITHDRAW: 0x42,
     JETTON_TRANSFER: 0xf8a7ea5,
     ONCHAIN_GETTER: 0x9998,
 };
@@ -70,4 +72,8 @@ export const FEES = {
     LIQUIDATION: toNano('0.8'),
     LIQUIDATION_JETTON: toNano('1'),
     LIQUIDATION_JETTON_FWD: toNano('0.8'),
+    // SW are ballpark estimates, may need refinement
+    SUPPLY_WITHDRAW: toNano('0.8'),
+    SUPPLY_WITHDRAW_JETTON: toNano('1'),
+    SUPPLY_WITHDRAW_JETTON_FWD: toNano('0.8'),
 };
