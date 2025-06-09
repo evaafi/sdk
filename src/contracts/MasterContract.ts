@@ -464,7 +464,7 @@ export class Evaa implements Contract {
             // this message master contract receives on
             const masterMessage = makeOnchainGetterMasterMessage({
                 queryId: parameters.queryID,
-                opCode: OPCODES.SUPPLY_WITHDRAW,
+                opCode: OPCODES.SUPPLY_WITHDRAW_JETTON,
                 updateDataCell: packPythUpdatesData(priceData),
                 targetFeedsCell: composeFeedsCell(targetFeeds),
                 publishGap,
@@ -501,7 +501,7 @@ export class Evaa implements Contract {
     protected createSupplyWithdrawMessageNoPrices(parameters: SupplyWithdrawParameters, operationPayload: Cell): Cell {
 
         const fullMessageBody = beginCell()
-            .storeUint(OPCODES.SUPPLY_WITHDRAW_NO_PRICES, 32)
+            .storeUint(OPCODES.SUPPLY_WITHDRAW, 32)
             .storeUint(parameters.queryID, 64)
             .storeSlice(operationPayload.beginParse())
             .endCell();
