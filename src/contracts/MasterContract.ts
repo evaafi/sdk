@@ -353,7 +353,7 @@ export class Evaa implements Contract {
 
         const operationPayload = beginCell()
             .storeAddress(parameters.borrowerAddress)
-            .storeAddress(parameters.liquidatorAddress)
+            // .storeAddress(parameters.liquidatorAddress)
             .storeUint(parameters.collateralAsset, 256)
             .storeUint(parameters.minCollateralAmount, 64)
             .storeInt(parameters.includeUserCode ? -1 : 0, 2)
