@@ -176,7 +176,8 @@ export type SupplyWithdrawParameters = {
     returnRepayRemainingsFlag: boolean;
     customPayloadSaturationFlag: boolean;
     pyth?: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams);
-    forwardAmount: bigint;
+    forwardAmount?: bigint;
+    responseAddress?: Address;
 }
 
 // Internal
@@ -184,6 +185,7 @@ type JettonParams = {
     queryID: bigint;
     amount?: bigint;
     liquidationAmount?: bigint;
+    supplyAmount?: bigint;
     responseAddress?: Address;
     userAddress?: Address;
     liquidatorAddress?: Address;
@@ -225,13 +227,13 @@ export class Evaa implements Contract {
     }
 
     protected createJettonTransferMessage(parameters: JettonParams, defaultFees: bigint, message: Cell): Cell {
-        if (parameters.amount == undefined && parameters.liquidationAmount == undefined) {
-            throw new Error('Either amount or liquidationAmount must be provided')
+        if (parameters.amount == undefined && parameters.liquidationAmount == undefined && parameters.supplyAmount == undefined) {
+            throw new Error('Either amount or liquidationAmount or supplyAmount must be provided')
         }
         return beginCell()
             .storeUint(OPCODES.JETTON_TRANSFER, 32)
             .storeUint(parameters.queryID, 64)
-            .storeCoins(parameters.amount ?? parameters.liquidationAmount ?? 0n)
+            .storeCoins(parameters.amount ?? parameters.liquidationAmount ?? parameters.supplyAmount ?? 0n)
             .storeAddress(parameters.destinationAddress ?? this.address) // notify master
             .storeAddress(parameters.responseAddress ?? parameters.userAddress ?? parameters.liquidatorAddress)
             .storeBit(0)
@@ -499,17 +501,17 @@ export class Evaa implements Contract {
     }
 
     protected createSupplyWithdrawMessageNoPrices(parameters: SupplyWithdrawParameters, operationPayload: Cell): Cell {
-
-        const fullMessageBody = beginCell()
-            .storeUint(OPCODES.SUPPLY_WITHDRAW, 32)
-            .storeUint(parameters.queryID, 64)
-            .storeSlice(operationPayload.beginParse())
-            .endCell();
-
         if (!isTonAsset(parameters.supplyAsset)) {
-            return this.createJettonTransferMessage(parameters, FEES.SUPPLY_WITHDRAW_JETTON_FWD, fullMessageBody);
+            return this.createJettonTransferMessage(parameters, FEES.SUPPLY_WITHDRAW_JETTON_FWD,
+                beginCell().storeUint(OPCODES.SUPPLY_WITHDRAW, 32)
+                    .storeSlice(operationPayload.beginParse()).endCell()
+            );
         } else {
-            return fullMessageBody;
+            return beginCell()
+                .storeUint(OPCODES.SUPPLY_WITHDRAW, 32)
+                .storeUint(parameters.queryID, 64)
+                .storeSlice(operationPayload.beginParse())
+                .endCell();
         }
     }
 
