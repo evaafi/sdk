@@ -503,12 +503,12 @@ export class Evaa implements Contract {
     protected createSupplyWithdrawMessageNoPrices(parameters: SupplyWithdrawParameters, operationPayload: Cell): Cell {
         if (!isTonAsset(parameters.supplyAsset)) {
             return this.createJettonTransferMessage(parameters, FEES.SUPPLY_WITHDRAW_JETTON_FWD,
-                beginCell().storeUint(OPCODES.SUPPLY_WITHDRAW, 32)
+                beginCell().storeUint(OPCODES.SUPPLY_WITHDRAW_NO_PRICES, 32)
                     .storeSlice(operationPayload.beginParse()).endCell()
             );
         } else {
             return beginCell()
-                .storeUint(OPCODES.SUPPLY_WITHDRAW, 32)
+                .storeUint(OPCODES.SUPPLY_WITHDRAW_NO_PRICES, 32)
                 .storeUint(parameters.queryID, 64)
                 .storeSlice(operationPayload.beginParse())
                 .endCell();
