@@ -10,7 +10,6 @@ import {
     NOT_MAINNET,
     STTON_MAINNET,
     TGBTC_TESTNET,
-    TGBTC1_TESTNET,
     TON_MAINNET,
     TON_STORM_MAINNET,
     TON_TESTNET,
@@ -86,7 +85,7 @@ export const TESTNET_POOL_CONFIG: PoolConfig = {
     masterConstants: MASTER_CONSTANTS,
     oracles: ORACLES_TESTNET,
     minimalOracles: 3,
-    poolAssetsConfig: [TON_TESTNET, TGBTC_TESTNET, TGBTC1_TESTNET],
+    poolAssetsConfig: [TON_TESTNET, TGBTC_TESTNET],
     lendingCode: LENDING_CODE,
 };
 

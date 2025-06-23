@@ -47,13 +47,6 @@ function getUserJettonData(ownerAddress: Address, assetName: string, jettonWalle
               .storeAddress(ownerAddress)
               .storeAddress(jettonMasterAddress)
               .endCell();
-                  case 'tgBTC1':
-          return beginCell()
-              .storeUint(0, 4)
-              .storeCoins(0)
-              .storeAddress(ownerAddress)
-              .storeAddress(jettonMasterAddress)
-              .endCell();
       default:
           return beginCell().storeCoins(0)
               .storeAddress(ownerAddress)
