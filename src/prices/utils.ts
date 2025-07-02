@@ -1,8 +1,8 @@
-import { beginCell, Cell, Dictionary, Slice } from "@ton/core";
-import { BackendPriceSource, DefaultPriceSourcesConfig, IcpPriceSource, IotaPriceSource, MAINNET_POOL_CONFIG, OraclePricesData, PriceData, PriceSource, PriceSourcesConfig, RawPriceData, TTL_ORACLE_DATA_SEC } from "..";
-import { Oracle, OracleNFT, PoolConfig } from "../types/Master";
-import { convertToMerkleProof, generateMerkleProofDirect } from "../utils/merkleProof";
-import { signVerify } from "@ton/crypto";
+import { beginCell, Cell, Dictionary, Slice } from "@ton/core"
+import { signVerify } from "@ton/crypto"
+import { BackendPriceSource, DefaultPriceSourcesConfig, IcpPriceSource, MAINNET_POOL_CONFIG, OraclePricesData, PriceData, PriceSource, PriceSourcesConfig, RawPriceData, TTL_ORACLE_DATA_SEC } from ".."
+import { Oracle, OracleNFT, PoolConfig } from "../types/Master"
+import { convertToMerkleProof, generateMerkleProofDirect } from "../utils/merkleProof"
 
 export function verifyPricesTimestamp() {
     return function(priceData: RawPriceData): boolean {
@@ -119,7 +119,6 @@ export function generatePriceSources(config: PriceSourcesConfig = DefaultPriceSo
     let result: PriceSource[] = config.backendEndpoints.map(x => new BackendPriceSource(x, nfts));
 
     result.push(...config.icpEndpoints.map(x => new IcpPriceSource(x, nfts)));
-    result.push(...config.iotaEndpoints.map(x => new IotaPriceSource(x, nfts)));
 
     return result;
 }

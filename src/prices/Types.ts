@@ -7,9 +7,6 @@ export type PriceSourcesConfig = {
     /** Endpoints for backend price data */
     backendEndpoints: string[];
     
-    /** Endpoints for IOTA price data */
-    iotaEndpoints: string[];
-    
     /** Endpoints for ICP price data */
     icpEndpoints: string[];
 };
@@ -19,7 +16,6 @@ export type PriceSourcesConfig = {
  */
 export const DefaultPriceSourcesConfig: PriceSourcesConfig = {
     backendEndpoints: ['evaa.space'],
-    iotaEndpoints: ['api.stardust-mainnet.iotaledger.net'],
     icpEndpoints: ['6khmc-aiaaa-aaaap-ansfq-cai.raw.icp0.io'],
 }
 
