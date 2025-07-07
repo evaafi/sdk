@@ -15,7 +15,7 @@ export type PriceSourcesConfig = {
  * Default configuration for price source endpoints.
  */
 export const DefaultPriceSourcesConfig: PriceSourcesConfig = {
-    backendEndpoints: ['evaa.space'],
+    backendEndpoints: ['api.evaa.space', 'evaa.space'],
     icpEndpoints: ['6khmc-aiaaa-aaaap-ansfq-cai.raw.icp0.io'],
 }
 
