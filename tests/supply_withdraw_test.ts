@@ -2,7 +2,7 @@ import {AssetConfig, calculatePresentValue, createAssetConfig, Evaa, EVAA_MASTER
 import {Address, beginCell, Cell, CellType, Dictionary, OpenedContract, Sender, toNano, TonClient, WalletContractV4, WalletContractV5Beta, WalletContractV5R1} from '@ton/ton';
 import dotenv from 'dotenv';
 import { mnemonicToWalletKey } from '@ton/crypto';
-import { MAINNET_LP_POOL_CONFIG, MAINNET_POOL_CONFIG } from '../src/constants/pools';
+import { MAINNET_LP_POOL_CONFIG, MAINNET_POOL_CONFIG, MAINNET_STABLE_POOL_CONFIG } from '../src/constants/pools';
 import { getHttpEndpoint } from "@orbs-network/ton-access";
 import { exit } from 'process';
 
@@ -20,7 +20,7 @@ let priceDataLP: PriceData;
 const address: Address = Address.parseFriendly('UQDN5CpSs8HT2GO4IymOXPS5zTDzHtY-s8VTuUVAsCTwWJzM').address;
 const address_mainnet: Address = Address.parseFriendly('UQDN5CpSs8HT2GO4IymOXPS5zTDzHtY-s8VTuUVAsCTwWJzM').address;
 const address2: Address = Address.parseFriendly('0QAq-I1fRZcegpp2bDALewjsXfdYRnYqE7KMA8DIi98EQLBd').address;
-const address2_mainnet: Address = Address.parseFriendly('0QAq-I1fRZcegpp2bDALewjsXfdYRnYqE7KMA8DIi98EQLBd').address;
+const address2_mainnet: Address = Address.parseFriendly('UQAq-I1fRZcegpp2bDALewjsXfdYRnYqE7KMA8DIi98EQAvX').address;
 const address3: Address = Address.parseFriendly('0QA5MjZwkAgDtp6eIb8FqQbaRH1IuYTYbOF6AVfzFSRafas1').address;
 //const address4: Address = Address.parseFriendly('UQB0jkvgow2xvEA5JS37-x7NkZYsB9TUEYD43cdQwJt0B9J5').address;
 //const address4: Address = Address.parseFriendly('UQC6oolqwFm36Tis31Pk5i6EGsblu8PyhVLB-IX1xU9pryd5').address;
@@ -88,7 +88,7 @@ beforeAll(async () => {
     exit(0);*/
     
     evaa = client.open(new Evaa({poolConfig: TESTNET_POOL_CONFIG}));
-    evaaMainNet = clientMainNet.open(new Evaa({poolConfig: MAINNET_POOL_CONFIG}));
+    evaaMainNet = clientMainNet.open(new Evaa({poolConfig: MAINNET_STABLE_POOL_CONFIG}));
     sender = {
         address: address,
         send: wallet.sender(keyPair.secretKey).send
@@ -192,12 +192,12 @@ test('Just supply mainnet', async () => {
     await evaaMainNet.getSync();
 
     try {
-        await waitForPrincipalChange(address_mainnet, TSUSDE_MAINNET, async () => {
-            await evaaMainNet.sendSupply(sender_mainnet, toNano(1), {
+        await waitForPrincipalChange(address, TSUSDE_MAINNET, async () => {
+            await evaaMainNet.sendSupply(sender_mainnet, toNano(0.5), {
                 queryID: 0n,
                 includeUserCode: true,
-                amount: 50_000n,
-                userAddress: address_mainnet,
+                amount: 20_000n,
+                userAddress: address,
                 asset: TSUSDE_MAINNET,
                 amountToTransfer: toNano(0),
                 payload: Cell.EMPTY
@@ -218,14 +218,14 @@ test('Just withdraw', async () => {
     const user = clientMainNet.open(await evaaMainNet.openUserContract(address_mainnet));
     await user.getSync(evaaMainNet.data!.assetsData, evaaMainNet.data!.assetsConfig, (await pricesCollector.getPrices()).dict);
     console.log(user.liteData?.principals)
-    const currentWithdrawPrices = await pricesCollector.getPricesForWithdraw(user.liteData?.realPrincipals!, USDE_MAINNET, true);
+    const currentWithdrawPrices = await pricesCollector.getPricesForWithdraw(user.liteData?.realPrincipals!, USDT_MAINNET, true);
     console.log('currentWithdrawPrices', currentWithdrawPrices.dict)
     await evaaMainNet.sendWithdraw(sender_mainnet, toNano(0.7), {
         queryID: 0n,
         includeUserCode: true,
-        amount: 50_000n,
+        amount: 0xFFFFFFFFFFFFFFFFn, // withdraw all
         userAddress: address,
-        asset: USDE_MAINNET,
+        asset: USDT_MAINNET,
         priceData: currentWithdrawPrices.dataCell,
         amountToTransfer: toNano(0),
         payload: Cell.EMPTY

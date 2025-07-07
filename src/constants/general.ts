@@ -27,6 +27,8 @@ export const EVAA_LP_MAINNET = Address.parse('EQBIlZX2URWkXCSg3QF2MJZU-wC5XkBoLw
 export const EVAA_LP_MAINNET_VERSION = 3;
 export const EVAA_ALTS_MAINNET = Address.parse('EQANURVS3fhBO9bivig34iyJQi97FhMbpivo1aUEAS2GYSu-');
 export const EVAA_ALTS_MAINNET_VERSION = 0;
+export const EVAA_STABLE_MAINNET = Address.parse('EQCdIdXf1kA_2Hd9mbGzSFDEPA-Px-et8qTWHEXgRGo0K3zd');
+export const STABLE_VERSION = 0;
 
 export const EVAA_ETHENA_MAINNET = Address.parse('EQCn95X_qLJa5VUXfyIQkWDH2iq3PTatsO4esunMaIsnyyeW');
 export const EVAA_ETHENA_VERSION = 0;

@@ -99,54 +99,9 @@ export {
 } from './types/User';
 
 // Constants
-export {
-    EVAA_MASTER_MAINNET,
-    MAINNET_VERSION,
-    EVAA_MASTER_TESTNET,
-    TESTNET_VERSION,
-    LENDING_CODE,
-    OPCODES,
-    FEES,
-    MASTER_CONSTANTS,
-    EVAA_REWARDS_MASTER_TESTNET,
-    EVAA_REWARDS_MASTER_CODE_TESTNET,
-    EVAA_REWARDS_USER_CODE_TESTNET,
-    EVAA_REWARDS_MASTER_CODE_MAINNET,
-    EVAA_REWARDS_USER_CODE_MAINNET,
-} from './constants/general';
+export * from './constants/general';
 
-export {
-    MAINNET_POOL_CONFIG,
-    TESTNET_POOL_CONFIG,
-    MAINNET_LP_POOL_CONFIG,
-    MAINNET_ALTS_POOL_CONFIG,
-    MAINNET_TEST_ETHENA_POOL_CONFIG,
-    // Reward Pools
-    TESTNET_MASTER_REWARD_CONFIG,
-    MAINNET_MASTER_TON_REWARD_CONFIG,
-    MAINNET_MASTER_USDT_REWARD_CONFIG,
-} from './constants/pools';
-
-export {
-    ASSET_ID,
-    UNDEFINED_ASSET,
-    TON_MAINNET,
-    USDT_MAINNET,
-    TONUSDT_DEDUST_MAINNET,
-    TON_STORM_MAINNET,
-    USDT_STORM_MAINNET,
-    DOGS_MAINNET,
-    CATI_MAINNET,
-    UTON_MAINNET,
-    NOT_MAINNET,
-    JUSDT_MAINNET,
-    JUSDC_MAINNET,
-    STTON_MAINNET,
-    TSTON_MAINNET,
-    JUSDT_TESTNET,
-    JUSDC_TESTNET,
-    STTON_TESTNET
-} from './constants/assets';
+export * from './constants/pools';
 
 export * from './constants/assets';
 export * from './utils/utils';
