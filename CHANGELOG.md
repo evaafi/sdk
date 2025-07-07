@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - Iota price source
 ### Fixed
   - ```calculateHealthParams``` function now ignore dust
+  - ```PricesCollector``` prices prune
 
 ## 0.6.3-b &mdash; 2025-04-30
 ### Added
