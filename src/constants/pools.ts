@@ -8,6 +8,7 @@ import {
     JUSDC_MAINNET,
     JUSDT_MAINNET,
     NOT_MAINNET,
+    PT_tsUSDe_01Sep2025_MAINNET,
     STTON_MAINNET,
     TGBTC_TESTNET,
     TON_MAINNET,
@@ -78,6 +79,7 @@ export const MAINNET_STABLE_POOL_CONFIG: PoolConfig = {
         USDT_MAINNET,
         USDE_MAINNET,
         TSUSDE_MAINNET,
+        PT_tsUSDe_01Sep2025_MAINNET
     ],
     lendingCode: LENDING_CODE,
 };
