@@ -8,6 +8,7 @@ import {
     JUSDC_MAINNET,
     JUSDT_MAINNET,
     NOT_MAINNET,
+    PT_tsUSDe_01Sep2025_MAINNET,
     STTON_MAINNET,
     TGBTC_TESTNET,
     TON_MAINNET,
@@ -34,6 +35,7 @@ import {
     EVAA_REWARDS_MASTER_TESTNET,
     EVAA_REWARDS_USER_CODE_MAINNET,
     EVAA_REWARDS_USER_CODE_TESTNET,
+    EVAA_STABLE_MAINNET,
     EVAA_TON_REWARDS_MASTER_MAINNET,
     EVAA_USDT_REWARDS_MASTER_MAINNET,
     LENDING_CODE,
@@ -43,6 +45,7 @@ import {
     ORACLES_LP,
     ORACLES_MAINNET,
     ORACLES_TESTNET,
+    STABLE_VERSION,
     TESTNET_VERSION,
 } from './general';
 
@@ -62,6 +65,21 @@ export const MAINNET_POOL_CONFIG: PoolConfig = {
         USDE_MAINNET,
         TSUSDE_MAINNET,
         // UTON_MAINNET // announce xdddd fake announce 
+    ],
+    lendingCode: LENDING_CODE,
+};
+
+export const MAINNET_STABLE_POOL_CONFIG: PoolConfig = {
+    masterAddress: EVAA_STABLE_MAINNET,
+    masterVersion: STABLE_VERSION,
+    masterConstants: MASTER_CONSTANTS,
+    oracles: ORACLES_MAINNET,
+    minimalOracles: 3,
+    poolAssetsConfig: [
+        USDT_MAINNET,
+        USDE_MAINNET,
+        TSUSDE_MAINNET,
+        PT_tsUSDe_01Sep2025_MAINNET
     ],
     lendingCode: LENDING_CODE,
 };
@@ -148,3 +166,10 @@ export const MAINNET_MASTER_USDT_REWARD_CONFIG: EvaaRewardsConfig = {
     availableReward: 0,
     publicKey: Buffer.from('9813725d6cead1c9bbc0e24b21d4fc62a7fa8ac4bb01b6758df30169a71dba67', 'hex'), // adminAddress publicKey
 };
+
+export const ALL_MAINNET_POOLS: PoolConfig[] = [
+    MAINNET_POOL_CONFIG,
+    MAINNET_LP_POOL_CONFIG,
+    MAINNET_ALTS_POOL_CONFIG,
+    MAINNET_STABLE_POOL_CONFIG,
+];

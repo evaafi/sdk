@@ -369,7 +369,7 @@ export function calculateHealthParams(parameters: HealthParamsArgs) {
         if (assetBalance.type === BalanceType.supply) {
             totalSupply += assetWorth;
             totalLimit += assetWorth * assetConfig.liquidationThreshold / ASSET_LIQUIDATION_THRESHOLD_SCALE;
-        } else if (assetBalance.type === BalanceType.borrow) {
+        } else if (assetBalance.type === BalanceType.borrow && assetConfig.dust < assetBalance.amount) {
             totalDebt += assetWorth;
         }
     }

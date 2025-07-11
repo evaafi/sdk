@@ -3,6 +3,7 @@ import {Address, beginCell, Dictionary, TonClient} from '@ton/ton';
 import dotenv from 'dotenv';
 import { predictHealthFactor } from '../src/api/math';
 import { sha256Hash } from '../src/utils/sha256BigInt';
+import { MAINNET_STABLE_POOL_CONFIG } from '../src/constants/pools';
 
 let client: TonClient;
 beforeAll(async () => {
@@ -14,11 +15,11 @@ beforeAll(async () => {
 });
 
 test('Manual dust check', async () => {
-    const evaa = client.open(new Evaa({poolConfig: MAINNET_POOL_CONFIG}));
+    const evaa = client.open(new Evaa({poolConfig: MAINNET_STABLE_POOL_CONFIG}));
     await evaa.getSync();
     const user = client.open(await evaa.openUserContract(Address.parseFriendly("UQDN5CpSs8HT2GO4IymOXPS5zTDzHtY-s8VTuUVAsCTwWJzM").address));
 
-    const collector = new PricesCollector(MAINNET_POOL_CONFIG);
+    const collector = new PricesCollector(MAINNET_STABLE_POOL_CONFIG);
     //console.log('priceData', priceData);
     await user.getSync(evaa.data!.assetsData, evaa.data!.assetsConfig, (await collector.getPrices()).dict, true);
 

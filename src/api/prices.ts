@@ -11,7 +11,6 @@ export async function getPrices(endpoints: string[] = ["api.stardust-mainnet.iot
     }
 
     const sources: PriceSourcesConfig = {
-        iotaEndpoints: endpoints,
         icpEndpoints: DefaultPriceSourcesConfig.icpEndpoints,
         backendEndpoints: DefaultPriceSourcesConfig.backendEndpoints,
     }

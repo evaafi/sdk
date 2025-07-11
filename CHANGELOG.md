@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.6.4 &mdash; 2025-06-27
+### Added
+ - New Stable Pool ```MAINNET_STABLE_POOL_CONFIG``` with ```USDT USDe and tsUSDe``` and something else in the future...
+### Fixed
+ - ```calculateHealthParams``` function now ignore dust
+ - ```PricesCollector``` prices prune
+### Removed
+ - Iota price source
+
 ## 0.6.3-b &mdash; 2025-04-30
 ### Added
  - ```USDe and tsUSDe``` new tokens in Main ```PoolConfig```

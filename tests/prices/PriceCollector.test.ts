@@ -1,7 +1,6 @@
-import { BackendPriceSource, DefaultPriceSourcesConfig, generatePriceSources, getPrices, JUSDC_MAINNET, MAINNET_LP_POOL_CONFIG, MAINNET_POOL_CONFIG, PriceData, Prices, PricesCollector, PriceSource, PriceSourcesConfig, RawPriceData, STTON_MAINNET, TON_MAINNET, USDT_MAINNET } from "../../src";
-import { Cell, Dictionary } from "@ton/core";
-import { ORACLES_MAINNET } from "../../src/constants/general";
-import { MAINNET_ALTS_POOL_CONFIG } from "../../src/constants/pools";
+import { Cell, Dictionary } from "@ton/core"
+import { BackendPriceSource, DefaultPriceSourcesConfig, generatePriceSources, getPrices, MAINNET_POOL_CONFIG, PriceData, Prices, PricesCollector, PriceSourcesConfig, RawPriceData, STTON_MAINNET, TON_MAINNET, USDT_MAINNET } from "../../src"
+import { ORACLES_MAINNET } from "../../src/constants/general"
 
 describe('PriceCollector tests', () => {
     test('test default price sources', async () => {
@@ -19,18 +18,6 @@ describe('PriceCollector tests', () => {
     
         expect(prices.dict.values().length).toBeGreaterThan(4);
         expect(prices.dataCell).not.toEqual(Cell.EMPTY);
-    });
-
-    test('test iota price source', async () => {
-        const priceSources = generatePriceSources(DefaultPriceSourcesConfig);
-        expect.assertions(1);
-
-        for (const source of priceSources) {
-            if (source.sourceName == 'IotaPriceSource') {
-                const prices = await source.getPrices();
-                expect(prices.length).toBeGreaterThan(3);
-            }
-        }
     });
 
     test('test backend price source', async () => {
@@ -75,7 +62,6 @@ describe('PriceCollector tests', () => {
         expect.assertions(3);
         const sources: PriceSourcesConfig = {
             backendEndpoints: [],
-            iotaEndpoints: DefaultPriceSourcesConfig.iotaEndpoints,
             icpEndpoints: DefaultPriceSourcesConfig.icpEndpoints
         }
         const collector = new PricesCollector(MAINNET_POOL_CONFIG, sources, [new FakeBackendPriceSource("", ORACLES_MAINNET)]);
