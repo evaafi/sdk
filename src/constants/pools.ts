@@ -166,3 +166,10 @@ export const MAINNET_MASTER_USDT_REWARD_CONFIG: EvaaRewardsConfig = {
     availableReward: 0,
     publicKey: Buffer.from('9813725d6cead1c9bbc0e24b21d4fc62a7fa8ac4bb01b6758df30169a71dba67', 'hex'), // adminAddress publicKey
 };
+
+export const ALL_MAINNET_POOLS: PoolConfig[] = [
+    MAINNET_POOL_CONFIG,
+    MAINNET_LP_POOL_CONFIG,
+    MAINNET_ALTS_POOL_CONFIG,
+    MAINNET_STABLE_POOL_CONFIG,
+];

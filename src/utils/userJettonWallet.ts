@@ -22,7 +22,7 @@ function getUserJettonData(ownerAddress: Address, assetName: string, jettonWalle
               .storeAddress(ownerAddress)
               .storeAddress(jettonMasterAddress)
               .endCell();
-     case 'PT_tsUSDe_01Sep2025':
+      case 'PT_tsUSDe_01Sep2025':
         return beginCell()
               .storeCoins(0)
               .storeAddress(ownerAddress)
