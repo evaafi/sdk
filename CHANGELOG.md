@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## 0.6.4 &mdash; 2025-06-27
 ### Added
  - New Stable Pool ```MAINNET_STABLE_POOL_CONFIG``` with ```USDT USDe and tsUSDe``` and something else in the future...
+ - ```ALL_MAINNET_POOLS``` Array of pools
 ### Fixed
  - ```calculateHealthParams``` function now ignore dust
  - ```PricesCollector``` prices prune
