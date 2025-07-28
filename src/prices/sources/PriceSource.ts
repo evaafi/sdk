@@ -1,12 +1,12 @@
 import { RawPriceData } from "..";
-import { OracleNFT } from "../../types/Master";
+import { ExtendedEvaaOracle } from "../../types/Master";
 
 export abstract class PriceSource {
     protected priceSourceName: string = 'BackendPriceSource';
     protected _endpoint: string;
-    protected _nfts: OracleNFT[];
+    protected _nfts: ExtendedEvaaOracle[];
 
-    constructor(endpoint: string, nfts: OracleNFT[]) {
+    constructor(endpoint: string, nfts: ExtendedEvaaOracle[]) {
         this._endpoint = endpoint;
         this._nfts = nfts;
     }
@@ -27,7 +27,7 @@ export abstract class PriceSource {
         this._endpoint = endpoint; 
     }
 
-    set nfts(nfts: OracleNFT[]) {
+    set nfts(nfts: ExtendedEvaaOracle[]) {
         this._nfts = nfts; 
     }
 

@@ -1,4 +1,7 @@
-import { Address, Cell, Dictionary } from '@ton/core'
+import { Address, Cell, Dictionary } from '@ton/core';
+import {loadMaybeMyRef} from "../api/helpers";
+import {FeedMapItem, parseFeedsMapDict} from "../api/feeds";
+import { Oracle } from '../prices/Oracle.interface';
 
 export type MasterConstants = {
     FACTOR_SCALE: bigint,
@@ -27,10 +30,9 @@ export type PoolConfig = {
     masterAddress: Address;
     masterVersion: number;
     masterConstants: MasterConstants;
-    oracles: OracleNFT[];
-    minimalOracles: number;
     poolAssetsConfig: PoolAssetsConfig;
     lendingCode: Cell;
+    oracles: Oracle
 };
 
 export type UpgradeConfig = {
@@ -65,20 +67,26 @@ export type AssetConfig = {
     minPrincipalForRewards: bigint;
     baseTrackingSupplySpeed: bigint;
     baseTrackingBorrowSpeed: bigint;
+    borrowCap: number | bigint;
 };
 
 export type MasterConfig = {
     ifActive: number;
+    oraclesInfo: OracleInfo
     admin: Address;
-    oraclesInfo: OraclesInfo
     tokenKeys: Cell | null;
+    supervisor: Address | null;
 };
 
-export type OraclesInfo = {
-    numOracles: number;
-    threshold: number;
-    oracles: Cell | null;
+export type OracleConfig = {
+    feedsMap: Dictionary<bigint, Buffer>,
+    pricesTtl: number,
+    pythComputeBaseGas: bigint,
+    pythComputePerUpdateGas: bigint,
+    pythSingleUpdateFee: bigint,
 };
+
+export type OracleInfo = {pythAddress: Address} & OracleConfig;
 
 export type AssetData = {
     sRate: bigint;
@@ -124,13 +132,11 @@ export type AgregatedBalances = {
     totalSupply: bigint;
 }
 
-export type OracleNFT = {
-    id: number,
+export type ExtendedEvaaOracle = EvaaOracle & {
     address: string,
-    pubkey: Buffer
 }
 
-export type Oracle = {
+export type EvaaOracle = {
     id: number,
-    pubkey: Buffer
+    pubkey: Buffer,
 }

@@ -1,40 +1,19 @@
 import { beginCell, Cell, Dictionary, Slice } from "@ton/core"
 import { signVerify } from "@ton/crypto"
 import { BackendPriceSource, DefaultPriceSourcesConfig, IcpPriceSource, MAINNET_POOL_CONFIG, OraclePricesData, PriceData, PriceSource, PriceSourcesConfig, RawPriceData, TTL_ORACLE_DATA_SEC } from ".."
-import { Oracle, OracleNFT, PoolConfig } from "../types/Master"
+import { EvaaOracle, ExtendedEvaaOracle, PoolConfig } from "../types/Master"
 import { convertToMerkleProof, generateMerkleProofDirect } from "../utils/merkleProof"
+
 
 export function verifyPricesTimestamp() {
     return function(priceData: RawPriceData): boolean {
         const timestamp = Date.now() / 1000;
         const pricesTime = priceData.timestamp;
 
-        //console.debug('timestamp - pricesTime, pricesTime', timestamp - pricesTime, pricesTime);
         return timestamp - pricesTime < TTL_ORACLE_DATA_SEC;
     }
 }
 
-export function verifyPricesSign(nfts: OracleNFT[]) {
-    return function(priceData: RawPriceData): boolean {
-        if (nfts.findIndex(x => x.pubkey.equals(priceData.pubkey)) == -1) {
-            //console.debug('[verifyPricesSign] nft not found');
-            return false;
-        }
-
-        return verifyRawPriceDataSign(priceData)
-    }
-}
-
-/* export function verifyPricesAssets(assets: PoolAssetsConfig) {
-    return function(priceData: RawPriceData): boolean {
-        for (const asset of assets) {
-            if(!priceData.dict.has(asset.assetId)) {
-                return false;
-            }
-        }
-        return true;
-    }
-} */
 
 export function getMedianPrice(pricesData: PriceData[], asset: bigint): bigint | null {
     try {
@@ -79,7 +58,7 @@ export function packPrices(assetsDataCell: Cell, oraclesDataCell: Cell): Cell {
     return pricesCell;
 }
 
-export function createOracleDataProof(oracle: Oracle, 
+export function createOracleDataProof(oracle: EvaaOracle, 
     data: OraclePricesData, 
     signature: Buffer,
     assets: Array<bigint>): Slice {
@@ -90,7 +69,7 @@ export function createOracleDataProof(oracle: Oracle,
     return oracleDataProof;
 }
 
-export function packOraclesData(oraclesData: {oracle: Oracle, data: OraclePricesData, signature: Buffer}[], 
+export function packOraclesData(oraclesData: {oracle: EvaaOracle, data: OraclePricesData, signature: Buffer}[], 
     assets: Array<bigint>): Cell {
     if (oraclesData.length == 0) {
         throw new Error("no oracles data to pack");
@@ -115,7 +94,7 @@ export function sumDicts(result: Dictionary<bigint, bigint>, addendum: Dictionar
     }
 }
 
-export function generatePriceSources(config: PriceSourcesConfig = DefaultPriceSourcesConfig, nfts: OracleNFT[] = MAINNET_POOL_CONFIG.oracles) {
+export function generatePriceSources(config: PriceSourcesConfig, nfts: ExtendedEvaaOracle[]) {
     let result: PriceSource[] = config.backendEndpoints.map(x => new BackendPriceSource(x, nfts));
 
     result.push(...config.icpEndpoints.map(x => new IcpPriceSource(x, nfts)));
@@ -123,18 +102,18 @@ export function generatePriceSources(config: PriceSourcesConfig = DefaultPriceSo
     return result;
 }
 
-export async function collectAndFilterPrices(priceSource: PriceSource, poolConfig: PoolConfig): Promise<RawPriceData[]> {
+export async function collectAndFilterPrices(priceSource: PriceSource, minimalOracles: number ): Promise<RawPriceData[]> {
     const prices = await priceSource.getPrices();
          
     //console.debug('[FILTERING] before filtering prices len ', priceSource.sourceName, prices.length);
     return (async () => {
             const acceptedPrices: RawPriceData[] = prices.filter(
-            price => verifyPricesTimestamp()(price) && verifyPricesSign(poolConfig.oracles)(price)
+            price => verifyPricesTimestamp()(price) && verifyPricesSign(priceSource.nfts)(price)
         );
 
         //console.debug('[FILTERING] after filtering prices len ', priceSource.sourceName, acceptedPrices.length);
 
-        if (acceptedPrices.length < poolConfig.minimalOracles) {
+        if (acceptedPrices.length < minimalOracles) {
             throw new Error("Prices are outdated");
         }
 
@@ -155,6 +134,17 @@ export function unpackMedianPrices(pricesCell: Cell): Dictionary<bigint, bigint>
         assetCell = slice.loadMaybeRef();
     }
     return res;
+}
+
+export function verifyPricesSign(nfts: ExtendedEvaaOracle[]) {
+    return function(priceData: RawPriceData): boolean {
+        if (nfts.findIndex(x => x.pubkey.equals(priceData.pubkey as Uint8Array)) == -1) {
+            //console.debug('[verifyPricesSign] nft not found');
+            return false;
+        }
+
+        return verifyRawPriceDataSign(priceData)
+    }
 }
 
 export function verifyRawPriceDataSign(priceData: RawPriceData): boolean {

@@ -48,24 +48,58 @@ import {
     STABLE_VERSION,
     TESTNET_VERSION,
 } from './general';
+import { PricesCollector } from '../prices';
+
+// Pool assets configs
+const MAINNET_POOL_ASSETS_CONFIG = [
+    TON_MAINNET,
+    JUSDT_MAINNET,
+    JUSDC_MAINNET,
+    STTON_MAINNET,
+    TSTON_MAINNET,
+    USDT_MAINNET,
+    USDE_MAINNET,
+    TSUSDE_MAINNET,
+    // UTON_MAINNET // announce xdddd fake announce 
+];
+
+const MAINNET_STABLE_POOL_ASSETS_CONFIG = [
+    USDT_MAINNET,
+    USDE_MAINNET,
+    TSUSDE_MAINNET,
+    PT_tsUSDe_01Sep2025_MAINNET
+];
+
+const MAINNET_TEST_ETHENA_POOL_ASSETS_CONFIG = [
+    TON_MAINNET,
+    USDE_MAINNET,
+];
+
+const TESTNET_POOL_ASSETS_CONFIG = [
+    TON_MAINNET,
+    EUSDT_TESTNET,
+    // JUSDC_TESTNET, // если нужен, добавить
+    // STTON_TESTNET // если нужен, добавить
+];
+
+const MAINNET_LP_POOL_ASSETS_CONFIG = [
+    TON_MAINNET, USDT_MAINNET, TONUSDT_DEDUST_MAINNET, TON_STORM_MAINNET, USDT_STORM_MAINNET
+];
+
+const MAINNET_ALTS_POOL_ASSETS_CONFIG = [
+    TON_MAINNET, USDT_MAINNET, CATI_MAINNET, NOT_MAINNET, DOGS_MAINNET
+];
 
 export const MAINNET_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_MASTER_MAINNET,
     masterVersion: MAINNET_VERSION,
     masterConstants: MASTER_CONSTANTS,
-    oracles: ORACLES_MAINNET,
-    minimalOracles: 3,
-    poolAssetsConfig: [
-        TON_MAINNET,
-        JUSDT_MAINNET,
-        JUSDC_MAINNET,
-        STTON_MAINNET,
-        TSTON_MAINNET,
-        USDT_MAINNET,
-        USDE_MAINNET,
-        TSUSDE_MAINNET,
-        // UTON_MAINNET // announce xdddd fake announce 
-    ],
+    oracles: new PricesCollector({
+        poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,
+        minimalOracles: 3,
+        evaaOracles: ORACLES_MAINNET
+    }),
+    poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,
     lendingCode: LENDING_CODE,
 };
 
@@ -73,14 +107,12 @@ export const MAINNET_STABLE_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_STABLE_MAINNET,
     masterVersion: STABLE_VERSION,
     masterConstants: MASTER_CONSTANTS,
-    oracles: ORACLES_MAINNET,
-    minimalOracles: 3,
-    poolAssetsConfig: [
-        USDT_MAINNET,
-        USDE_MAINNET,
-        TSUSDE_MAINNET,
-        PT_tsUSDe_01Sep2025_MAINNET
-    ],
+    oracles: new PricesCollector({
+        poolAssetsConfig: MAINNET_STABLE_POOL_ASSETS_CONFIG,
+        minimalOracles: 3,
+        evaaOracles: ORACLES_MAINNET
+    }),
+    poolAssetsConfig: MAINNET_STABLE_POOL_ASSETS_CONFIG,
     lendingCode: LENDING_CODE,
 };
 
@@ -88,12 +120,12 @@ export const MAINNET_TEST_ETHENA_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_ETHENA_MAINNET,
     masterVersion: EVAA_ETHENA_VERSION,
     masterConstants: MASTER_CONSTANTS,
-    oracles: ORACLES_MAINNET,
-    minimalOracles: 3,
-    poolAssetsConfig: [
-        TON_MAINNET,
-        USDE_MAINNET,
-    ],
+    oracles: new PricesCollector({
+        poolAssetsConfig: MAINNET_TEST_ETHENA_POOL_ASSETS_CONFIG,
+        minimalOracles: 3,
+        evaaOracles: ORACLES_MAINNET
+    }),
+    poolAssetsConfig: MAINNET_TEST_ETHENA_POOL_ASSETS_CONFIG,
     lendingCode: LENDING_CODE,
 };
 
@@ -101,19 +133,25 @@ export const TESTNET_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_MASTER_TESTNET,
     masterVersion: TESTNET_VERSION,
     masterConstants: MASTER_CONSTANTS,
-    oracles: ORACLES_TESTNET,
-    minimalOracles: 3,
-    poolAssetsConfig: [TON_TESTNET, TGBTC_TESTNET],
-    lendingCode: LENDING_CODE,
+    oracles: new PricesCollector({
+        poolAssetsConfig: TESTNET_POOL_ASSETS_CONFIG,
+        minimalOracles: 3,
+        evaaOracles: ORACLES_TESTNET
+    }),
+    poolAssetsConfig: TESTNET_POOL_ASSETS_CONFIG,
+    lendingCode: LENDING_CODE
 };
 
 export const MAINNET_LP_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_LP_MAINNET,
     masterVersion: EVAA_LP_MAINNET_VERSION,
     masterConstants: MASTER_CONSTANTS,
-    oracles: ORACLES_LP,
-    minimalOracles: 3,
-    poolAssetsConfig: [TON_MAINNET, USDT_MAINNET, TONUSDT_DEDUST_MAINNET, TON_STORM_MAINNET, USDT_STORM_MAINNET],
+    oracles: new PricesCollector({
+        poolAssetsConfig: MAINNET_LP_POOL_ASSETS_CONFIG,
+        minimalOracles: 3,
+        evaaOracles: ORACLES_LP
+    }),
+    poolAssetsConfig: MAINNET_LP_POOL_ASSETS_CONFIG,
     lendingCode: LENDING_CODE,
 };
 
@@ -121,9 +159,12 @@ export const MAINNET_ALTS_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_ALTS_MAINNET,
     masterVersion: EVAA_ALTS_MAINNET_VERSION,
     masterConstants: MASTER_CONSTANTS,
-    oracles: ORACLES_ALTS,
-    minimalOracles: 3,
-    poolAssetsConfig: [TON_MAINNET, USDT_MAINNET, CATI_MAINNET, NOT_MAINNET, DOGS_MAINNET],
+    oracles: new PricesCollector({
+        poolAssetsConfig: MAINNET_ALTS_POOL_ASSETS_CONFIG,
+        minimalOracles: 3,
+        evaaOracles: ORACLES_ALTS
+    }),
+    poolAssetsConfig: MAINNET_ALTS_POOL_ASSETS_CONFIG,
     lendingCode: LENDING_CODE,
 };
 
