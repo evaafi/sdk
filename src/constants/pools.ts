@@ -1,4 +1,6 @@
 import { Address } from '@ton/core';
+import { MAIN_POOL_FEEDS_MAP } from '../api/feeds';
+import { PricesCollector, PythCollector } from '../prices';
 import { PoolConfig } from '../types/Master';
 import { EvaaRewardsConfig } from '../types/MasterRewards';
 import {
@@ -45,10 +47,10 @@ import {
     ORACLES_LP,
     ORACLES_MAINNET,
     ORACLES_TESTNET,
+    PYTH_ORACLE_MAINNET,
     STABLE_VERSION,
     TESTNET_VERSION,
 } from './general';
-import { PricesCollector } from '../prices';
 
 // Pool assets configs
 const MAINNET_POOL_ASSETS_CONFIG = [
@@ -99,6 +101,25 @@ export const MAINNET_POOL_CONFIG: PoolConfig = {
         minimalOracles: 3,
         evaaOracles: ORACLES_MAINNET
     }),
+    poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,
+    lendingCode: LENDING_CODE,
+};
+
+export const MAINNET_PYTH_POOL_CONFIG: PoolConfig = {
+    masterAddress: EVAA_MASTER_MAINNET,
+    masterVersion: MAINNET_VERSION,
+    masterConstants: MASTER_CONSTANTS,
+    oracles: new PythCollector(
+        {
+            pythAddress: PYTH_ORACLE_MAINNET,
+            feedsMap: MAIN_POOL_FEEDS_MAP,
+            pricesTtl: 180,
+            pythComputeBaseGas: 100n,
+            pythSingleUpdateFee: 1n,
+            pythComputePerUpdateGas: 2n,
+        },
+        MAINNET_POOL_ASSETS_CONFIG,
+    ),
     poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,
     lendingCode: LENDING_CODE,
 };

@@ -1,8 +1,12 @@
 import { beginCell, Cell, Dictionary, Slice } from "@ton/core"
 import { signVerify } from "@ton/crypto"
-import { BackendPriceSource, DefaultPriceSourcesConfig, IcpPriceSource, MAINNET_POOL_CONFIG, OraclePricesData, PriceData, PriceSource, PriceSourcesConfig, RawPriceData, TTL_ORACLE_DATA_SEC } from ".."
-import { EvaaOracle, ExtendedEvaaOracle, PoolConfig } from "../types/Master"
+import { EvaaOracle, ExtendedEvaaOracle } from "../types/Master"
 import { convertToMerkleProof, generateMerkleProofDirect } from "../utils/merkleProof"
+import { TTL_ORACLE_DATA_SEC } from "./constants"
+import { BackendPriceSource } from "./sources/Backend"
+import { IcpPriceSource } from "./sources/Icp"
+import { PriceSource } from "./sources/PriceSource"
+import { OraclePricesData, PriceData, PriceSourcesConfig, RawPriceData } from "./Types"
 
 
 export function verifyPricesTimestamp() {

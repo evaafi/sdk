@@ -1,5 +1,5 @@
-import { Address, Cell, toNano } from '@ton/core';
-import { ExtendedEvaaOracle } from '../types/Master';
+import { Address, Cell, toNano } from '@ton/core'
+import { ExtendedEvaaOracle } from '../types/Master'
 
 const ASSET_PRICE_SCALE = BigInt(1e9);
 
@@ -43,6 +43,9 @@ export const ORACLES_MAINNET: ExtendedEvaaOracle[] = [
     {id: 2, address: '0x2eb258ce7b5d02466ab8a178ad8b0ba6ffa7b58ef21de3dc3b6dd359a1e16af0', pubkey: Buffer.from('e503e02e8a9226b34e7c9deb463cbf7f19bce589362eb448a69a8ee7b2fca631', 'hex') },
     {id: 3, address: '0xf9a0769954b4430bca95149fb3d876deb7799d8f74852e0ad4ccc5778ce68b52', pubkey: Buffer.from('9cbf8374cf1f2cf17110134871d580198416e101683f4a61f54cf2a3e4e32070', 'hex') },
 ];
+
+export const PYTH_ORACLE_MAINNET: Address = Address.parse('EQBU6k8HH6yX4Jf3d18swWbnYr31D3PJI7PgjXT-flsKHqql');
+export const PYTH_ORACLE_TESTNET: Address = Address.parse('EQB4ZnrI5qsP_IUJgVJNwEGKLzZWsQOFhiaqDbD7pTt_f9oU');
 
 export const ORACLES_TESTNET: ExtendedEvaaOracle[] = ORACLES_MAINNET;
 
