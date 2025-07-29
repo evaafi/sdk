@@ -30,6 +30,8 @@ import {
 } from "../api/prices"
 
 import {makeOnchainGetterMasterMessage, makePythProxyMessage} from "../api/pyth";
+import { Dictionary } from "@ton/ton";
+import { Dict } from "@tact-lang/compiler/dist/asm/runtime/util";
 
 /**
  * Parameters for the Evaa contract
@@ -158,6 +160,7 @@ export type LiquidationParameters = LiquidationBaseData & {
     liquidatorAddress: Address;
     responseAddress: Address;
     includeUserCode: boolean;
+    requestedRefTokens: bigint[];
     pyth: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams);
     payload: Cell;
 };
@@ -170,6 +173,7 @@ export type SupplyWithdrawParameters = {
     withdrawAsset: PoolAssetConfig;
     withdrawRecipient: Address;
     includeUserCode: boolean;
+    requestedRefTokens: bigint[];
     tonForRepayRemainings: bigint;
     payload: Cell;
     subaccountId: number;
@@ -353,6 +357,10 @@ export class Evaa implements Contract {
             innerCell.storeUint(parameters.customPayloadSaturationFlag ? -1 : 0, 2);
         }
 
+        const refsDict: Dictionary<bigint, Buffer> = Dictionary.empty(Dictionary.Keys.BigUint(256),Dictionary.Values.Buffer(0));
+        for (const refToken of parameters.requestedRefTokens) {
+            refsDict.set(refToken, Buffer.alloc(0));
+        }
         const operationPayload = beginCell()
             .storeAddress(parameters.borrowerAddress)
             // .storeAddress(parameters.liquidatorAddress)
@@ -360,6 +368,7 @@ export class Evaa implements Contract {
             .storeUint(parameters.minCollateralAmount, 64)
             .storeInt(parameters.includeUserCode ? -1 : 0, 2)
             .storeUint(isTon ? parameters.liquidationAmount : 0, 64)
+            .storeDict(refsDict)
             // do not need liquidationAmount in case of jetton liquidation because
             // the exact amount of transferred jettons for liquidation is known
             .storeRef(innerCell)
@@ -430,8 +439,14 @@ export class Evaa implements Contract {
             .storeUint(parameters.withdrawAsset.assetId, 256)
             .storeAddress(parameters.withdrawRecipient);
 
+        const refsDict: Dictionary<bigint, Buffer> = Dictionary.empty(Dictionary.Keys.BigUint(256),Dictionary.Values.Buffer(0));
+        for (const refToken of parameters.requestedRefTokens) {
+            refsDict.set(refToken, Buffer.alloc(0));
+        }
+
         const generalData = beginCell()
             .storeInt(parameters.includeUserCode ? -1 : 0, 2)
+            .storeDict(refsDict, Dictionary.Keys.BigUint(256), Dictionary.Values.Buffer(0))
             .storeUint(parameters.tonForRepayRemainings, 64)
             .storeRef(parameters.payload);
 

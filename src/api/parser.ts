@@ -178,12 +178,15 @@ export function parseMasterData(masterDataBOC: string, poolAssetsConfig: PoolAss
 
     const ifActive = masterConfigSlice.loadInt(8);
     const oraclesSlice = masterConfigSlice.loadRef().beginParse();
+    const feedDataCell = oraclesSlice.loadRef();
+    const feedDataSlice = feedDataCell.beginParse();
 
     const masterConfig = {
         ifActive: ifActive,
         oraclesInfo:  {
             pythAddress: oraclesSlice.loadAddress(),
-            feedsMap: oraclesSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.Buffer(64)),
+            feedsMap: feedDataSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.Buffer(64)),
+            allowedRefTokens: feedDataSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.BigUint(256)),
             pricesTtl: oraclesSlice.loadUint(32),
             pythComputeBaseGas: oraclesSlice.loadUintBig(64),
             pythComputePerUpdateGas: oraclesSlice.loadUintBig(64),
@@ -194,6 +197,7 @@ export function parseMasterData(masterDataBOC: string, poolAssetsConfig: PoolAss
         supervisor: masterConfigSlice.loadMaybeAddress(),
     };
     masterConfigSlice.endParse();
+    feedDataSlice.endParse();
 
     for (const [_, asset] of Object.entries(poolAssetsConfig)) {
         const assetData = assetsExtendedData.get(asset.assetId) as ExtendedAssetData;

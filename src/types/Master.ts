@@ -78,6 +78,7 @@ export type MasterConfig = {
 
 export type OracleConfig = {
     feedsMap: Dictionary<bigint, Buffer>,
+    allowedRefTokens: Dictionary<bigint, bigint>,
     pricesTtl: number,
     pythComputeBaseGas: bigint,
     pythComputePerUpdateGas: bigint,
