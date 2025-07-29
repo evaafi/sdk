@@ -1,5 +1,6 @@
 import {PoolConfig} from '../types/Master';
 import {MAINNET_POOL_CONFIG} from '../constants/pools';
+import {FeedMapItem} from "../api/feeds";
 
 import {Buffer} from "buffer";
 import {HermesClient, HexString} from "@pythnetwork/hermes-client";
@@ -17,14 +18,14 @@ export const DEFAULT_HERMES_ENDPOINT = 'https://hermes.pyth.network';
  * @param feedIds list of pyth feed ids to fetch
  * @returns binary - buffer of feeds update, parsed - json feeds data
  */
-export async function getPythFeedsUpdates(feedIds: HexString[], hermesEndpoint: string) {
+export async function getPythFeedsUpdates(feedIds: HexString[], hermesEndpoint: string = DEFAULT_HERMES_ENDPOINT) {
     const hermesClient = new HermesClient(hermesEndpoint);
-    const latestPriceUpdates = await hermesClient.getLatestPriceUpdates(feedIds, {encoding: 'hex'});
+    const latestPriceUpdates = await hermesClient.getLatestPriceUpdates(feedIds, { encoding: 'hex' });
 
     const parsed = latestPriceUpdates.parsed;
     const binary = Buffer.from(latestPriceUpdates.binary.data[0], 'hex');
 
-    return {binary, parsed};
+    return { binary, parsed };
 }
 
 export function composeFeedsCell(feeds: HexString[]): Cell {
@@ -61,9 +62,33 @@ export function packPythUpdatesData(pythUpdates: Buffer|Cell): Cell {
  * @param evaaIds list of evaa ids
  * @returns list of pyth feeds required to get specified evaa ids
  */
-export function createRequiredFeedsList(evaaIds: bigint[]): HexString[] {
-    throw new Error('Not implemented yet');
-    return [];
+export function createRequiredFeedsList(evaaIds: bigint[], feedsMap: Map<bigint, FeedMapItem>): HexString[] {
+    const requiredFeeds = new Set<bigint>();
+    const queue = [...evaaIds];
+
+    const evaaToPythMap = new Map<bigint, bigint>();
+    for (const [pythId, feedInfo] of feedsMap.entries()) {
+        evaaToPythMap.set(feedInfo.evaaId, pythId);
+    }
+
+    while (queue.length > 0) {
+        const evaaId = queue.shift();
+        if (!evaaId) continue;
+
+        const pythId = evaaToPythMap.get(evaaId);
+        if (pythId && !requiredFeeds.has(pythId)) {
+            requiredFeeds.add(pythId);
+            const feedInfo = feedsMap.get(pythId);
+            if (feedInfo && feedInfo.referredPythFeed !== 0n) {
+                const referredPythId = feedInfo.referredPythFeed;
+                if(!requiredFeeds.has(referredPythId)) {
+                    requiredFeeds.add(referredPythId);
+                }
+            }
+        }
+    }
+
+    return Array.from(requiredFeeds).map(id => "0x" + id.toString(16));
 }
 
 /*

@@ -1,6 +1,6 @@
 import { Address, Cell, Dictionary } from '@ton/core';
 import {loadMaybeMyRef} from "../api/helpers";
-import {FeedMapItem, parseFeedsMapDict} from "../api/feeds";
+export {FeedMapItem, parseFeedsMapDict} from "../api/feeds";
 import { Oracle } from '../prices/Oracle.interface';
 
 export type MasterConstants = {
