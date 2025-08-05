@@ -1,4 +1,4 @@
-import { CATI_MAINNET, DOGS_MAINNET, getUserJettonWallet, JUSDC_MAINNET, JUSDT_MAINNET, NOT_MAINNET, PT_tsUSDe_01Sep2025_MAINNET, STTON_MAINNET, TON_STORM_MAINNET, TONUSDT_DEDUST_MAINNET, TSTON_MAINNET, TSUSDE_MAINNET, USDE_MAINNET, USDT_MAINNET, USDT_STORM_MAINNET, UTON_MAINNET } from "../../src";
+import { CATI_MAINNET, DOGS_MAINNET, getUserJettonWallet, JUSDC_MAINNET, JUSDT_MAINNET, NOT_MAINNET, PT_tsUSDe_01Sep2025_MAINNET, STON_MAINNET, STTON_MAINNET, TON_STORM_MAINNET, TONUSDT_DEDUST_MAINNET, TONUSDT_STONFI_MAINNET, TSTON_MAINNET, TSUSDE_MAINNET, USDE_MAINNET, USDT_MAINNET, USDT_STORM_MAINNET, UTON_MAINNET } from "../../src";
 import { Address } from "@ton/core";
 describe('Address calculation tests', () => {
     test('test dogs address', () => {
@@ -84,5 +84,15 @@ describe('Address calculation tests', () => {
     test('test pt tsusde 01sep2025 address', () => {
         const walletAddr = getUserJettonWallet(Address.parseFriendly('UQAt9aQ6PCNJkLDerpx84quzbq0aAFy08AUPfljTC8qzZsWQ').address, PT_tsUSDe_01Sep2025_MAINNET);
         expect(walletAddr.toString({urlSafe: true, bounceable: true})).toEqual('EQAVE7OjEyNaMSE2nEF76jD7vExX8V6TK379S9Rj640hXmRc');
+    });
+
+    test('test STON_MAINNET address', () => {
+        const walletAddr = getUserJettonWallet(Address.parseFriendly('EQATQPeCwtMzQ9u54nTjUNcK4n_0VRSxPOOROLf_IE0OU3XK').address, STON_MAINNET);
+        expect(walletAddr.toString({urlSafe: true, bounceable: true})).toEqual('EQBZ92juQGsA7u9fZOteMt8K6V6fOW9dEhgZkQSHnSdihC4C');
+    });
+
+    test('test TONUSDT_STONFI_MAINNET address', () => {
+        const walletAddr = getUserJettonWallet(Address.parseFriendly('UQDDrGKkqD_LXE7T-PtscMJgcI-cPQiD0R8ICFDnEZfUgIR-').address, TONUSDT_STONFI_MAINNET);
+        expect(walletAddr.toString({urlSafe: true, bounceable: true})).toEqual('EQC9dOa1rbYxFMDRBSeuI4W8HYakGJmlf0VzDN9CMe25pev3');
     });
 });
