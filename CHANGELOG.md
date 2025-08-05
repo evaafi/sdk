@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## 0.6.4-a &mdash; 2025-08-05
 ### Added
  - *preparing* ```STON``` for listing in Alts ```PoolConfig```
- - ```TonUsdtStonfiV2Oracle``` new asset in LP ```PoolConfig```
+ - ```TONUSDT_STONFI``` new asset in LP ```PoolConfig```
 
 
 ## 0.6.4 &mdash; 2025-06-27
