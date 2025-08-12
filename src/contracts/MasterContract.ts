@@ -382,11 +382,11 @@ export class Evaa implements Contract {
         const state = (await provider.getState()).state;
         if (state.type === 'active') {
             this._data = parseMasterData(state.data!.toString('base64'), this._poolConfig.poolAssetsConfig, this._poolConfig.masterConstants);
-            if (this._data.upgradeConfig.masterCodeVersion !== this._poolConfig.masterVersion) {
-                throw Error(
-                    `Outdated SDK pool version. It supports only master code version ${this._poolConfig.masterVersion}, but the current master code version is ${this._data.upgradeConfig.masterCodeVersion}`,
-                );
-            }
+            //if (this._data.upgradeConfig.masterCodeVersion !== this._poolConfig.masterVersion) {
+            //    throw Error(
+            //        `Outdated SDK pool version. It supports only master code version ${this._poolConfig.masterVersion}, but the current master code version is ${this._data.upgradeConfig.masterCodeVersion}`,
+            //    );
+            //}
             this.lastSync = Math.floor(Date.now() / 1000);
         } else {
             throw Error('Master contract is not active');
