@@ -1,3 +1,4 @@
+import { HexString } from "@pythnetwork/hermes-client"
 import {
     Address,
     beginCell,
@@ -7,29 +8,25 @@ import {
     OpenedContract,
     Sender,
     SendMode,
-    storeStateInit,
-    toNano,
-} from '@ton/core';
+    storeStateInit
+} from '@ton/core'
+import { Maybe } from '@ton/core/dist/utils/maybe'
+import { isTonAsset, isTonAssetId, MAINNET_POOL_CONFIG } from '..'
+import { parseMasterData } from '../api/parser'
+import {
+    composeFeedsCell,
+    packPythUpdatesData
+} from "../api/prices"
 import {
     FEES,
     OPCODES,
-} from '../constants/general';
-import { Maybe } from '@ton/core/dist/utils/maybe';
-import { EvaaUser } from './UserContract';
-import { parseMasterData } from '../api/parser';
-import { MasterData, PoolAssetConfig, PoolConfig } from '../types/Master';
-import { JettonWallet } from './JettonWallet';
-import { getUserJettonWallet } from '../utils/userJettonWallet';
-import { isTonAsset, isTonAssetId, MAINNET_POOL_CONFIG } from '..';
-import {HexString} from "@pythnetwork/hermes-client";
-import {
-    composeFeedsCell,
-    DEFAULT_HERMES_ENDPOINT,
-    getPythFeedsUpdates,
-    packPythUpdatesData
-} from "../api/prices"
+} from '../constants/general'
+import { MasterData, PoolAssetConfig, PoolConfig } from '../types/Master'
+import { getUserJettonWallet } from '../utils/userJettonWallet'
+import { JettonWallet } from './JettonWallet'
+import { EvaaUser } from './UserContract'
 
-import {makeOnchainGetterMasterMessage, makePythProxyMessage} from "../api/pyth";
+import { makeOnchainGetterMasterMessage, makePythProxyMessage } from "../api/pyth"
 
 /**
  * Parameters for the Evaa contract
@@ -253,7 +250,7 @@ export class Evaa implements Contract {
         const isTon = isTonAsset(parameters.asset);
 
         const operationPayload = beginCell()
-            .storeUint(OPCODES.SUPPLY, 32)
+            .storeUint(OPCODES.SUPPLY_MASTER, 32)
             .storeBuilder(isTon ? beginCell().storeUint(parameters.queryID, 64) : beginCell())
             .storeInt(parameters.includeUserCode ? -1 : 0, 2)
             .storeBuilder(isTon ? beginCell().storeUint(parameters.amount, 64) : beginCell())
@@ -289,19 +286,19 @@ export class Evaa implements Contract {
             minPublishTime, maxPublishTime
         } = parameters.pyth as TonPythParams;
 
-        const wrappedOperationPayload =
-            beginCell()
-            .storeUint(OPCODES.WITHDRAW, 32)
+        const wrappedOperationPayload = beginCell()
+            .storeUint(OPCODES.SUPPLY_WITHDRAW_MASTER, 32)
             .storeUint(parameters.queryID, 64)
             .storeRef(
-                beginCell().storeUint(parameters.asset.assetId, 256)
+                beginCell()
+                    .storeUint(parameters.asset.assetId, 256)
                     .storeUint(parameters.amount, 64)
                     .storeAddress(parameters.userAddress)
                     .storeInt(parameters.includeUserCode ? -1 : 0, 2)
                     .storeUint(parameters.amountToTransfer, 64)
                     .storeRef(parameters.payload)
                     .storeSlice(extraDataTail.beginParse())
-                    .endCell()
+                    .endCell(),
             )
             .endCell();
 
@@ -321,7 +318,7 @@ export class Evaa implements Contract {
         const subaccountId = parameters.subaccountId ?? 0;
         const subaccount = beginCell().storeInt(subaccountId, 16);
         return beginCell()
-            .storeUint(OPCODES.WITHDRAW, 32)
+            .storeUint(OPCODES.SUPPLY_WITHDRAW_MASTER, 32)
             .storeUint(parameters.queryID, 64)
             .storeUint(parameters.asset.assetId, 256)
             .storeUint(parameters.amount, 64)
@@ -378,7 +375,7 @@ export class Evaa implements Contract {
             // this message master contract receives on
             const masterMessage = makeOnchainGetterMasterMessage({
                 queryId: parameters.queryID,
-                opCode: OPCODES.LIQUIDATE,
+                opCode: OPCODES.LIQUIDATE_MASTER,
                 updateDataCell: packPythUpdatesData(priceData),
                 targetFeedsCell: composeFeedsCell(targetFeeds),
                 publishGap,
@@ -397,7 +394,7 @@ export class Evaa implements Contract {
             } = parameters.pyth as TonPythParams;
 
             const wrappedOperationPayload = beginCell()
-                .storeUint(OPCODES.LIQUIDATE, 32)
+                .storeUint(OPCODES.LIQUIDATE_MASTER, 32)
                 .storeUint(parameters.queryID, 64)
                 .storeRef(operationPayload) // real operation payload, which will be parsed in ton liquidate method
                 .endCell();
@@ -466,7 +463,7 @@ export class Evaa implements Contract {
             // this message master contract receives on
             const masterMessage = makeOnchainGetterMasterMessage({
                 queryId: parameters.queryID,
-                opCode: OPCODES.SUPPLY_WITHDRAW_JETTON,
+                opCode: OPCODES.SUPPLY_WITHDRAW_MASTER_JETTON,
                 updateDataCell: packPythUpdatesData(priceData),
                 targetFeedsCell: composeFeedsCell(targetFeeds),
                 publishGap,
@@ -485,7 +482,7 @@ export class Evaa implements Contract {
             } = parameters.pyth as TonPythParams;
 
             const wrappedOperationPayload = beginCell()
-                .storeUint(OPCODES.SUPPLY_WITHDRAW, 32)
+                .storeUint(OPCODES.SUPPLY_WITHDRAW_MASTER, 32)
                 .storeUint(parameters.queryID, 64)
                 .storeRef(operationPayload) // real operation payload, which will be parsed in ton liquidate method
                 .endCell();
@@ -503,12 +500,12 @@ export class Evaa implements Contract {
     protected createSupplyWithdrawMessageNoPrices(parameters: SupplyWithdrawParameters, operationPayload: Cell): Cell {
         if (!isTonAsset(parameters.supplyAsset)) {
             return this.createJettonTransferMessage(parameters, FEES.SUPPLY_WITHDRAW_JETTON_FWD,
-                beginCell().storeUint(OPCODES.SUPPLY_WITHDRAW_NO_PRICES, 32)
+                beginCell().storeUint(OPCODES.SUPPLY_WITHDRAW_MASTER_WITHOUT_PRICES, 32)
                     .storeSlice(operationPayload.beginParse()).endCell()
             );
         } else {
             return beginCell()
-                .storeUint(OPCODES.SUPPLY_WITHDRAW_NO_PRICES, 32)
+                .storeUint(OPCODES.SUPPLY_WITHDRAW_MASTER_WITHOUT_PRICES, 32)
                 .storeUint(parameters.queryID, 64)
                 .storeSlice(operationPayload.beginParse())
                 .endCell();
@@ -682,16 +679,5 @@ export class Evaa implements Contract {
         } else {
             throw Error('Master contract is not active');
         }
-    }
-
-    // @ts-ignore
-    /**
-     * Fetches pyth price updates from specified endpoint
-     * @param provider
-     * @param targetFeeds
-     * @param endpoint
-     */
-    async getPrices(provider: ContractProvider, targetFeeds: HexString[], endpoint?: string) {
-        return getPythFeedsUpdates(targetFeeds, endpoint ?? DEFAULT_HERMES_ENDPOINT);
     }
 }
