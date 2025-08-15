@@ -1,18 +1,18 @@
-import { Address } from '@ton/core';
-import { MAIN_POOL_FEEDS_MAP } from '../api/feeds';
-import { PricesCollector, PythCollector } from '../prices';
-import { PoolConfig } from '../types/Master';
-import { EvaaRewardsConfig } from '../types/MasterRewards';
+import { Address } from '@ton/core'
+import { TESTNET_ALLOWED_REF_TOKENS, TESTNET_FEEDS_MAP } from '../api/feeds'
+import { DefaultPythPriceSourcesConfig, PricesCollector, PythCollector } from '../prices'
+import { PoolConfig } from '../types/Master'
+import { EvaaRewardsConfig } from '../types/MasterRewards'
 import {
     CATI_MAINNET,
     DOGS_MAINNET,
     EUSDT_TESTNET,
     JUSDC_MAINNET,
+    JUSDC_TESTNET,
     JUSDT_MAINNET,
     NOT_MAINNET,
     PT_tsUSDe_01Sep2025_MAINNET,
     STTON_MAINNET,
-    TGBTC_TESTNET,
     TON_MAINNET,
     TON_STORM_MAINNET,
     TON_TESTNET,
@@ -21,8 +21,8 @@ import {
     TSUSDE_MAINNET,
     USDE_MAINNET,
     USDT_MAINNET,
-    USDT_STORM_MAINNET,
-} from './assets';
+    USDT_STORM_MAINNET
+} from './assets'
 import {
     EVAA_ALTS_MAINNET,
     EVAA_ALTS_MAINNET_VERSION,
@@ -32,6 +32,7 @@ import {
     EVAA_LP_MAINNET_VERSION,
     EVAA_MASTER_MAINNET,
     EVAA_MASTER_TESTNET,
+    EVAA_MASTER_TESTNET_V7,
     EVAA_REWARDS_MASTER_CODE_MAINNET,
     EVAA_REWARDS_MASTER_CODE_TESTNET,
     EVAA_REWARDS_MASTER_TESTNET,
@@ -47,13 +48,14 @@ import {
     ORACLES_LP,
     ORACLES_MAINNET,
     ORACLES_TESTNET,
-    PYTH_ORACLE_MAINNET,
+    PYTH_ORACLE_TESTNET,
     STABLE_VERSION,
     TESTNET_VERSION,
-} from './general';
+    TESTNET_VERSION_V7
+} from './general'
 
 // Pool assets configs
-const MAINNET_POOL_ASSETS_CONFIG = [
+export const MAINNET_POOL_ASSETS_CONFIG = [
     TON_MAINNET,
     JUSDT_MAINNET,
     JUSDC_MAINNET,
@@ -84,6 +86,8 @@ const TESTNET_POOL_ASSETS_CONFIG = [
     // STTON_TESTNET // если нужен, добавить
 ];
 
+export const TESTNET_POOL_ASSETS_CONFIG_V7 = [TON_TESTNET, JUSDC_TESTNET, USDT_MAINNET];
+
 const MAINNET_LP_POOL_ASSETS_CONFIG = [
     TON_MAINNET, USDT_MAINNET, TONUSDT_DEDUST_MAINNET, TON_STORM_MAINNET, USDT_STORM_MAINNET
 ];
@@ -105,22 +109,20 @@ export const MAINNET_POOL_CONFIG: PoolConfig = {
     lendingCode: LENDING_CODE,
 };
 
-export const MAINNET_PYTH_POOL_CONFIG: PoolConfig = {
-    masterAddress: EVAA_MASTER_MAINNET,
-    masterVersion: MAINNET_VERSION,
+export const TESTNET_V7_POOL_CONFIG: PoolConfig = {
+    masterAddress: EVAA_MASTER_TESTNET_V7,
+    masterVersion: TESTNET_VERSION_V7,
     masterConstants: MASTER_CONSTANTS,
-    oracles: new PythCollector(
-        {
-            pythAddress: PYTH_ORACLE_MAINNET,
-            feedsMap: MAIN_POOL_FEEDS_MAP,
-            pricesTtl: 180,
-            pythComputeBaseGas: 100n,
-            pythSingleUpdateFee: 1n,
-            pythComputePerUpdateGas: 2n,
+    oracles: new PythCollector({
+        poolAssetsConfig: TESTNET_POOL_ASSETS_CONFIG_V7,
+        pythOracle: {
+            feedsMap: TESTNET_FEEDS_MAP,
+            pythAddress: PYTH_ORACLE_TESTNET,
+            allowedRefTokens: TESTNET_ALLOWED_REF_TOKENS,
         },
-        MAINNET_POOL_ASSETS_CONFIG,
-    ),
-    poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,
+        pythConfig: DefaultPythPriceSourcesConfig,
+    }),
+    poolAssetsConfig: TESTNET_POOL_ASSETS_CONFIG_V7,
     lendingCode: LENDING_CODE,
 };
 
@@ -133,7 +135,7 @@ export const MAINNET_STABLE_POOL_CONFIG: PoolConfig = {
         minimalOracles: 3,
         evaaOracles: ORACLES_MAINNET
     }),
-    poolAssetsConfig: MAINNET_STABLE_POOL_ASSETS_CONFIG,
+    poolAssetsConfig: TESTNET_POOL_ASSETS_CONFIG_V7,
     lendingCode: LENDING_CODE,
 };
 

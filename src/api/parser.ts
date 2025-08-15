@@ -1,4 +1,4 @@
-import {beginCell, Cell, Dictionary, DictionaryValue, Slice} from '@ton/core';
+import { beginCell, Cell, Dictionary, DictionaryValue, Slice } from '@ton/core'
 import {
     AssetConfig,
     AssetData,
@@ -9,7 +9,9 @@ import {
     MasterData,
     PoolAssetsConfig,
     PoolConfig
-} from '../types/Master';
+} from '../types/Master'
+import { BalanceType, UserBalance, UserData, UserLiteData, UserRewards } from '../types/User'
+import { loadMaybeMyRef, loadMyRef } from './helpers'
 import {
     bigIntMax,
     bigIntMin,
@@ -20,10 +22,7 @@ import {
     getAssetLiquidityMinusReserves,
     getAvailableToBorrow,
     presentValue,
-} from './math';
-import {loadMaybeMyRef, loadMyRef} from './helpers';
-import {BalanceType, UserBalance, UserData, UserLiteData, UserRewards} from '../types/User';
-import {parseFeedsMapDict} from "./feeds";
+} from './math'
 
 export function createUserRewards(): DictionaryValue<UserRewards> {
     return {
@@ -143,7 +142,11 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
     };
 }
 
-export function parseMasterData(masterDataBOC: string, poolAssetsConfig: PoolAssetsConfig, masterConstants: MasterConstants): MasterData {
+export function parseMasterData(
+    masterDataBOC: string,
+    poolAssetsConfig: PoolAssetsConfig,
+    masterConstants: MasterConstants,
+): MasterData {
     const masterSlice = Cell.fromBase64(masterDataBOC).beginParse();
     const meta = masterSlice.loadRef().beginParse().loadStringTail();
     const upgradeConfigParser = masterSlice.loadRef().beginParse();
@@ -178,12 +181,15 @@ export function parseMasterData(masterDataBOC: string, poolAssetsConfig: PoolAss
 
     const ifActive = masterConfigSlice.loadInt(8);
     const oraclesSlice = masterConfigSlice.loadRef().beginParse();
+    const feedDataCell = oraclesSlice.loadRef();
+    const feedDataSlice = feedDataCell.beginParse();
 
     const masterConfig = {
         ifActive: ifActive,
-        oraclesInfo:  {
+        oraclesInfo: {
             pythAddress: oraclesSlice.loadAddress(),
-            feedsMap: oraclesSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.Buffer(64)),
+            feedsMap: feedDataSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.Buffer(64)),
+            allowedRefTokens: feedDataSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.BigUint(256)),
             pricesTtl: oraclesSlice.loadUint(32),
             pythComputeBaseGas: oraclesSlice.loadUintBig(64),
             pythComputePerUpdateGas: oraclesSlice.loadUintBig(64),

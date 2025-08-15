@@ -1,20 +1,19 @@
 import { Address, Cell, Dictionary } from '@ton/core';
-import {loadMaybeMyRef} from "../api/helpers";
-export {FeedMapItem, parseFeedsMapDict} from "../api/feeds";
 import { Oracle } from '../prices/Oracle.interface';
+export { FeedMapItem, parseFeedsMapDict } from '../api/feeds';
 
 export type MasterConstants = {
-    FACTOR_SCALE: bigint,
-    ASSET_COEFFICIENT_SCALE: bigint,
-    ASSET_PRICE_SCALE: bigint,
-    ASSET_RESERVE_FACTOR_SCALE: bigint,
-    ASSET_LIQUIDATION_RESERVE_FACTOR_SCALE: bigint,
-    ASSET_LIQUIDATION_THRESHOLD_SCALE: bigint,
-    ASSET_LIQUIDATION_BONUS_SCALE: bigint,
-    ASSET_ORIGINATION_FEE_SCALE: bigint,
-    ASSET_SRATE_SCALE: bigint,
-    ASSET_BRATE_SCALE: bigint,
-    COLLATERAL_WORTH_THRESHOLD: bigint,
+    FACTOR_SCALE: bigint;
+    ASSET_COEFFICIENT_SCALE: bigint;
+    ASSET_PRICE_SCALE: bigint;
+    ASSET_RESERVE_FACTOR_SCALE: bigint;
+    ASSET_LIQUIDATION_RESERVE_FACTOR_SCALE: bigint;
+    ASSET_LIQUIDATION_THRESHOLD_SCALE: bigint;
+    ASSET_LIQUIDATION_BONUS_SCALE: bigint;
+    ASSET_ORIGINATION_FEE_SCALE: bigint;
+    ASSET_SRATE_SCALE: bigint;
+    ASSET_BRATE_SCALE: bigint;
+    COLLATERAL_WORTH_THRESHOLD: bigint;
 };
 
 export type PoolAssetsConfig = PoolAssetConfig[];
@@ -24,7 +23,7 @@ export type PoolAssetConfig = {
     assetId: bigint;
     jettonMasterAddress: Address;
     jettonWalletCode: Cell;
-}
+};
 
 export type PoolConfig = {
     masterAddress: Address;
@@ -32,7 +31,7 @@ export type PoolConfig = {
     masterConstants: MasterConstants;
     poolAssetsConfig: PoolAssetsConfig;
     lendingCode: Cell;
-    oracles: Oracle
+    oracles: Oracle;
 };
 
 export type UpgradeConfig = {
@@ -72,21 +71,27 @@ export type AssetConfig = {
 
 export type MasterConfig = {
     ifActive: number;
-    oraclesInfo: OracleInfo
+    oraclesInfo: OracleInfo;
     admin: Address;
     tokenKeys: Cell | null;
     supervisor: Address | null;
 };
 
 export type OracleConfig = {
-    feedsMap: Dictionary<bigint, Buffer>,
-    pricesTtl: number,
-    pythComputeBaseGas: bigint,
-    pythComputePerUpdateGas: bigint,
-    pythSingleUpdateFee: bigint,
+    pythAddress: Address;
+    feedsMap: Dictionary<bigint, Buffer>;
+    allowedRefTokens: Dictionary<bigint, bigint>;
 };
 
-export type OracleInfo = {pythAddress: Address} & OracleConfig;
+export type OracleInfo = OracleConfig & {
+    pythAddress: Address;
+    feedsMap: Dictionary<bigint, Buffer>;
+    allowedRefTokens: Dictionary<bigint, bigint>;
+    pricesTtl: number;
+    pythComputeBaseGas: bigint;
+    pythComputePerUpdateGas: bigint;
+    pythSingleUpdateFee: bigint;
+};
 
 export type AssetData = {
     sRate: bigint;
@@ -130,13 +135,13 @@ export type MasterData = {
 export type AgregatedBalances = {
     totalBorrow: bigint;
     totalSupply: bigint;
-}
+};
 
 export type ExtendedEvaaOracle = EvaaOracle & {
-    address: string,
-}
+    address: string;
+};
 
 export type EvaaOracle = {
-    id: number,
-    pubkey: Buffer,
-}
+    id: number;
+    pubkey: Buffer;
+};

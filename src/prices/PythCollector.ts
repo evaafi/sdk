@@ -1,19 +1,28 @@
-import { HexString } from '@pythnetwork/hermes-client';
+import { HermesClient, HexString, PriceUpdate } from '@pythnetwork/hermes-client';
 import { Cell, Dictionary } from '@ton/core';
 import { checkNotInDebtAtAll } from '../api/math';
-import { getPythFeedsUpdates, packPythUpdatesData } from '../api/prices';
-import { FeedMapItem, OracleInfo, parseFeedsMapDict, PoolAssetConfig, PoolAssetsConfig } from '../types/Master';
+import { packPythUpdatesData } from '../api/prices';
+import { FeedMapItem, OracleConfig, parseFeedsMapDict, PoolAssetConfig, PoolAssetsConfig } from '../types/Master';
 import { FetchPricesConfig, Oracle } from './Oracle.interface';
 import { Prices } from './Prices';
+import { PythFeedUpdateType, PythPriceSourcesConfig } from './Types';
+
+export type PythCollectorConfig = {
+    poolAssetsConfig: PoolAssetsConfig;
+    pythOracle: OracleConfig;
+    pythConfig: PythPriceSourcesConfig;
+};
 
 export class PythCollector implements Oracle {
-    #oracleInfo: OracleInfo;
-    #poolAssetsConfig: PoolAssetsConfig;
+    #oracleInfo: OracleConfig;
     #parsedFeedsMap: Map<bigint, FeedMapItem>;
+    #pythConfig: PythPriceSourcesConfig;
+    #poolAssetsConfig: PoolAssetsConfig;
 
-    constructor(oracleInfo: OracleInfo, poolAssetsConfig: PoolAssetsConfig) {
-        this.#oracleInfo = oracleInfo;
-        this.#poolAssetsConfig = poolAssetsConfig;
+    constructor(config: PythCollectorConfig) {
+        this.#oracleInfo = config.pythOracle;
+        this.#pythConfig = config.pythConfig;
+        this.#poolAssetsConfig = config.poolAssetsConfig;
         this.#parsedFeedsMap = parseFeedsMapDict(this.#oracleInfo.feedsMap);
     }
 
@@ -92,23 +101,38 @@ export class PythCollector implements Oracle {
         return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY);
     }
 
+    /**
+     * Updates feeds data from specified endpoint
+     * @param feedIds list of pyth feed ids to fetch
+     * @returns binary - buffer of feeds update, parsed - json feeds data
+     */
+    async #getPythFeedsUpdates(feedIds: HexString[]): Promise<PythFeedUpdateType> {
+        const latestPriceUpdates: PriceUpdate = await Promise.any(
+            this.#pythConfig.pythEndpoints.map((x) =>
+                new HermesClient(x).getLatestPriceUpdates(feedIds, { encoding: 'hex' }),
+            ),
+        );
+
+        const parsed = latestPriceUpdates['parsed'];
+        const binary = Buffer.from(latestPriceUpdates.binary.data[0], 'hex');
+
+        return { binary, parsed };
+    }
+
     async #fetchPythUpdatesWithRetry(
         requiredFeeds: HexString[],
         fetchConfig: FetchPricesConfig,
-    ): Promise<Awaited<ReturnType<typeof getPythFeedsUpdates>>> {
+    ): Promise<PythFeedUpdateType> {
         let lastError: Error | null = null;
 
         for (let attempt = 0; attempt <= fetchConfig.retries; attempt++) {
             try {
-                const timeoutPromise = new Promise((_, reject) => {
+                const timeoutPromise = new Promise<never>((_, reject) => {
                     setTimeout(() => reject(new Error('Request timeout')), fetchConfig.timeout);
                 });
 
-                const fetchPromise = getPythFeedsUpdates(requiredFeeds);
-
-                return (await Promise.race([fetchPromise, timeoutPromise])) as Awaited<
-                    ReturnType<typeof getPythFeedsUpdates>
-                >;
+                const fetchPromise = this.#getPythFeedsUpdates(requiredFeeds);
+                return await Promise.race([fetchPromise, timeoutPromise]);
             } catch (error) {
                 lastError = error instanceof Error ? error : new Error(String(error));
 

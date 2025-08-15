@@ -1,9 +1,9 @@
 import { Cell, Dictionary } from '@ton/core';
 import {
     DEFAULT_FEEDS_MAP,
-    MAINNET_POOL_CONFIG,
-    OracleInfo,
-    PYTH_ORACLE_MAINNET,
+    DefaultPythPriceSourcesConfig,
+    MAINNET_POOL_ASSETS_CONFIG,
+    PYTH_ORACLE_TESTNET,
     PythCollector,
     STTON_MAINNET,
     TON_MAINNET,
@@ -12,19 +12,17 @@ import {
 
 describe('PythOracle', () => {
     let oracle: PythCollector;
-    let oracleInfo: OracleInfo;
 
     beforeEach(() => {
-        const feedsMap = DEFAULT_FEEDS_MAP;
-        oracleInfo = {
-            pythAddress: PYTH_ORACLE_MAINNET,
-            feedsMap: feedsMap,
-            pricesTtl: 180,
-            pythComputeBaseGas: 1n,
-            pythComputePerUpdateGas: 1n,
-            pythSingleUpdateFee: 1n,
-        };
-        oracle = new PythCollector(oracleInfo, MAINNET_POOL_CONFIG.poolAssetsConfig);
+        oracle = new PythCollector({
+            poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,
+            pythOracle: {
+                feedsMap: DEFAULT_FEEDS_MAP,
+                pythAddress: PYTH_ORACLE_TESTNET,
+                allowedRefTokens: Dictionary.empty(),
+            },
+            pythConfig: DefaultPythPriceSourcesConfig,
+        });
     });
 
     it('should create a required feeds list', () => {

@@ -24,7 +24,7 @@ export function bigintToBuffer(value: bigint, size: number): Buffer {
 
 export const packConnectedFeeds = (evaa_id: bigint, reffered_id: bigint) => {
     return Buffer.concat([bigintToBuffer(evaa_id, 32), bigintToBuffer(reffered_id, 32)]);
-}
+};
 
 export const EVAA_TON_PRICE_FEED_ID = ASSET_ID.TON;
 export const EVAA_NOT_PRICE_FEED_ID = ASSET_ID.NOT;
@@ -42,8 +42,14 @@ export const DEFAULT_FEEDS_MAP: Dictionary<bigint, Buffer> = (() => {
     map.set(BigInt(PYTH_USDT_PRICE_FEED_ID), packConnectedFeeds(EVAA_USDT_PRICE_FEED_ID, 0n));
     map.set(BigInt(PYTH_NOT_PRICE_FEED_ID), packConnectedFeeds(EVAA_NOT_PRICE_FEED_ID, 0n));
     map.set(BigInt(PYTH_DOGS_PRICE_FEED_ID), packConnectedFeeds(EVAA_DOGS_PRICE_FEED_ID, 0n));
-    map.set(BigInt(PYTH_STTON_PRICE_FEED_ID), packConnectedFeeds(EVAA_STTON_PRICE_FEED_ID, BigInt(PYTH_TON_PRICE_FEED_ID)));
-    map.set(BigInt(PYTH_TSTON_PRICE_FEED_ID), packConnectedFeeds(EVAA_TSTON_PRICE_FEED_ID, BigInt(PYTH_TON_PRICE_FEED_ID)));
+    map.set(
+        BigInt(PYTH_STTON_PRICE_FEED_ID),
+        packConnectedFeeds(EVAA_STTON_PRICE_FEED_ID, BigInt(PYTH_TON_PRICE_FEED_ID)),
+    );
+    map.set(
+        BigInt(PYTH_TSTON_PRICE_FEED_ID),
+        packConnectedFeeds(EVAA_TSTON_PRICE_FEED_ID, BigInt(PYTH_TON_PRICE_FEED_ID)),
+    );
     return map;
 })();
 
@@ -51,8 +57,14 @@ export const MAIN_POOL_FEEDS_MAP: Dictionary<bigint, Buffer> = (() => {
     const map = Dictionary.empty<bigint, Buffer>();
     map.set(BigInt(PYTH_TON_PRICE_FEED_ID), packConnectedFeeds(EVAA_TON_PRICE_FEED_ID, 0n));
     map.set(BigInt(PYTH_USDT_PRICE_FEED_ID), packConnectedFeeds(EVAA_USDT_PRICE_FEED_ID, 0n));
-    map.set(BigInt(PYTH_STTON_PRICE_FEED_ID), packConnectedFeeds(EVAA_STTON_PRICE_FEED_ID, BigInt(PYTH_TON_PRICE_FEED_ID)));
-    map.set(BigInt(PYTH_TSTON_PRICE_FEED_ID), packConnectedFeeds(EVAA_TSTON_PRICE_FEED_ID, BigInt(PYTH_TON_PRICE_FEED_ID)));
+    map.set(
+        BigInt(PYTH_STTON_PRICE_FEED_ID),
+        packConnectedFeeds(EVAA_STTON_PRICE_FEED_ID, BigInt(PYTH_TON_PRICE_FEED_ID)),
+    );
+    map.set(
+        BigInt(PYTH_TSTON_PRICE_FEED_ID),
+        packConnectedFeeds(EVAA_TSTON_PRICE_FEED_ID, BigInt(PYTH_TON_PRICE_FEED_ID)),
+    );
     map.set(BigInt(PYTH_USDC_PRICE_FEED_ID), packConnectedFeeds(EVAA_JUSDC_PRICE_FEED_ID, 0n));
     map.set(BigInt(PYTH_USDT_PRICE_FEED_ID), packConnectedFeeds(EVAA_JUSDT_PRICE_FEED_ID, 0n));
     map.set(BigInt(PYTH_USDE_PRICE_FEED_ID), packConnectedFeeds(EVAA_USDE_PRICE_FEED_ID, 0n));
@@ -60,14 +72,14 @@ export const MAIN_POOL_FEEDS_MAP: Dictionary<bigint, Buffer> = (() => {
 })();
 
 export type FeedMapItem = {
-    evaaId: bigint,
-    referredPythFeed: bigint
+    evaaId: bigint;
+    referredPythFeed: bigint;
 };
 
 export function parseFeedsMapDict(dict: Dictionary<bigint, Buffer>) {
     const parsedData = new Map<bigint, FeedMapItem>();
     for (const key of dict.keys()) {
-        const buffer = dict.get(key)!
+        const buffer = dict.get(key)!;
 
         const hex1 = '0x' + buffer.toString('hex', 0, 32);
         const hex2 = '0x' + buffer.toString('hex', 32);
@@ -75,8 +87,21 @@ export function parseFeedsMapDict(dict: Dictionary<bigint, Buffer>) {
         const evaaId = BigInt(hex1);
         const referredPythFeed = BigInt(hex2);
 
-        parsedData.set(key, {evaaId, referredPythFeed});
+        parsedData.set(key, { evaaId, referredPythFeed });
     }
 
     return parsedData;
 }
+
+export const TESTNET_ALLOWED_REF_TOKENS: Dictionary<bigint, bigint> = (() => {
+    const map = Dictionary.empty<bigint, bigint>();
+    map.set(BigInt(EVAA_JUSDT_PRICE_FEED_ID), BigInt(EVAA_USDT_PRICE_FEED_ID));
+    return map;
+})();
+
+export const TESTNET_FEEDS_MAP: Dictionary<bigint, Buffer> = (() => {
+    const map = Dictionary.empty<bigint, Buffer>();
+    map.set(BigInt(PYTH_TON_PRICE_FEED_ID), packConnectedFeeds(EVAA_TON_PRICE_FEED_ID, 0n));
+    map.set(BigInt(EVAA_JUSDC_PRICE_FEED_ID), packConnectedFeeds(EVAA_USDT_PRICE_FEED_ID, ASSET_ID.jUSDC));
+    return map;
+})();

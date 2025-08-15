@@ -1,4 +1,6 @@
-import { Cell, Dictionary } from '@ton/core';
+import type { PriceUpdate } from '@pythnetwork/hermes-client';
+import type { Cell, Dictionary } from '@ton/core';
+import { FetchPricesConfig } from './Oracle.interface';
 
 /**
  * Configuration for price source endpoints.
@@ -6,9 +8,18 @@ import { Cell, Dictionary } from '@ton/core';
 export type PriceSourcesConfig = {
     /** Endpoints for backend price data */
     backendEndpoints: string[];
-    
+
     /** Endpoints for ICP price data */
     icpEndpoints: string[];
+};
+
+/**
+ * Configuration for pyth prices.
+ */
+
+export type PythPriceSourcesConfig = {
+    /** Endpoints for pyth price data */
+    pythEndpoints: string[];
 };
 
 /**
@@ -17,7 +28,14 @@ export type PriceSourcesConfig = {
 export const DefaultPriceSourcesConfig: PriceSourcesConfig = {
     backendEndpoints: ['api.evaa.space', 'evaa.space'],
     icpEndpoints: ['6khmc-aiaaa-aaaap-ansfq-cai.raw.icp0.io'],
-}
+};
+
+/**
+ * Configuration for pyth price sources.
+ */
+export const DefaultPythPriceSourcesConfig: PythPriceSourcesConfig = {
+    pythEndpoints: ['https://hermes.pyth.network'],
+};
 
 export type RawPriceData = {
     dict: Dictionary<bigint, bigint>;
@@ -28,6 +46,10 @@ export type RawPriceData = {
     timestamp: number;
 };
 
+export type PythFeedUpdateType = {
+    parsed: PriceUpdate['parsed'];
+    binary: Buffer;
+};
 
 export type PriceData = {
     dict: Dictionary<bigint, bigint>;
@@ -35,6 +57,11 @@ export type PriceData = {
 };
 
 export type OraclePricesData = {
-    timestamp: number, 
-    prices: Dictionary<bigint, bigint>
-}
+    timestamp: number;
+    prices: Dictionary<bigint, bigint>;
+};
+
+export const DefaultFetchPricesConfig: FetchPricesConfig = {
+    retries: 3,
+    timeout: 1000,
+};
