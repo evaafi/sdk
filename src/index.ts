@@ -46,8 +46,6 @@ export { createAssetData, createAssetConfig, parseMasterData, parseUserData, par
 
 // Prices
 export {
-    DEFAULT_HERMES_ENDPOINT,
-    getPythFeedsUpdates,
     composeFeedsCell,
     packPythUpdatesData,
     createRequiredFeedsList,

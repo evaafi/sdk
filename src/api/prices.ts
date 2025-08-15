@@ -7,26 +7,6 @@ import {HermesClient, HexString} from "@pythnetwork/hermes-client";
 import {Cell} from "@ton/core";
 import {beginCell} from "@ton/ton";
 import {createCellChain} from "@pythnetwork/pyth-ton-js";
-import { DefaultPriceSourcesConfig, PriceSourcesConfig } from '../prices';
-
-
-export const DEFAULT_HERMES_ENDPOINT = 'https://hermes.pyth.network';
-
-/**
- * Updates feeds data from specified endpoint
- * @param hermesEndpoint prices servide endpoint
- * @param feedIds list of pyth feed ids to fetch
- * @returns binary - buffer of feeds update, parsed - json feeds data
- */
-export async function getPythFeedsUpdates(feedIds: HexString[], hermesEndpoint: string = DEFAULT_HERMES_ENDPOINT) {
-    const hermesClient = new HermesClient(hermesEndpoint);
-    const latestPriceUpdates = await hermesClient.getLatestPriceUpdates(feedIds, { encoding: 'hex' });
-
-    const parsed = latestPriceUpdates.parsed;
-    const binary = Buffer.from(latestPriceUpdates.binary.data[0], 'hex');
-
-    return { binary, parsed };
-}
 
 export function composeFeedsCell(feeds: HexString[]): Cell {
     if (feeds.length === 0) {
