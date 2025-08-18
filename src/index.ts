@@ -47,8 +47,7 @@ export { createAssetData, createAssetConfig, parseMasterData, parseUserData, par
 // Prices
 export {
     composeFeedsCell,
-    packPythUpdatesData,
-    createRequiredFeedsList,
+    packPythUpdatesData
 } from './api/prices';
 
 // Feeds utils

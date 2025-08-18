@@ -151,17 +151,13 @@ export class PythCollector implements Oracle {
 
     public createRequiredFeedsList(evaaIds: bigint[]): HexString[] {
         const requiredFeeds = new Set<bigint>();
-        const queue = [...evaaIds];
 
         const evaaToPythMap = new Map<bigint, bigint>();
         for (const [pythId, feedInfo] of this.#parsedFeedsMap.entries()) {
             evaaToPythMap.set(feedInfo.evaaId, pythId);
         }
 
-        while (queue.length > 0) {
-            const evaaId = queue.shift();
-            if (!evaaId) continue;
-
+        for (const evaaId of evaaIds) {
             const pythId = evaaToPythMap.get(evaaId);
             if (pythId && !requiredFeeds.has(pythId)) {
                 requiredFeeds.add(pythId);
