@@ -64,7 +64,6 @@ export const MAINNET_POOL_ASSETS_CONFIG = [
     USDT_MAINNET,
     USDE_MAINNET,
     TSUSDE_MAINNET,
-    // UTON_MAINNET // announce xdddd fake announce 
 ];
 
 const MAINNET_STABLE_POOL_ASSETS_CONFIG = [
