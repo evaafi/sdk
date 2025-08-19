@@ -2,6 +2,7 @@ import { beginCell, Cell, Dictionary, Slice } from "@ton/core"
 import { signVerify } from "@ton/crypto"
 import { EvaaOracle, ExtendedEvaaOracle } from "../types/Master"
 import { convertToMerkleProof, generateMerkleProofDirect } from "../utils/merkleProof"
+import { FetchConfig } from "../utils/utils"
 import { TTL_ORACLE_DATA_SEC } from "./constants"
 import { BackendPriceSource } from "./sources/Backend"
 import { IcpPriceSource } from "./sources/Icp"
@@ -106,8 +107,8 @@ export function generatePriceSources(config: PriceSourcesConfig, nfts: ExtendedE
     return result;
 }
 
-export async function collectAndFilterPrices(priceSource: PriceSource, minimalOracles: number ): Promise<RawPriceData[]> {
-    const prices = await priceSource.getPrices();
+export async function collectAndFilterPrices(priceSource: PriceSource, minimalOracles: number, fetchConfig?: FetchConfig ): Promise<RawPriceData[]> {
+    const prices = await priceSource.getPrices(fetchConfig);
          
     //console.debug('[FILTERING] before filtering prices len ', priceSource.sourceName, prices.length);
     return (async () => {

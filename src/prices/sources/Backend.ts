@@ -1,32 +1,34 @@
-import { beginCell, Cell, Dictionary } from "@ton/core";
-import { RawPriceData } from "..";
-import { PriceSource } from "./PriceSource";
+import { beginCell, Cell, Dictionary } from '@ton/core';
+import { RawPriceData } from '..';
+import { DefaultFetchConfig, FetchConfig, proxyFetchRetries } from '../../utils/utils';
+import { PriceSource } from './PriceSource';
 
 export class BackendPriceSource extends PriceSource {
     protected priceSourceName: string = 'BackendPriceSource';
 
-    async getPrices(): Promise<RawPriceData[]> {
-        const data = await this.loadOracleData();
-        return data.map(outputData => this.parsePrices(outputData));
+    async getPrices(fetchConfig?: FetchConfig): Promise<RawPriceData[]> {
+        const data = await this.loadOracleData(fetchConfig);
+        return data.map((outputData) => this.parsePrices(outputData));
     }
 
-    async loadOracleData(): Promise<OutputData[]> {
-        let response = await fetch(`https://${this._endpoint}/api/prices`, {
+    async loadOracleData(fetchConfig: FetchConfig = DefaultFetchConfig): Promise<OutputData[]> {
+        const fetchPromise = fetch(`https://${this._endpoint}/api/prices`, {
             headers: { accept: 'application/json' },
-            signal: AbortSignal.timeout(5000)
+            signal: AbortSignal.timeout(fetchConfig.timeout),
+        }).then(async (response) => {
+            const resp = await response.json();
+            const data = resp as Record<string, string>;
+            let outputData: OutputData[] = [];
+
+            for (const nft of this._nfts) {
+                outputData.push({ oracleId: nft.id, data: data[nft.address] });
+            }
+
+            return outputData;
         });
 
-        const resp = (await response.json());
-        const data = resp as Record<string, string>;
-        let outputData: OutputData[] = [];
-
-        for (const nft of this._nfts) {
-            outputData.push({ oracleId: nft.id, data: data[nft.address] })
-        }
-    
-        return outputData;
+        return await proxyFetchRetries(fetchPromise, fetchConfig);
     }
-
 
     parsePrices(outputData: OutputData): RawPriceData {
         try {

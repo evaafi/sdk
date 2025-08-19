@@ -3,7 +3,7 @@ import {
     DEFAULT_FEEDS_MAP,
     DefaultPythPriceSourcesConfig,
     MAINNET_POOL_ASSETS_CONFIG,
-    PYTH_ORACLE_TESTNET,
+    PYTH_ORACLE_MAINNET,
     PythCollector,
     STTON_MAINNET,
     TON_MAINNET,
@@ -18,7 +18,7 @@ describe('PythOracle', () => {
             poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,
             pythOracle: {
                 feedsMap: DEFAULT_FEEDS_MAP,
-                pythAddress: PYTH_ORACLE_TESTNET,
+                pythAddress: PYTH_ORACLE_MAINNET,
                 allowedRefTokens: Dictionary.empty(),
             },
             pythConfig: DefaultPythPriceSourcesConfig,

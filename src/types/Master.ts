@@ -79,14 +79,12 @@ export type MasterConfig = {
 
 export type OracleConfig = {
     pythAddress: Address;
+    // FYI: The Pyth max feeds count is 7, but it can add more in the future
     feedsMap: Dictionary<bigint, Buffer>;
     allowedRefTokens: Dictionary<bigint, bigint>;
 };
 
 export type OracleInfo = OracleConfig & {
-    pythAddress: Address;
-    feedsMap: Dictionary<bigint, Buffer>;
-    allowedRefTokens: Dictionary<bigint, bigint>;
     pricesTtl: number;
     pythComputeBaseGas: bigint;
     pythComputePerUpdateGas: bigint;

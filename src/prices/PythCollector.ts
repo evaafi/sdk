@@ -3,7 +3,8 @@ import { Cell, Dictionary } from '@ton/core';
 import { checkNotInDebtAtAll } from '../api/math';
 import { packPythUpdatesData } from '../api/prices';
 import { FeedMapItem, OracleConfig, parseFeedsMapDict, PoolAssetConfig, PoolAssetsConfig } from '../types/Master';
-import { FetchPricesConfig, Oracle } from './Oracle.interface';
+import { FetchConfig, proxyFetchRetries } from '../utils/utils';
+import { Oracle } from './Oracle.interface';
 import { Prices } from './Prices';
 import { PythFeedUpdateType, PythPriceSourcesConfig } from './Types';
 
@@ -28,7 +29,7 @@ export class PythCollector implements Oracle {
 
     async getPricesForLiquidate(
         realPrincipals: Dictionary<bigint, bigint>,
-        fetchConfig: FetchPricesConfig,
+        fetchConfig?: FetchConfig,
     ): Promise<Prices> {
         const assets = this.#filterEmptyPrincipalsAndAssets(realPrincipals);
         if (assets.includes(undefined)) {
@@ -45,7 +46,7 @@ export class PythCollector implements Oracle {
         supplyAsset: PoolAssetConfig | undefined,
         withdrawAsset: PoolAssetConfig | undefined,
         collateralToDebt: boolean,
-        fetchConfig: FetchPricesConfig,
+        fetchConfig?: FetchConfig,
     ): Promise<Prices> {
         let assets = this.#filterEmptyPrincipalsAndAssets(realPrincipals);
         if (
@@ -71,7 +72,7 @@ export class PythCollector implements Oracle {
         );
     }
 
-    async getPrices(assets: PoolAssetsConfig, fetchConfig: FetchPricesConfig): Promise<Prices> {
+    async getPrices(assets: PoolAssetsConfig, fetchConfig?: FetchConfig): Promise<Prices> {
         if (assets.length === 0) {
             return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY);
         }
@@ -121,32 +122,9 @@ export class PythCollector implements Oracle {
 
     async #fetchPythUpdatesWithRetry(
         requiredFeeds: HexString[],
-        fetchConfig: FetchPricesConfig,
+        fetchConfig?: FetchConfig,
     ): Promise<PythFeedUpdateType> {
-        let lastError: Error | null = null;
-
-        for (let attempt = 0; attempt <= fetchConfig.retries; attempt++) {
-            try {
-                const timeoutPromise = new Promise<never>((_, reject) => {
-                    setTimeout(() => reject(new Error('Request timeout')), fetchConfig.timeout);
-                });
-
-                const fetchPromise = this.#getPythFeedsUpdates(requiredFeeds);
-                return await Promise.race([fetchPromise, timeoutPromise]);
-            } catch (error) {
-                lastError = error instanceof Error ? error : new Error(String(error));
-
-                if (attempt < fetchConfig.retries) {
-                    // Exponential backoff: wait 1s, 2s, 4s, etc.
-                    const delay = Math.pow(2, attempt) * 1000;
-                    await new Promise((resolve) => setTimeout(resolve, delay));
-                }
-            }
-        }
-
-        throw new Error(
-            `Failed to fetch Pyth updates after ${fetchConfig.retries + 1} attempts. Last error: ${lastError?.message}`,
-        );
+        return proxyFetchRetries(this.#getPythFeedsUpdates(requiredFeeds), fetchConfig);
     }
 
     public createRequiredFeedsList(evaaIds: bigint[]): HexString[] {

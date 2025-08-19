@@ -9,7 +9,8 @@
     ],
     "scripts": {
         "build": "tsc --declaration",
-        "test": "jest"
+        "test": "jest",
+        "test:prices": "jest tests/prices/PriceCollector.test.ts tests/prices/PythCollector.test.ts"
     },
     "repository": {
         "type": "git",

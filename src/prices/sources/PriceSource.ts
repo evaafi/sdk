@@ -1,5 +1,6 @@
 import { RawPriceData } from "..";
 import { ExtendedEvaaOracle } from "../../types/Master";
+import { FetchConfig } from "../../utils/utils";
 
 export abstract class PriceSource {
     protected priceSourceName: string = 'BackendPriceSource';
@@ -31,5 +32,5 @@ export abstract class PriceSource {
         this._nfts = nfts; 
     }
 
-    abstract getPrices(): Promise<RawPriceData[]>;
+    abstract getPrices(fetchConfig?: FetchConfig): Promise<RawPriceData[]>;
 }

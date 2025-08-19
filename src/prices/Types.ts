@@ -1,6 +1,5 @@
 import type { PriceUpdate } from '@pythnetwork/hermes-client';
 import type { Cell, Dictionary } from '@ton/core';
-import { FetchPricesConfig } from './Oracle.interface';
 
 /**
  * Configuration for price source endpoints.
@@ -34,6 +33,7 @@ export const DefaultPriceSourcesConfig: PriceSourcesConfig = {
  * Configuration for pyth price sources.
  */
 export const DefaultPythPriceSourcesConfig: PythPriceSourcesConfig = {
+    // FYI: 3RPS limit per IP, TODO: support Pythnet RPC
     pythEndpoints: ['https://hermes.pyth.network'],
 };
 
@@ -59,9 +59,4 @@ export type PriceData = {
 export type OraclePricesData = {
     timestamp: number;
     prices: Dictionary<bigint, bigint>;
-};
-
-export const DefaultFetchPricesConfig: FetchPricesConfig = {
-    retries: 3,
-    timeout: 1000,
 };

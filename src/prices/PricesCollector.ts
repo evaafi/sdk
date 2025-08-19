@@ -1,13 +1,12 @@
-import { Cell, Dictionary } from "@ton/core";
-import { MAINNET_POOL_CONFIG } from "../constants/pools";
-import { EvaaOracle, ExtendedEvaaOracle, PoolAssetConfig, PoolAssetsConfig, PoolConfig } from "../types/Master";
-import { PriceSource } from "./sources";
-import { DefaultPriceSourcesConfig, PriceSourcesConfig, RawPriceData } from "./Types";
-import { collectAndFilterPrices, generatePriceSources, getMedianPrice, packAssetsData, packOraclesData, packPrices, verifyPricesTimestamp } from "./utils";
-import { delay } from "../utils/utils";
-import { Prices } from "./Prices";
-import { checkNotInDebtAtAll } from "../api/math";
-import { FetchPricesConfig, Oracle } from "./Oracle.interface";
+import { Cell, Dictionary } from "@ton/core"
+import { checkNotInDebtAtAll } from "../api/math"
+import { ExtendedEvaaOracle, PoolAssetConfig, PoolAssetsConfig } from "../types/Master"
+import { FetchConfig, proxyFetchRetries } from '../utils/utils'
+import { Oracle } from "./Oracle.interface"
+import { Prices } from "./Prices"
+import { PriceSource } from "./sources"
+import { DefaultPriceSourcesConfig, PriceSourcesConfig, RawPriceData } from "./Types"
+import { collectAndFilterPrices, generatePriceSources, getMedianPrice, packAssetsData, packOraclesData, packPrices, verifyPricesTimestamp } from "./utils"
 
 
 export type PricesCollectorConfig = {
@@ -36,7 +35,7 @@ export class PricesCollector implements Oracle {
         this.#prices = [];
     }
 
-    async getPricesForLiquidate(realPrincipals: Dictionary<bigint, bigint>, fetchConfig: FetchPricesConfig): Promise<Prices>  {
+    async getPricesForLiquidate(realPrincipals: Dictionary<bigint, bigint>, fetchConfig?: FetchConfig): Promise<Prices>  {
         const assets = this.#filterEmptyPrincipalsAndAssets(realPrincipals);
         if (assets.includes(undefined)) {
             throw new Error("User from another pool");
@@ -44,7 +43,7 @@ export class PricesCollector implements Oracle {
         return await this.getPrices(assets.map(x => x!), fetchConfig);
     }
 
-    async getPricesForWithdraw(realPrincipals: Dictionary<bigint, bigint>, withdrawAsset: PoolAssetConfig, collateralToDebt = false, fetchConfig: FetchPricesConfig): Promise<Prices>  {
+    async getPricesForWithdraw(realPrincipals: Dictionary<bigint, bigint>, withdrawAsset: PoolAssetConfig, collateralToDebt = false, fetchConfig?: FetchConfig): Promise<Prices>  {
         let assets = this.#filterEmptyPrincipalsAndAssets(realPrincipals);
         if (checkNotInDebtAtAll(realPrincipals) && (realPrincipals.get(withdrawAsset.assetId) ?? 0n) > 0n && !collateralToDebt) {
             return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY);
@@ -66,7 +65,7 @@ export class PricesCollector implements Oracle {
         supplyAsset: PoolAssetConfig | undefined,
         withdrawAsset: PoolAssetConfig | undefined,
         collateralToDebt: boolean,
-        fetchConfig: FetchPricesConfig
+        fetchConfig?: FetchConfig,
     ): Promise<Prices> {
         // Используем ту же логику, что и getPricesForWithdraw, но supplyAsset не используется
         let assets = this.#filterEmptyPrincipalsAndAssets(realPrincipals);
@@ -85,23 +84,15 @@ export class PricesCollector implements Oracle {
         return await this.getPrices(assets.map(x => x!), fetchConfig);
     }
 
-    async getPrices(assets: PoolAssetsConfig = this.#poolAssetsConfig, fetchConfig: FetchPricesConfig): Promise<Prices> {
-        console.debug('[getPrices] Assets length', assets.length);
+    async getPrices(assets: PoolAssetsConfig = this.#poolAssetsConfig, fetchConfig?: FetchConfig): Promise<Prices> {
         if (assets.length == 0) {
             return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY);
         }
-        for (let i = 0; i <= fetchConfig.retries; i++) {  // attemts = retries + 1
-            if (!this.#prices || this.#filterPrices() < this.#minimalOracles) {
-                if (i > 0) {
-                    await delay(fetchConfig.timeout);
-                }
-                await this.#collectPrices();
-            } else {
-                break;
-            }
-        }
+
+        await proxyFetchRetries(this.#collectPricesWithValidation(fetchConfig), fetchConfig);
+
         if (this.#prices.length < this.#minimalOracles) {
-            throw new Error(`Error per updating prices, valid ${this.#prices.length} of ${this.#minimalOracles}`);  // if still not enough data after retries
+            throw new Error(`Error per updating prices, valid ${this.#prices.length} of ${this.#minimalOracles}`);
         }
         const prices = this.#getPricesByAssetList(assets);
         return new Prices(prices.dict, prices.dataCell);
@@ -139,14 +130,26 @@ export class PricesCollector implements Oracle {
         }
     }
 
-    async #collectPrices(): Promise<boolean> {
+    async #collectPrices(fetchConfig?: FetchConfig): Promise<boolean> {
         try {
-            // collectAndFilterPrices теперь требует poolAssetsConfig и minimalOracles
-            this.#prices = await Promise.any(this.#priceSources.map(x => collectAndFilterPrices(x, this.#minimalOracles )));
+            this.#prices = await Promise.any(
+                this.#priceSources.map((x) => collectAndFilterPrices(x, this.#minimalOracles, fetchConfig)),
+            );
             return true;
         }
         catch { }
         return false;
+    }
+
+    async #collectPricesWithValidation(fetchConfig?: FetchConfig): Promise<void> {
+        if (!this.#prices || this.#filterPrices() < this.#minimalOracles) {
+            const success = await this.#collectPrices(fetchConfig);
+            if (!success || this.#prices.length < this.#minimalOracles) {
+                throw new Error(
+                    `Failed to collect sufficient prices: ${this.#prices?.length || 0} of ${this.#minimalOracles}`,
+                );
+            }
+        }
     }
 
     #filterPrices(): number {
