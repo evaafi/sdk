@@ -20,11 +20,44 @@ export class PythCollector implements Oracle {
     #pythConfig: PythPriceSourcesConfig;
     #poolAssetsConfig: PoolAssetsConfig;
 
+    #pythToEvaaDirect = new Map<bigint, bigint>(); // pythId -> evaaId (native)
+    #pythToEvaaReferred = new Map<bigint, Set<bigint>>(); // pythId -> Set<evaaId>,
+    #evaaToPythDirect = new Map<bigint, bigint>(); // evaaId -> pythId (native)
+    #allowedRefEvaa = new Map<bigint, bigint>(); // evaaId -> baseEvaaId (allowedRefTokens)
+
     constructor(config: PythCollectorConfig) {
         this.#oracleInfo = config.pythOracle;
         this.#pythConfig = config.pythConfig;
         this.#poolAssetsConfig = config.poolAssetsConfig;
         this.#parsedFeedsMap = parseFeedsMapDict(this.#oracleInfo.feedsMap);
+
+        // 1) pythId -> evaaId, evaaId -> pythId
+        for (const [pythId, feedInfo] of this.#parsedFeedsMap.entries()) {
+            this.#pythToEvaaDirect.set(pythId, feedInfo.evaaId);
+            this.#evaaToPythDirect.set(feedInfo.evaaId, pythId);
+        }
+
+        // 2) pythId (native) -> Set<evaaId>
+        for (const [pythId, feedInfo] of this.#parsedFeedsMap.entries()) {
+            const ref = feedInfo.referredPythFeed;
+            if (ref && ref !== 0n) {
+                if (!this.#pythToEvaaReferred.has(ref)) this.#pythToEvaaReferred.set(ref, new Set());
+                this.#pythToEvaaReferred.get(ref)!.add(feedInfo.evaaId);
+            }
+        }
+
+        // 3)  evaaId -> baseEvaaId (allowedRefTokens)
+        for (const evaaId of this.#oracleInfo.allowedRefTokens.keys()) {
+            const base = this.#oracleInfo.allowedRefTokens.get(evaaId)!;
+            this.#allowedRefEvaa.set(evaaId, base);
+
+            // If baseEvaaId have pythId. evaaId -> pyth(base)
+            const basePyth = this.#evaaToPythDirect.get(base);
+            if (basePyth) {
+                if (!this.#pythToEvaaReferred.has(basePyth)) this.#pythToEvaaReferred.set(basePyth, new Set());
+                this.#pythToEvaaReferred.get(basePyth)!.add(evaaId);
+            }
+        }
     }
 
     async getPricesForLiquidate(
@@ -84,19 +117,40 @@ export class PythCollector implements Oracle {
         const pythPriceUpdates = pythUpdates.parsed;
 
         if (pythPriceUpdates) {
-            for (const priceUpdate of pythPriceUpdates) {
-                const price = BigInt(priceUpdate.price.price);
-                const conf = BigInt(priceUpdate.price.conf);
+            // Only set prices for requested assets, not all possible mapped assets
+            const requestedAssetIds = new Set(assets.map((a) => a.assetId));
+            
+            for (const u of pythPriceUpdates) {
+                const pythId = BigInt('0x' + u.id);
+                const price = BigInt(u.price.price);
 
-                // Find evaaId for this pyth feed
-                const pythId = BigInt('0x' + priceUpdate.id);
-                const feedInfo = this.#parsedFeedsMap.get(pythId);
-                if (feedInfo) {
-                    pricesDict.set(feedInfo.evaaId, price);
+                // Set price for direct mapping if the evaaId is requested
+                const directEvaa = this.#pythToEvaaDirect.get(pythId);
+                if (directEvaa && requestedAssetIds.has(directEvaa)) {
+                    pricesDict.set(directEvaa, price);
+                }
+
+                // Set price for referred assets only if they are requested
+                const referredSet = this.#pythToEvaaReferred.get(pythId);
+                if (referredSet && referredSet.size) {
+                    for (const evaaId of referredSet) {
+                        if (requestedAssetIds.has(evaaId)) {
+                            pricesDict.set(evaaId, price);
+                        }
+                    }
                 }
             }
-            const dataCell = packPythUpdatesData(pythUpdates.binary);
 
+            // Check that all requested assets have prices
+            const missing = assets.map((a) => a.assetId).filter((id) => pricesDict.get(id) === undefined);
+
+            if (missing.length) {
+                throw new Error(
+                    `Missing prices for ${missing.length} asset(s): ${missing.map((x) => x.toString()).join(', ')}`,
+                );
+            }
+
+            const dataCell = packPythUpdatesData(pythUpdates.binary);
             return new Prices(pricesDict, dataCell);
         }
         return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY);
@@ -130,21 +184,20 @@ export class PythCollector implements Oracle {
     public createRequiredFeedsList(evaaIds: bigint[]): HexString[] {
         const requiredFeeds = new Set<bigint>();
 
-        const evaaToPythMap = new Map<bigint, bigint>();
-        for (const [pythId, feedInfo] of this.#parsedFeedsMap.entries()) {
-            evaaToPythMap.set(feedInfo.evaaId, pythId);
-        }
-
         for (const evaaId of evaaIds) {
-            const pythId = evaaToPythMap.get(evaaId);
-            if (pythId && !requiredFeeds.has(pythId)) {
+            let pythId = this.#evaaToPythDirect.get(evaaId);
+
+            // If evaaId no have native feed — try by allowedRefTokens (evAA->baseEvAA->pyth)
+            if (!pythId) {
+                const baseEvaa = this.#allowedRefEvaa.get(evaaId);
+                if (baseEvaa) pythId = this.#evaaToPythDirect.get(baseEvaa) ?? null!;
+            }
+
+            if (pythId) {
                 requiredFeeds.add(pythId);
                 const feedInfo = this.#parsedFeedsMap.get(pythId);
-                if (feedInfo && feedInfo.referredPythFeed !== 0n) {
-                    const referredPythId = feedInfo.referredPythFeed;
-                    if (!requiredFeeds.has(referredPythId)) {
-                        requiredFeeds.add(referredPythId);
-                    }
+                if (feedInfo?.referredPythFeed && feedInfo.referredPythFeed !== 0n) {
+                    requiredFeeds.add(feedInfo.referredPythFeed);
                 }
             }
         }

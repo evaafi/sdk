@@ -36,23 +36,7 @@ export const EVAA_TSTON_PRICE_FEED_ID = ASSET_ID.tsTON;
 export const EVAA_JUSDC_PRICE_FEED_ID = ASSET_ID.jUSDC;
 export const EVAA_JUSDT_PRICE_FEED_ID = ASSET_ID.jUSDT;
 export const EVAA_USDE_PRICE_FEED_ID = ASSET_ID.USDe;
-
-export const DEFAULT_FEEDS_MAP: Dictionary<bigint, Buffer> = (() => {
-    const map = Dictionary.empty<bigint, Buffer>();
-    map.set(BigInt(PYTH_TON_PRICE_FEED_ID), packConnectedFeeds(EVAA_TON_PRICE_FEED_ID, 0n));
-    map.set(BigInt(PYTH_USDT_PRICE_FEED_ID), packConnectedFeeds(EVAA_USDT_PRICE_FEED_ID, 0n));
-    map.set(BigInt(PYTH_NOT_PRICE_FEED_ID), packConnectedFeeds(EVAA_NOT_PRICE_FEED_ID, 0n));
-    map.set(BigInt(PYTH_DOGS_PRICE_FEED_ID), packConnectedFeeds(EVAA_DOGS_PRICE_FEED_ID, 0n));
-    map.set(
-        BigInt(PYTH_STTON_PRICE_FEED_ID),
-        packConnectedFeeds(EVAA_STTON_PRICE_FEED_ID, BigInt(PYTH_TON_PRICE_FEED_ID)),
-    );
-    map.set(
-        BigInt(PYTH_TSTON_PRICE_FEED_ID),
-        packConnectedFeeds(EVAA_TSTON_PRICE_FEED_ID, BigInt(PYTH_TON_PRICE_FEED_ID)),
-    );
-    return map;
-})();
+export const EVAA_TSUSDE_PRICE_FEED_ID = ASSET_ID.tsUSDe;
 
 export const MAIN_POOL_FEEDS_MAP: Dictionary<bigint, Buffer> = (() => {
     const map = Dictionary.empty<bigint, Buffer>();
@@ -69,8 +53,8 @@ export const MAIN_POOL_FEEDS_MAP: Dictionary<bigint, Buffer> = (() => {
     map.set(BigInt(PYTH_USDC_PRICE_FEED_ID), packConnectedFeeds(EVAA_JUSDC_PRICE_FEED_ID, 0n));
     map.set(BigInt(PYTH_USDT_PRICE_FEED_ID), packConnectedFeeds(EVAA_JUSDT_PRICE_FEED_ID, 0n));
     map.set(BigInt(PYTH_USDE_PRICE_FEED_ID), packConnectedFeeds(EVAA_USDE_PRICE_FEED_ID, 0n));
-    map.set(BigInt(PYTH_TSUDE_PRICE_FEED_ID), packConnectedFeeds(EVAA_USDE_PRICE_FEED_ID, 0n));
-    return map
+    map.set(BigInt(PYTH_TSUDE_PRICE_FEED_ID), packConnectedFeeds(EVAA_TSUSDE_PRICE_FEED_ID, 0n));
+    return map;
 })();
 
 export type FeedMapItem = {
@@ -104,6 +88,5 @@ export const TESTNET_ALLOWED_REF_TOKENS: Dictionary<bigint, bigint> = (() => {
 export const TESTNET_FEEDS_MAP: Dictionary<bigint, Buffer> = (() => {
     const map = Dictionary.empty<bigint, Buffer>();
     map.set(BigInt(PYTH_TON_PRICE_FEED_ID), packConnectedFeeds(EVAA_TON_PRICE_FEED_ID, 0n));
-    map.set(BigInt(EVAA_JUSDC_PRICE_FEED_ID), packConnectedFeeds(EVAA_USDT_PRICE_FEED_ID, ASSET_ID.jUSDC));
     return map;
 })();
