@@ -80,8 +80,8 @@ export const EVAA_REWARDS_USER_CODE_MAINNET = EVAA_REWARDS_USER_CODE_TESTNET;
 
 export const OPCODES = {
     SUPPLY: 0x1,
-    WITHDRAW: 0x2,
     LIQUIDATE: 0x3,
+    SUPPLY_WITHDRAW: 0x4,
     JETTON_TRANSFER: 0xf8a7ea5,
     ONCHAIN_GETTER: 0x9998,
     REWARD_CLAIM: 0x2,
@@ -103,4 +103,8 @@ export const FEES = {
     REWARD_MASTER_WITHDRAW: toNano('0.1'),
     REWARD_USER_DEPLOY: toNano('0.05'),
     REWARD_USER_CLAIM: toNano('0.1'),
+    // SW are ballpark estimates, may need refinement
+    SUPPLY_WITHDRAW: toNano('0.8'),
+    SUPPLY_WITHDRAW_JETTON: toNano('1'),
+    SUPPLY_WITHDRAW_JETTON_FWD: toNano('0.8'),
 };

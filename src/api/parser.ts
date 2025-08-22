@@ -1,5 +1,15 @@
 import { beginCell, Cell, Dictionary, DictionaryValue, Slice } from '@ton/core';
-import { AssetConfig, AssetData, ExtendedAssetData, ExtendedAssetsConfig, ExtendedAssetsData, MasterConfig, MasterConstants, MasterData, PoolAssetsConfig, PoolConfig } from '../types/Master';
+import {
+    AssetConfig,
+    AssetData,
+    ExtendedAssetData,
+    ExtendedAssetsConfig,
+    ExtendedAssetsData,
+    MasterConstants,
+    MasterData,
+    PoolAssetsConfig,
+    PoolConfig
+} from '../types/Master';
 import {
     bigIntMax,
     bigIntMin,
@@ -13,7 +23,6 @@ import {
 } from './math';
 import { loadMaybeMyRef, loadMyRef } from './helpers';
 import { BalanceType, UserBalance, UserData, UserLiteData, UserRewards } from '../types/User';
-import { checkNotInDebtAtAll } from "../api/math";
 
 export function createUserRewards(): DictionaryValue<UserRewards> {
     return {
@@ -81,6 +90,7 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
             refBuild.storeUint(src.minPrincipalForRewards, 64);
             refBuild.storeUint(src.baseTrackingSupplySpeed, 64);
             refBuild.storeUint(src.baseTrackingBorrowSpeed, 64);
+            refBuild.storeInt(src.borrowCap, 64);
             builder.storeRef(refBuild.endCell());
         },
         parse: (src: Slice) => {
@@ -104,6 +114,7 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
             const minPrincipalForRewards = ref.loadUintBig(64);
             const baseTrackingSupplySpeed = ref.loadUintBig(64);
             const baseTrackingBorrowSpeed = ref.loadUintBig(64);
+            const borrowCap = ref.loadInt(64);
 
             return {
                 oracle,
@@ -124,7 +135,8 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
                 liquidationReserveFactor,
                 minPrincipalForRewards,
                 baseTrackingSupplySpeed,
-                baseTrackingBorrowSpeed
+                baseTrackingBorrowSpeed,
+                borrowCap,
             };
         },
     };
@@ -162,15 +174,19 @@ export function parseMasterData(masterDataBOC: string, poolAssetsConfig: PoolAss
         const assetData = calculateAssetData(assetsConfigDict, assetsDataDict, asset.assetId, masterConstants);
         assetsExtendedData.set(asset.assetId, assetData);
     }
+
+    const oraclesSlice = masterConfigSlice.loadRef().beginParse();
+
     const masterConfig = {
         ifActive: masterConfigSlice.loadInt(8),
         admin: masterConfigSlice.loadAddress(),
         oraclesInfo:  {
-            numOracles: masterConfigSlice.loadUint(16),
-            threshold: masterConfigSlice.loadUint(16),
-            oracles: loadMaybeMyRef(masterConfigSlice)
+            numOracles: oraclesSlice.loadUint(16),
+            threshold: oraclesSlice.loadUint(16),
+            oracles: loadMaybeMyRef(oraclesSlice)
         },
         tokenKeys: loadMaybeMyRef(masterConfigSlice),
+        supervisor: masterConfigSlice.loadMaybeAddress(),
     };
     masterConfigSlice.endParse();
 
