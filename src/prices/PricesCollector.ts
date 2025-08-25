@@ -1,146 +1,163 @@
-import { Cell, Dictionary } from "@ton/core";
-import { MAINNET_POOL_CONFIG } from "../constants/pools";
-import { PoolAssetConfig, PoolAssetsConfig, PoolConfig } from "../types/Master";
-import { PriceSource } from "./sources";
-import { DefaultPriceSourcesConfig, PriceSourcesConfig, RawPriceData } from "./Types";
-import { collectAndFilterPrices, generatePriceSources, getMedianPrice, packAssetsData, packOraclesData, packPrices, verifyPricesSign, verifyPricesTimestamp } from "./utils";
-import { delay } from "../utils/utils";
-import { Prices } from "./Prices";
-import { checkNotInDebtAtAll } from "../api/math";
+import { Cell, Dictionary } from "@ton/core"
+import { checkNotInDebtAtAll } from "../api/math"
+import { ExtendedEvaaOracle, PoolAssetConfig, PoolAssetsConfig } from "../types/Master"
+import { FetchConfig, proxyFetchRetries } from '../utils/utils'
+import { Oracle } from "./Oracle.interface"
+import { Prices } from "./Prices"
+import { PriceSource } from "./sources"
+import { DefaultPriceSourcesConfig, PriceSourcesConfig, RawPriceData } from "./Types"
+import { collectAndFilterPrices, generatePriceSources, getMedianPrice, packAssetsData, packOraclesData, packPrices, verifyPricesTimestamp } from "./utils"
 
 
-export class PricesCollector {
+export type PricesCollectorConfig = {
+    poolAssetsConfig: PoolAssetsConfig;
+    minimalOracles: number;
+    evaaOracles: ExtendedEvaaOracle[];
+    sourcesConfig?: PriceSourcesConfig;
+    additionalPriceSources?: PriceSource[];
+};
+
+export class PricesCollector implements Oracle {
     #prices: RawPriceData[];
-    #poolConfig: PoolConfig;
+    #poolAssetsConfig: PoolAssetsConfig;
     #sourcesConfig: PriceSourcesConfig;
     #priceSources: PriceSource[];
+    #minimalOracles: number;
 
-    constructor(poolConfig: PoolConfig = MAINNET_POOL_CONFIG, sourcesConfig: PriceSourcesConfig = DefaultPriceSourcesConfig, additionalPriceSources?: PriceSource[]) {
-        this.#poolConfig = poolConfig;
-        this.#sourcesConfig = sourcesConfig;
-        this.#priceSources = generatePriceSources(this.#sourcesConfig, this.#poolConfig.oracles);
-
-        if (additionalPriceSources) {
-            this.#priceSources.push(...additionalPriceSources);
+    constructor(config: PricesCollectorConfig) {
+        this.#poolAssetsConfig = config.poolAssetsConfig;
+        this.#sourcesConfig = config.sourcesConfig ?? DefaultPriceSourcesConfig;
+        this.#priceSources = generatePriceSources(this.#sourcesConfig, config.evaaOracles);
+        this.#minimalOracles = config.minimalOracles;
+        if (config.additionalPriceSources) {
+            this.#priceSources.push(...config.additionalPriceSources);
         }
-
         this.#prices = [];
     }
 
-    // TODO Make UserData class and incapsulate raw bigintegers
-
-    async getPricesForLiquidate(realPrincipals: Dictionary<bigint, bigint>, retries: number = 1, timeout: number = 3000): Promise<Prices>  {
+    async getPricesForLiquidate(realPrincipals: Dictionary<bigint, bigint>, fetchConfig?: FetchConfig): Promise<Prices>  {
         const assets = this.#filterEmptyPrincipalsAndAssets(realPrincipals);
         if (assets.includes(undefined)) {
             throw new Error("User from another pool");
         }
-        return await this.getPrices(assets.map(x => x!), retries, timeout);
+        return await this.getPrices(assets.map(x => x!), fetchConfig);
     }
 
-
-    async getPricesForWithdraw(realPrincipals: Dictionary<bigint, bigint>, withdrawAsset: PoolAssetConfig, collateralToDebt = false, retries: number = 1, timeout: number = 3000): Promise<Prices>  {
+    async getPricesForWithdraw(realPrincipals: Dictionary<bigint, bigint>, withdrawAsset: PoolAssetConfig, collateralToDebt = false, fetchConfig?: FetchConfig): Promise<Prices>  {
         let assets = this.#filterEmptyPrincipalsAndAssets(realPrincipals);
         if (checkNotInDebtAtAll(realPrincipals) && (realPrincipals.get(withdrawAsset.assetId) ?? 0n) > 0n && !collateralToDebt) {
             return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY);
         }
-
         if (assets.includes(undefined)) {
             throw new Error("User from another pool");
         }
-
         if (!assets.includes(withdrawAsset)) {
             assets.push(withdrawAsset);
         }
-
         if (collateralToDebt && assets.length == 1) {
             throw new Error("Cannot debt only one supplied asset");
         }
-
-        return await this.getPrices(assets.map(x => x!), retries, timeout);
+        return await this.getPrices(assets.map(x => x!), fetchConfig);
     }
 
-    async getPrices(assets: PoolAssetsConfig = this.#poolConfig.poolAssetsConfig, retries: number = 1, timeout: number = 3000): Promise<Prices> {
-        console.debug('[getPrices] Assets length', assets.length);
+    async getPricesForSupplyWithdraw(
+        realPrincipals: Dictionary<bigint, bigint>,
+        supplyAsset: PoolAssetConfig | undefined,
+        withdrawAsset: PoolAssetConfig | undefined,
+        collateralToDebt: boolean,
+        fetchConfig?: FetchConfig,
+    ): Promise<Prices> {
+        // Используем ту же логику, что и getPricesForWithdraw, но supplyAsset не используется
+        let assets = this.#filterEmptyPrincipalsAndAssets(realPrincipals);
+        if (checkNotInDebtAtAll(realPrincipals) && withdrawAsset && (realPrincipals.get(withdrawAsset.assetId) ?? 0n) > 0n && !collateralToDebt) {
+            return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY);
+        }
+        if (assets.includes(undefined)) {
+            throw new Error("User from another pool");
+        }
+        if (withdrawAsset && !assets.includes(withdrawAsset)) {
+            assets.push(withdrawAsset);
+        }
+        if (collateralToDebt && assets.length == 1) {
+            throw new Error("Cannot debt only one supplied asset");
+        }
+        return await this.getPrices(assets.map(x => x!), fetchConfig);
+    }
 
+    async getPrices(assets: PoolAssetsConfig = this.#poolAssetsConfig, fetchConfig?: FetchConfig): Promise<Prices> {
         if (assets.length == 0) {
             return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY);
         }
 
-        for (let i = 0; i <= retries; i++) {  // attemts = retries + 1
-            if (!this.#prices || this.#filterPrices() < this.#poolConfig.minimalOracles) {
-                //console.debug('[getPrices] Load prices attemp', i + 1)
-                if (i > 0) {
-                    await delay(timeout);
-                }
-                await this.#collectPrices();
-            } else {
-                break;
-            }
-        }
+        await proxyFetchRetries(this.#collectPricesWithValidation(fetchConfig), fetchConfig);
 
-        if (this.#prices.length < this.#poolConfig.minimalOracles) {
-            throw new Error(`Error per updating prices, valid ${this.#prices.length} of ${this.#poolConfig.minimalOracles}`);  // if still not enough data after retries
+        if (this.#prices.length < this.#minimalOracles) {
+            throw new Error(`Error per updating prices, valid ${this.#prices.length} of ${this.#minimalOracles}`);
         }
         const prices = this.#getPricesByAssetList(assets);
         return new Prices(prices.dict, prices.dataCell);
     }
 
     #getPricesByAssetList(assets: PoolAssetsConfig) {
-        //console.debug('[getPricesByAssetList] start')
-        let pricesFiltered = this.#prices;  // for strict check this.#prices.filter(x => assets.every(asset => x.dict.has(asset.assetId)));
-
-        if (pricesFiltered.length < this.#poolConfig.minimalOracles) {
+        let pricesFiltered = this.#prices;
+        if (pricesFiltered.length < this.#minimalOracles) {
             throw new Error("Not enough price data");
         }
-
-        if (pricesFiltered.length > this.#poolConfig.minimalOracles) {
+        if (pricesFiltered.length > this.#minimalOracles) {
             const sortedByTimestamp = pricesFiltered.slice().sort((a, b) => b.timestamp - a.timestamp);
-            const newerPrices = sortedByTimestamp.slice(0, this.#poolConfig.minimalOracles);
+            const newerPrices = sortedByTimestamp.slice(0, this.#minimalOracles);
             pricesFiltered = newerPrices.sort((a, b) => a.oracleId - b.oracleId);
         }
-
         const medianData = assets.map((asset) => ({
             assetId: asset.assetId,
             medianPrice: getMedianPrice(pricesFiltered, asset.assetId),
         }));
-        
         const nonEmptymedianData = medianData.filter(x => x.medianPrice != null) as { assetId: bigint, medianPrice: bigint }[];
-
         const packedMedianData = packAssetsData(nonEmptymedianData);
-
         const oraclesData = pricesFiltered.map((x) => ({
             oracle: { id: x.oracleId, pubkey: x.pubkey },
             data: { timestamp: x.timestamp, prices: x.dict },
             signature: x.signature,
         }));
         const packedOracleData = packOraclesData(oraclesData, nonEmptymedianData.map(x => x.assetId));
-
         const dict = Dictionary.empty<bigint, bigint>();
         for (const medianDataAsset of nonEmptymedianData) {
             dict.set(medianDataAsset.assetId, medianDataAsset.medianPrice);
         }
-
         return {
             dict: dict,
             dataCell: packPrices(packedMedianData, packedOracleData)
         }
     }
 
-    async #collectPrices(): Promise<boolean> {
+    async #collectPrices(fetchConfig?: FetchConfig): Promise<boolean> {
         try {
-            this.#prices = await Promise.any(this.#priceSources.map(x => collectAndFilterPrices(x, this.#poolConfig)));
+            this.#prices = await Promise.any(
+                this.#priceSources.map((x) => collectAndFilterPrices(x, this.#minimalOracles, fetchConfig)),
+            );
             return true;
         }
         catch { }
         return false;
     }
 
-    #filterPrices(): number {  // filter again for expire check
+    async #collectPricesWithValidation(fetchConfig?: FetchConfig): Promise<void> {
+        if (!this.#prices || this.#filterPrices() < this.#minimalOracles) {
+            const success = await this.#collectPrices(fetchConfig);
+            if (!success || this.#prices.length < this.#minimalOracles) {
+                throw new Error(
+                    `Failed to collect sufficient prices: ${this.#prices?.length || 0} of ${this.#minimalOracles}`,
+                );
+            }
+        }
+    }
+
+    #filterPrices(): number {
         this.#prices = this.#prices.filter(verifyPricesTimestamp());
         return this.#prices.length;
     }
 
     #filterEmptyPrincipalsAndAssets(principals: Dictionary<bigint, bigint>) {
-        return principals.keys().filter(x => principals.get(x)! != 0n).map(x => this.#poolConfig.poolAssetsConfig.find(asset => asset.assetId == x));
+        return principals.keys().filter(x => principals.get(x)! != 0n).map(x => this.#poolAssetsConfig.find(asset => asset.assetId == x));
     }
 }

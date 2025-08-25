@@ -45,15 +45,25 @@ export {
 export { createAssetData, createAssetConfig, parseMasterData, parseUserData, parseUserLiteData } from './api/parser';
 
 // Prices
-export { getPrices } from './api/prices';
+export {
+    composeFeedsCell,
+    packPythUpdatesData
+} from './api/prices';
+
+// Feeds utils
+export * from './api/feeds';
 
 // Contracts' wrappers
 export { JettonWallet } from './contracts/JettonWallet';
 export {
     EvaaParameters,
     WithdrawParameters,
+    PythWithdrawParameters,
     LiquidationBaseData,
     LiquidationParameters,
+    PythBaseData,
+    ProxySpecificPythParams,
+    OnchainSpecificPythParams,
     Evaa
 } from './contracts/MasterContract';
 export { EvaaUser } from './contracts/UserContract';
@@ -82,7 +92,9 @@ export {
     ExtendedAssetsConfig,
     PoolAssetConfig,
     PoolAssetsConfig,
-    MasterConstants
+    MasterConstants,
+    OracleInfo,
+    OracleConfig,
 } from './types/Master';
 
 export {

@@ -1,3 +1,4 @@
+import { HexString } from '@pythnetwork/hermes-client';
 import {
     Address,
     beginCell,
@@ -9,23 +10,17 @@ import {
     SendMode,
     storeStateInit,
 } from '@ton/core';
-import { FEES, OPCODES, } from '../constants/general';
 import { Maybe } from '@ton/core/dist/utils/maybe';
-import { EvaaUser } from './UserContract';
+import { isTonAsset, isTonAssetId, MAINNET_POOL_CONFIG, TON_MAINNET } from '..';
 import { parseMasterData } from '../api/parser';
+import { composeFeedsCell, packPythUpdatesData } from '../api/prices';
+import { FEES, OPCODES } from '../constants/general';
 import { MasterData, PoolAssetConfig, PoolConfig } from '../types/Master';
-import { JettonWallet } from './JettonWallet';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
-import {
-    DefaultPriceSourcesConfig,
-    getPrices,
-    isTonAsset,
-    isTonAssetId,
-    MAINNET_POOL_CONFIG,
-    PricesCollector,
-    PriceSourcesConfig,
-    TON_MAINNET
-} from '..';
+import { JettonWallet } from './JettonWallet';
+import { EvaaUser } from './UserContract';
+
+import { makeOnchainGetterMasterMessage, makePythProxyMessage } from '../api/pyth';
 
 /**
  * Parameters for the Evaa contract
@@ -46,7 +41,7 @@ export type EvaaParameters = {
  * @property asset
  */
 export type SupplyParameters = {
-    asset: PoolAssetConfig
+    asset: PoolAssetConfig;
     queryID: bigint;
     includeUserCode: boolean;
     amount: bigint;
@@ -61,25 +56,62 @@ export type SupplyParameters = {
 };
 
 /**
+ * pyth specific parameters
+ */
+export type PythBaseData = {
+    priceData: Buffer | Cell;
+    targetFeeds: HexString[];
+};
+
+export type ProxySpecificPythParams = {
+    pythAddress: Address;
+    attachedValue: bigint;
+    minPublishTime: number | bigint;
+    maxPublishTime: number | bigint;
+};
+
+export type OnchainSpecificPythParams = {
+    publishGap: number | bigint;
+    maxStaleness: number | bigint;
+};
+
+export type JettonPythParams = PythBaseData & OnchainSpecificPythParams;
+
+export type TonPythParams = PythBaseData & ProxySpecificPythParams;
+
+/**
  * Parameters for the withdraw message
  * @property queryID - unique query ID
- *  * @property assetID - asset ID
- * @property assetID - asset ID
+ * @property asset - asset config
  * @property amount - amount to withdraw
  * @property userAddress - user address
  * @property includeUserCode - true to include user code for update (needed when user contract code version is outdated)
  * @property priceData - price data cell. Can be obtained from the getPrices function
  */
-export type WithdrawParameters = {
+export type WithdrawParametersBase = {
     queryID: bigint;
     amount: bigint;
     userAddress: Address;
     includeUserCode: boolean;
-    asset: PoolAssetConfig
+    asset: PoolAssetConfig;
     priceData: Cell;
     payload: Cell;
     subaccountId?: number;
     forwardAmount?: bigint;
+    amountToTransfer: bigint;
+    customPayloadSaturationFlag: boolean;
+};
+
+/**
+ * Parameters for the withdraw message
+ * @property priceData - price data cell. Can be obtained from the getPrices function
+ */
+export type WithdrawParameters = WithdrawParametersBase & {
+    priceData: Cell;
+};
+
+export type PythWithdrawParameters = WithdrawParametersBase & {
+    pyth: TonPythParams;
 };
 
 /**
@@ -89,7 +121,12 @@ export type WithdrawParameters = {
  * @property collateralAsset - collateral asset ID
  * @property minCollateralAmount - minimal amount to receive from the liquidation
  * @property liquidationAmount - amount to liquidate
- * @property tonLiquidation - true if the loan asset is TON
+ * @property asset - asset config
+ * @property queryID - unique query ID
+ * @property liquidatorAddress - liquidator address, where and collateral will be sent
+ * @property includeUserCode - true to include user code for update (needed when user contract code version is outdated)
+ * @property payload - liquidation operation custom payload
+ * @property payloadForwardAmount - amount of coins to forward with payload
  */
 export type LiquidationBaseData = {
     borrowerAddress: Address;
@@ -97,29 +134,23 @@ export type LiquidationBaseData = {
     collateralAsset: bigint;
     minCollateralAmount: bigint;
     liquidationAmount: bigint;
-    tonLiquidation: boolean;
-    forwardAmount?: bigint;
+    asset: PoolAssetConfig;
+    queryID: bigint;
+    payload: Cell;
+    // TODO: maybe deprecate it, and use responseAddress instead of
+    liquidatorAddress: Address;
+    includeUserCode: boolean;
     subaccountId?: number;
     customPayloadRecipient?: Address;
     customPayloadSaturationFlag?: boolean;
 };
 
-/**
- * Base parameters for liquidation
- * @property queryID - unique query ID
- * @property liquidatorAddress - liquidator address, where and collateral will be sent
- * @property includeUserCode - true to include user code for update (needed when user contract code version is outdated)
- * @property priceData - price data cell. Can be obtained from the getPrices function
- */
+export type PythLiquidationParameters = LiquidationBaseData & {
+    pyth: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams);
+};
+
 export type LiquidationParameters = LiquidationBaseData & {
-    asset: PoolAssetConfig;
-    queryID: bigint;
-    liquidatorAddress: Address;
-    responseAddress: Address;
-    includeUserCode: boolean;
     priceData: Cell;
-    payload: Cell;
-    payloadForwardAmount: bigint;
 };
 
 export type SupplyWithdrawParameters = {
@@ -138,7 +169,8 @@ export type SupplyWithdrawParameters = {
     priceData?: Cell;
     forwardAmount?: bigint;
     responseAddress?: Address;
-}
+    pyth?: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams);
+};
 
 // Internal
 type JettonParams = {
@@ -151,7 +183,7 @@ type JettonParams = {
     liquidatorAddress?: Address;
     forwardAmount?: bigint;
     destinationAddress?: Address;
-}
+};
 
 /**
  * Evaa master contract wrapper
@@ -181,8 +213,12 @@ export class Evaa implements Contract {
     }
 
     protected createJettonTransferMessage(parameters: JettonParams, defaultFees: bigint, message: Cell): Cell {
-        if (parameters.amount == undefined && parameters.liquidationAmount == undefined && parameters.supplyAmount == undefined) {
-            throw new Error('Either amount or liquidationAmount or supplyAmount must be provided')
+        if (
+            parameters.amount == undefined &&
+            parameters.liquidationAmount == undefined &&
+            parameters.supplyAmount == undefined
+        ) {
+            throw new Error('Either amount or liquidationAmount or supplyAmount must be provided');
         }
         return beginCell()
             .storeUint(OPCODES.JETTON_TRANSFER, 32)
@@ -207,7 +243,7 @@ export class Evaa implements Contract {
         const isTon = isTonAsset(parameters.asset);
 
         const operationPayload = beginCell()
-            .storeUint(OPCODES.SUPPLY, 32)
+            .storeUint(OPCODES.SUPPLY_MASTER, 32)
             .storeBuilder(isTon ? beginCell().storeUint(parameters.queryID, 64) : beginCell())
             .storeInt(parameters.includeUserCode ? -1 : 0, 2)
             .storeBuilder(isTon ? beginCell().storeUint(parameters.amount, 64) : beginCell())
@@ -217,6 +253,7 @@ export class Evaa implements Contract {
             .storeInt(parameters.returnRepayRemainingsFlag ? -1 : 0, 2)
             .storeAddress(parameters.customPayloadRecipient)
             .storeUint(parameters.customPayloadSaturationFlag ? -1 : 0, 2)
+            .storeInt(parameters.customPayloadSaturationFlag ? -1 : 0, 2)
             .endCell();
 
         if (!isTon) {
@@ -251,7 +288,7 @@ export class Evaa implements Contract {
             .storeUint(parameters.tonForRepayRemainings ?? 0n, 64)
             .storeRef(parameters.payload);
 
-        if ((subaccountId != 0) || parameters.returnRepayRemainingsFlag || parameters.customPayloadSaturationFlag) {
+        if (subaccountId != 0 || parameters.returnRepayRemainingsFlag || parameters.customPayloadSaturationFlag) {
             generalData.storeInt(subaccountId, 16);
             generalData.storeInt(parameters.returnRepayRemainingsFlag ? -1 : 0, 2);
             generalData.storeInt(parameters.customPayloadSaturationFlag ? -1 : 0, 2);
@@ -264,13 +301,17 @@ export class Evaa implements Contract {
             .endCell();
 
         if (!isTonAsset(parameters.supplyAsset)) {
-            return this.createJettonTransferMessage(parameters, FEES.SUPPLY_WITHDRAW_JETTON_FWD,
-                beginCell().storeUint(OPCODES.SUPPLY_WITHDRAW, 32)
-                    .storeSlice(operationPayload.beginParse()).endCell()
+            return this.createJettonTransferMessage(
+                parameters,
+                FEES.SUPPLY_WITHDRAW_JETTON_FWD,
+                beginCell()
+                    .storeUint(OPCODES.SUPPLY_WITHDRAW_MASTER, 32)
+                    .storeSlice(operationPayload.beginParse())
+                    .endCell(),
             );
         } else {
             return beginCell()
-                .storeUint(OPCODES.SUPPLY_WITHDRAW, 32)
+                .storeUint(OPCODES.SUPPLY_WITHDRAW_MASTER, 32)
                 .storeUint(parameters.queryID, 64)
                 .storeSlice(operationPayload.beginParse())
                 .endCell();
@@ -286,10 +327,9 @@ export class Evaa implements Contract {
 
         const isTon = isTonAsset(parameters.asset);
 
-        const innerCell = beginCell()
-            .storeRef(parameters.payload);
+        const innerCell = beginCell().storeRef(parameters.payload);
 
-        if ((subaccountId != 0) || parameters.customPayloadRecipient || parameters.customPayloadSaturationFlag) {
+        if (subaccountId != 0 || parameters.customPayloadRecipient || parameters.customPayloadSaturationFlag) {
             innerCell.storeInt(subaccountId, 16);
             innerCell.storeAddress(parameters.customPayloadRecipient);
             innerCell.storeUint(parameters.customPayloadSaturationFlag ? -1 : 0, 2);
@@ -308,17 +348,147 @@ export class Evaa implements Contract {
             .storeRef(parameters.priceData);
 
         if (!isTonAsset(parameters.asset)) {
-            return this.createJettonTransferMessage(parameters, FEES.LIQUIDATION_JETTON_FWD,
-                beginCell()
-                    .storeUint(OPCODES.LIQUIDATE, 32)
-                    .storeBuilder(operationPayload)
-                    .endCell()
+            return this.createJettonTransferMessage(
+                parameters,
+                FEES.LIQUIDATION_JETTON_FWD,
+                beginCell().storeUint(OPCODES.LIQUIDATE_MASTER, 32).storeBuilder(operationPayload).endCell(),
             );
         } else {
             return beginCell()
-                .storeUint(OPCODES.LIQUIDATE, 32)
+                .storeUint(OPCODES.LIQUIDATE_MASTER, 32)
                 .storeUint(parameters.queryID, 64)
                 .storeBuilder(operationPayload)
+                .endCell();
+        }
+    }
+
+    createPythLiquidationMessage(parameters: PythLiquidationParameters): Cell {
+        const subaccountId = parameters.subaccountId ?? 0;
+
+        const isTon = isTonAsset(parameters.asset);
+
+        const innerCell = beginCell().storeRef(parameters.payload);
+
+        if (subaccountId != 0 || parameters.customPayloadRecipient || parameters.customPayloadSaturationFlag) {
+            innerCell.storeInt(subaccountId, 16);
+            innerCell.storeAddress(parameters.customPayloadRecipient);
+            innerCell.storeInt(parameters.customPayloadSaturationFlag ? -1 : 0, 2);
+        }
+
+        const operationPayload = beginCell()
+            .storeAddress(parameters.borrowerAddress)
+            // .storeAddress(parameters.liquidatorAddress)
+            .storeUint(parameters.collateralAsset, 256)
+            .storeUint(parameters.minCollateralAmount, 64)
+            .storeInt(parameters.includeUserCode ? -1 : 0, 2)
+            .storeUint(isTon ? parameters.liquidationAmount : 0, 64)
+            // do not need liquidationAmount in case of jetton liquidation because
+            // the exact amount of transferred jettons for liquidation is known
+            .storeRef(innerCell)
+            .endCell();
+
+        if (!isTon) {
+            // JETTON
+
+            const { priceData, targetFeeds, publishGap, maxStaleness } = parameters.pyth as JettonPythParams;
+
+            // operationPayload contains liquidation operation info to be parsed in operation processor method
+
+            // this message master contract receives on
+            const masterMessage = makeOnchainGetterMasterMessage({
+                queryId: parameters.queryID,
+                opCode: OPCODES.LIQUIDATE_MASTER,
+                updateDataCell: packPythUpdatesData(priceData),
+                targetFeedsCell: composeFeedsCell(targetFeeds),
+                publishGap,
+                maxStaleness,
+                operationPayload,
+            });
+
+            // jetton transfer message
+            return this.createJettonTransferMessage(parameters, FEES.LIQUIDATION_JETTON_FWD, masterMessage);
+        } else {
+            // TON
+
+            const { priceData, targetFeeds, minPublishTime, maxPublishTime } = parameters.pyth as TonPythParams;
+
+            const wrappedOperationPayload = beginCell()
+                .storeUint(OPCODES.LIQUIDATE_MASTER, 32)
+                .storeUint(parameters.queryID, 64)
+                .storeRef(operationPayload) // real operation payload, which will be parsed in ton liquidate method
+                .endCell();
+
+            // pyth message will be sent to pyth for prices validation and then payload will be sent to evaa master
+            return makePythProxyMessage(
+                this.address, // master contract address
+                packPythUpdatesData(priceData),
+                composeFeedsCell(targetFeeds),
+                minPublishTime,
+                maxPublishTime,
+                wrappedOperationPayload,
+            );
+        }
+    }
+
+    protected createPythSupplyWithdrawMessage(parameters: SupplyWithdrawParameters, operationPayload: Cell): Cell {
+        if (!isTonAsset(parameters.supplyAsset)) {
+            // JETTON
+
+            const { priceData, targetFeeds, publishGap, maxStaleness } = parameters.pyth as JettonPythParams;
+
+            // operationPayload contains liquidation operation info to be parsed in operation processor method
+
+            // this message master contract receives on
+            const masterMessage = makeOnchainGetterMasterMessage({
+                queryId: parameters.queryID,
+                opCode: OPCODES.SUPPLY_WITHDRAW_MASTER_JETTON,
+                updateDataCell: packPythUpdatesData(priceData),
+                targetFeedsCell: composeFeedsCell(targetFeeds),
+                publishGap,
+                maxStaleness,
+                operationPayload,
+            });
+
+            // jetton transfer message
+            return this.createJettonTransferMessage(parameters, FEES.SUPPLY_WITHDRAW_JETTON_FWD, masterMessage);
+        } else {
+            // TON
+
+            const { priceData, targetFeeds, minPublishTime, maxPublishTime } = parameters.pyth as TonPythParams;
+
+            const wrappedOperationPayload = beginCell()
+                .storeUint(OPCODES.SUPPLY_WITHDRAW_MASTER, 32)
+                .storeUint(parameters.queryID, 64)
+                .storeRef(operationPayload) // real operation payload, which will be parsed in ton liquidate method
+                .endCell();
+
+            // pyth message will be sent to pyth for prices validation and then payload will be sent to evaa master
+            return makePythProxyMessage(
+                this.address, // master contract address
+                packPythUpdatesData(priceData),
+                composeFeedsCell(targetFeeds),
+                minPublishTime,
+                maxPublishTime,
+                wrappedOperationPayload,
+            );
+        }
+    }
+
+    protected createSupplyWithdrawMessageNoPrices(parameters: SupplyWithdrawParameters, operationPayload: Cell): Cell {
+        if (!isTonAsset(parameters.supplyAsset)) {
+            return this.createJettonTransferMessage(
+                parameters,
+                FEES.SUPPLY_WITHDRAW_JETTON_FWD,
+                beginCell()
+                    .storeUint(OPCODES.SUPPLY_WITHDRAW_MASTER_WITHOUT_PRICES, 32)
+                    .storeSlice(operationPayload.beginParse())
+                    .endCell(),
+            );
+        } else {
+            return beginCell()
+                .storeUint(OPCODES.SUPPLY_WITHDRAW_MASTER_WITHOUT_PRICES, 32)
+                .storeUint(parameters.queryID, 64)
+                .storeSlice(operationPayload.beginParse())
                 .endCell();
         }
     }
@@ -359,10 +529,17 @@ export class Evaa implements Contract {
      * @returns user contract
      */
     openUserContract(userAddress: Address, subaccountId: number = 0): EvaaUser {
-        return EvaaUser.createFromAddress(this.calculateUserSCAddr(userAddress, this._poolConfig.lendingCode, subaccountId), this._poolConfig);
+        return EvaaUser.createFromAddress(
+            this.calculateUserSCAddr(userAddress, this._poolConfig.lendingCode, subaccountId),
+            this._poolConfig,
+        );
     }
 
-    getOpenedUserContract(provider: ContractProvider, userAddress: Address, subaccountId: number = 0): OpenedContract<EvaaUser> {
+    getOpenedUserContract(
+        provider: ContractProvider,
+        userAddress: Address,
+        subaccountId: number = 0,
+    ): OpenedContract<EvaaUser> {
         return provider.open(this.openUserContract(userAddress, subaccountId));
     }
 
@@ -373,12 +550,7 @@ export class Evaa implements Contract {
         return this._data;
     }
 
-    async sendSupply(
-        provider: ContractProvider,
-        via: Sender,
-        value: bigint,
-        parameters: SupplyParameters,
-    ) {
+    async sendSupply(provider: ContractProvider, via: Sender, value: bigint, parameters: SupplyParameters) {
         const message = this.createSupplyMessage(parameters);
 
         if (!isTonAsset(parameters.asset)) {
@@ -397,26 +569,6 @@ export class Evaa implements Contract {
                 body: message,
             });
         }
-    }
-
-    // compatibility layer - emulate withdraw with supplyWithdraw
-    async sendWithdraw(provider: ContractProvider, via: Sender, value: bigint, parameters: WithdrawParameters) {
-        return this.sendSupplyWithdraw(provider, via, value, {
-            supplyAsset: TON_MAINNET,
-            supplyAmount: 0n,
-            queryID: parameters.queryID,
-            withdrawAsset: parameters.asset,
-            withdrawAmount: parameters.amount,
-            withdrawRecipient: parameters.userAddress,
-            includeUserCode: parameters.includeUserCode,
-            forwardAmount: parameters.forwardAmount,
-            payload: parameters.payload,
-            subaccountId: parameters.subaccountId ?? 0,
-            customPayloadSaturationFlag: false,
-            returnRepayRemainingsFlag: false,
-            tonForRepayRemainings: 0n,
-            priceData: parameters.priceData,
-        });
     }
 
     async sendSupplyWithdraw(
@@ -445,19 +597,100 @@ export class Evaa implements Contract {
         }
     }
 
+    /**
+     * @deprecated use sendSupplyWithdraw instead
+     * @description compatibility layer - emulate withdraw with supplyWithdraw
+     */
+    async sendWithdraw(provider: ContractProvider, via: Sender, value: bigint, parameters: WithdrawParameters) {
+        return this.sendSupplyWithdraw(provider, via, value, {
+            supplyAsset: TON_MAINNET,
+            supplyAmount: 0n,
+            queryID: parameters.queryID,
+            withdrawAsset: parameters.asset,
+            withdrawAmount: parameters.amount,
+            withdrawRecipient: parameters.userAddress,
+            includeUserCode: parameters.includeUserCode,
+            forwardAmount: parameters.forwardAmount,
+            payload: parameters.payload,
+            subaccountId: parameters.subaccountId ?? 0,
+            customPayloadSaturationFlag: false,
+            returnRepayRemainingsFlag: false,
+            tonForRepayRemainings: 0n,
+            priceData: parameters.priceData,
+        });
+    }
+
+    /**
+     * Create withdraw message
+     * @returns withdraw message as a cell
+     */
+    createPythWithdrawMessage(parameters: PythWithdrawParameters): Cell {
+        const extraDataTail =
+            (parameters.subaccountId ?? 0) == 0
+                ? beginCell().endCell()
+                : beginCell()
+                      .storeInt(parameters.subaccountId ?? 0, 16)
+                      .storeUint(0, 2) // custom_payload_saturation_flag = false (default)
+                      .endCell();
+
+        const { priceData, targetFeeds, minPublishTime, maxPublishTime } = parameters.pyth as TonPythParams;
+
+        const wrappedOperationPayload = beginCell()
+            .storeUint(OPCODES.SUPPLY_WITHDRAW_MASTER, 32)
+            .storeUint(parameters.queryID, 64)
+            .storeRef(
+                beginCell()
+                    .storeUint(parameters.asset.assetId, 256)
+                    .storeUint(parameters.amount, 64)
+                    .storeAddress(parameters.userAddress)
+                    .storeInt(parameters.includeUserCode ? -1 : 0, 2)
+                    .storeUint(parameters.amountToTransfer, 64)
+                    .storeRef(parameters.payload)
+                    .storeSlice(extraDataTail.beginParse())
+                    .endCell(),
+            )
+            .endCell();
+
+        // pyth message will be sent to pyth for prices validation and then payload will be sent to evaa master
+        return makePythProxyMessage(
+            this.address, // master contract address
+            packPythUpdatesData(priceData),
+            composeFeedsCell(targetFeeds),
+            minPublishTime,
+            maxPublishTime,
+            wrappedOperationPayload,
+        );
+    }
+
+    async sendWithdrawPyth(provider: ContractProvider, via: Sender, value: bigint, parameters: PythWithdrawParameters) {
+        const _parameters = { ...parameters }; // make a copy
+        _parameters.pyth = { ...parameters.pyth, ...{ attachedValue: value } };
+        const message = this.createPythWithdrawMessage(_parameters);
+        // console.log('message: ', message);
+
+        await via.send({
+            value: value,
+            to: _parameters.pyth.pythAddress,
+            sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
+            body: message,
+        });
+    }
+
     async sendLiquidation(
         provider: ContractProvider,
         via: Sender,
         value: bigint,
-        parameters: LiquidationParameters,
+        parameters: PythLiquidationParameters,
     ) {
-        const message = this.createLiquidationMessage(parameters);
+        const _parameters = { ...parameters }; // make a copy
+        _parameters.pyth = { ...parameters.pyth, ...{ attachedValue: value } };
+        const message = this.createPythLiquidationMessage(_parameters);
 
         if (!isTonAssetId(parameters.loanAsset)) {
             if (!via.address) {
                 throw Error('Via address is required for jetton liquidation');
             }
-            
+
             const jettonWallet = provider.open(
                 JettonWallet.createFromAddress(getUserJettonWallet(via.address, parameters.asset)),
             );
@@ -499,7 +732,11 @@ export class Evaa implements Contract {
     async getSync(provider: ContractProvider) {
         const state = (await provider.getState()).state;
         if (state.type === 'active') {
-            this._data = parseMasterData(state.data!.toString('base64'), this._poolConfig.poolAssetsConfig, this._poolConfig.masterConstants);
+            this._data = parseMasterData(
+                state.data!.toString('base64'),
+                this._poolConfig.poolAssetsConfig,
+                this._poolConfig.masterConstants,
+            );
             if (this._data.upgradeConfig.masterCodeVersion !== this._poolConfig.masterVersion) {
                 throw Error(
                     `Outdated SDK pool version. It supports only master code version ${this._poolConfig.masterVersion}, but the current master code version is ${this._data.upgradeConfig.masterCodeVersion}`,
@@ -509,20 +746,5 @@ export class Evaa implements Contract {
         } else {
             throw Error('Master contract is not active');
         }
-    }
-
-    /**
-     * @deprecated Use PriceCollector (createPriceCollector) istead of getPrices
-     */
-    async getPrices(provider: ContractProvider, endpoints?: string[]) {
-        if ((endpoints?.length ?? 0) > 0) {
-            return await getPrices(endpoints, this._poolConfig);
-        } else {
-            return await getPrices(undefined, this._poolConfig);
-        }
-    }
-
-    createPriceCollector(priceSourcesConfig: PriceSourcesConfig = DefaultPriceSourcesConfig) : PricesCollector {
-        return new PricesCollector(this._poolConfig, priceSourcesConfig);
     }
 }
