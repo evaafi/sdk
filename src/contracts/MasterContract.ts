@@ -11,7 +11,7 @@ import {
     storeStateInit,
 } from '@ton/core';
 import { Maybe } from '@ton/core/dist/utils/maybe';
-import { isTonAsset, isTonAssetId, MAINNET_POOL_CONFIG, TON_MAINNET } from '..';
+import { isTonAsset, isTonAssetId, isValidSubaccountId, MAINNET_POOL_CONFIG, TON_MAINNET } from '..';
 import { parseMasterData } from '../api/parser';
 import { composeFeedsCell, packPythUpdatesData } from '../api/prices';
 import { FEES, OPCODES } from '../constants/general';
@@ -501,7 +501,13 @@ export class Evaa implements Contract {
      * @returns user contract address
      */
     calculateUserSCAddr(userAddress: Address, lendingCode: Cell, subaccountId: number = 0): Address {
-        const subaccount = subaccountId != 0 ? beginCell().storeInt(subaccountId, 16) : beginCell();
+        const subaccount = beginCell();
+        if (subaccountId != 0) {
+            if (!isValidSubaccountId(subaccountId)) {
+                throw new Error('Invalid subaccount id');
+            }
+            subaccount.storeInt(subaccountId, 16);
+        }
 
         const lendingData = beginCell()
             .storeAddress(this.address)

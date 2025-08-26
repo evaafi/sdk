@@ -1,5 +1,5 @@
 import { Address, beginCell, storeStateInit } from '@ton/core';
-import { Evaa, MAINNET_POOL_CONFIG, TESTNET_PYTH_POOL_CONFIG_TOB_AUDITED } from '../../src';
+import { Evaa, MAINNET_POOL_CONFIG, TESTNET_PYTH_POOL_CONFIG_TOB_AUDITED, isValidSubaccountId } from '../../src';
 
 // These tests validate that subaccount IDs produce deterministic and distinct user contract addresses
 // and that helper methods return consistent results.
@@ -76,8 +76,8 @@ describe('Subaccount calculation tests', () => {
         );
     });
 
-    test('addresses are unique and deterministic across several subaccount IDs', () => {
-        const ids = [0, 1, 2, 42, 32767]; // 32767 is max 16-bit signed value
+    test('addresses are unique and deterministic across valid subaccount IDs (incl. boundaries)', () => {
+        const ids = [0, 1, 2, 42, 32766, 32767, -1, -32767]; // include boundary-valid values
         const results = ids.map((id) =>
             evaa.calculateUserSCAddr(userAddr, MAINNET_POOL_CONFIG.lendingCode, id).toString({
                 urlSafe: true,
@@ -97,6 +97,10 @@ describe('Subaccount calculation tests', () => {
             }),
         );
         expect(results2).toEqual(results);
+
+        // invalid boundaries should throw
+        expect(() => evaa.calculateUserSCAddr(userAddr, MAINNET_POOL_CONFIG.lendingCode, 32768)).toThrow();
+        expect(() => evaa.calculateUserSCAddr(userAddr, MAINNET_POOL_CONFIG.lendingCode, -32768)).toThrow();
     });
 
     test('should verify hardcoded user smart contract address matches calculated address', () => {
@@ -108,5 +112,16 @@ describe('Subaccount calculation tests', () => {
         expect(addr.toString({ urlSafe: true, bounceable: true })).toEqual(
             userscAddr.toString({ urlSafe: true, bounceable: true }),
         );
+    });
+
+    test('isValidSubaccountId boundary cases', () => {
+        // 0x7FFF (32767) is the maximum allowed 16-bit signed value
+        expect(isValidSubaccountId(0x7fff)).toBe(true);
+        // 0x7FFF + 1 (32768) exceeds the range and should be invalid
+        expect(isValidSubaccountId(0x7fff + 1)).toBe(false);
+        // -0x8000 (-32768) is explicitly excluded by implementation
+        expect(isValidSubaccountId(-0x8000)).toBe(false);
+        // -0x8000 - 1 (-32769) is out of 16-bit signed range and should be invalid
+        expect(isValidSubaccountId(-0x8000 - 1)).toBe(false);
     });
 });

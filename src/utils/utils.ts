@@ -45,3 +45,7 @@ export async function proxyFetchRetries<T>(fetch: Promise<T>, config: FetchConfi
 
     throw new Error(`Failed to fetch after ${config.retries + 1} attempts. Last error: ${JSON.stringify(lastError)}`);
 }
+
+export function isValidSubaccountId(subaccountId: number) {
+    return (subaccountId << 16) >> 16 === subaccountId && subaccountId !== -0x8000;
+}
