@@ -1,27 +1,30 @@
 import { Address } from '@ton/core';
 import { TESTNET_ALLOWED_REF_TOKENS, TESTNET_FEEDS_MAP } from '../../api/feeds';
-import { DefaultPythPriceSourcesConfig, PythCollector } from '../../prices';
+import { DefaultPythPriceSourcesConfig, PricesCollector, PythCollector } from '../../prices';
 import { PoolConfig } from '../../types/Master';
 import { EvaaRewardsConfig } from '../../types/MasterRewards';
 import { EUSDT_TESTNET, JUSDC_TESTNET, TON_TESTNET } from '../assets';
 import {
-    EVAA_MASTER_TESTNET_TOB_AUDITED,
+    EVAA_MASTER_TESTNET_CLASSIC_TOB_AUDITED,
+    EVAA_MASTER_TESTNET_PYTH_TOB_AUDITED,
     EVAA_REWARDS_MASTER_CODE_TESTNET,
     EVAA_REWARDS_MASTER_TESTNET,
     EVAA_REWARDS_USER_CODE_TESTNET,
     LENDING_CODE,
     MASTER_CONSTANTS,
+    ORACLES_TESTNET,
     PYTH_ORACLE_TESTNET,
-    TESTNET_VERSION_TOB_AUDITED,
+    TESTNET_CLASSIC_TOB_AUDITED,
+    TESTNET_PYTH_VERSION_TOB_AUDITED,
 } from '../general';
 
 export const TESTNET_POOL_ASSETS_CONFIG = [TON_TESTNET];
 
 export const TESTNET_POOL_ASSETS_CONFIG_TOB_AUDITED = [TON_TESTNET, JUSDC_TESTNET];
 
-export const TESTNET_POOL_CONFIG_TOB_AUDITED: PoolConfig = {
-    masterAddress: EVAA_MASTER_TESTNET_TOB_AUDITED,
-    masterVersion: TESTNET_VERSION_TOB_AUDITED,
+export const TESTNET_PYTH_POOL_CONFIG_TOB_AUDITED: PoolConfig = {
+    masterAddress: EVAA_MASTER_TESTNET_PYTH_TOB_AUDITED,
+    masterVersion: TESTNET_PYTH_VERSION_TOB_AUDITED,
     masterConstants: MASTER_CONSTANTS,
     oracles: new PythCollector({
         poolAssetsConfig: TESTNET_POOL_ASSETS_CONFIG_TOB_AUDITED,
@@ -34,6 +37,19 @@ export const TESTNET_POOL_CONFIG_TOB_AUDITED: PoolConfig = {
     }),
     poolAssetsConfig: TESTNET_POOL_ASSETS_CONFIG_TOB_AUDITED,
     lendingCode: LENDING_CODE,
+};
+
+export const TESTNET_CLASSIC_POOL_CONFIG_TOB_AUDITED: PoolConfig = {
+    masterAddress: EVAA_MASTER_TESTNET_CLASSIC_TOB_AUDITED,
+    masterVersion: TESTNET_CLASSIC_TOB_AUDITED,
+    masterConstants: MASTER_CONSTANTS,
+    oracles: new PricesCollector({
+        poolAssetsConfig: TESTNET_POOL_ASSETS_CONFIG,
+        minimalOracles: 3,
+        evaaOracles: ORACLES_TESTNET,
+    }),
+    lendingCode: LENDING_CODE,
+    poolAssetsConfig: TESTNET_POOL_ASSETS_CONFIG,
 };
 
 export const TESTNET_MASTER_REWARD_CONFIG: EvaaRewardsConfig = {

@@ -48,6 +48,9 @@ export const TGBTC_TESTNET: PoolAssetConfig = {
     )[0],
 };
 
+/**
+ * @description faucet t.me/evaabuidl
+ */
 export const EUSDT_TESTNET: PoolAssetConfig = {
     name: 'EUSDT',
     assetId: ASSET_ID.EUSDT,
@@ -60,9 +63,12 @@ export const EUSDT_TESTNET: PoolAssetConfig = {
     )[0],
 };
 
+/**
+ * @description faucet t.me/evaabuidl
+ */
 export const EUSDC_TESTNET: PoolAssetConfig = {
-    assetId: 81203563022592193867903899252711112850180680126331353892172221352147647262515n,
     name: 'EUSDC',
+    assetId: ASSET_ID.EUSDC,
     jettonMasterAddress: Address.parse('kQDaY5yUatYnHei73HBqRX_Ox9LK2XnR7XuCY9MFC2INbfYI'),
     jettonWalletCode: JETTON_WALLET_STANDART_CODE_TESTNET,
 };

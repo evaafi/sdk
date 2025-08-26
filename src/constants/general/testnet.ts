@@ -2,8 +2,13 @@ import { Address, Cell } from '@ton/core';
 import { ExtendedEvaaOracle } from '../../types/Master';
 import { EVAA_REWARDS_MASTER_CODE_MAINNET, EVAA_REWARDS_USER_CODE_MAINNET, ORACLES_MAINNET } from './mainnet';
 
-export const EVAA_MASTER_TESTNET_TOB_AUDITED = Address.parse('kQCsd7Q0f3rL9qei1C1c61Ncitc6wwUH7-ww52KXPdk0VYCM');
-export const TESTNET_VERSION_TOB_AUDITED = 0;
+export const EVAA_MASTER_TESTNET_PYTH_TOB_AUDITED = Address.parse('kQCsd7Q0f3rL9qei1C1c61Ncitc6wwUH7-ww52KXPdk0VYCM');
+export const TESTNET_PYTH_VERSION_TOB_AUDITED = 0;
+
+export const EVAA_MASTER_TESTNET_CLASSIC_TOB_AUDITED = Address.parse(
+    'kQBTmXNOP6TUEQ-v85mlefDnVUor6tX_ZYFvQnaoxkM7LFVl',
+);
+export const TESTNET_CLASSIC_TOB_AUDITED = 0;
 
 export const PYTH_ORACLE_TESTNET: Address = Address.parse('EQB4ZnrI5qsP_IUJgVJNwEGKLzZWsQOFhiaqDbD7pTt_f9oU');
 
