@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.8.0 &mdash; 2025-08-DD
+### Added
+ - to be added
+
+## 0.6.4-a &mdash; 2025-08-05
+### Added
+ - *preparing* ```STON``` for listing in Alts ```PoolConfig```
+ - *preparing* ```TONUSDT_STONFI``` new asset in LP ```PoolConfig```
+
+
 ## 0.6.4 &mdash; 2025-06-27
 ### Added
  - New Stable Pool ```MAINNET_STABLE_POOL_CONFIG``` with ```USDT USDe and tsUSDe``` and something else in the future...

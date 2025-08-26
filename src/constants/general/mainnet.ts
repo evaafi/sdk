@@ -3,15 +3,15 @@ import { ExtendedEvaaOracle } from '../../types/Master';
 
 /* MAIN POOL */
 export const EVAA_MASTER_MAINNET = Address.parse('EQC8rUZqR_pWV1BylWUlPNBzyiTYVoBEmQkMIQDZXICfnuRr');
-export const MAINNET_VERSION = 6;
+export const MAINNET_VERSION = 7;
 
 /* LP POOL */
 export const EVAA_LP_MAINNET = Address.parse('EQBIlZX2URWkXCSg3QF2MJZU-wC5XkBoLww-hdWk2G37Jc6N');
-export const EVAA_LP_MAINNET_VERSION = 3;
+export const EVAA_LP_MAINNET_VERSION = 4;
 
 /* ALTS POOL */
 export const EVAA_ALTS_MAINNET = Address.parse('EQANURVS3fhBO9bivig34iyJQi97FhMbpivo1aUEAS2GYSu-');
-export const EVAA_ALTS_MAINNET_VERSION = 0;
+export const EVAA_ALTS_MAINNET_VERSION = 1;
 
 /* STABLE POOL */
 export const EVAA_STABLE_MAINNET = Address.parse('EQCdIdXf1kA_2Hd9mbGzSFDEPA-Px-et8qTWHEXgRGo0K3zd');

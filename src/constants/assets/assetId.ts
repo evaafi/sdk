@@ -22,6 +22,7 @@ export const ASSET_ID = {
     NOT: sha256Hash('NOT'),
     DOGS: sha256Hash('DOGS'),
     CATI: sha256Hash('CATI'),
+    STON: sha256Hash('STON'),
 
     // Testnet assets, faucet t.me/evaabuidl
     EUSDT: sha256Hash('EUSDT'),
