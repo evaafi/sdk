@@ -110,6 +110,7 @@ export type WithdrawParametersBase = {
     forwardAmount?: bigint;
     amountToTransfer: bigint;
     customPayloadSaturationFlag: boolean;
+    returnRepayRemainingsFlag: boolean;
 };
 
 /**
@@ -274,7 +275,6 @@ export abstract class AbstractEvaaMaster implements Contract {
             .storeInt(subaccountId, 16)
             .storeInt(parameters.returnRepayRemainingsFlag ? -1 : 0, 2)
             .storeAddress(parameters.customPayloadRecipient)
-            .storeUint(parameters.customPayloadSaturationFlag ? -1 : 0, 2)
             .storeInt(parameters.customPayloadSaturationFlag ? -1 : 0, 2)
             .endCell();
 

@@ -51,7 +51,7 @@ export class EvaaMasterClassic extends AbstractEvaaMaster {
             payload: parameters.payload,
             subaccountId: parameters.subaccountId ?? 0,
             customPayloadSaturationFlag: parameters.customPayloadSaturationFlag ?? false,
-            returnRepayRemainingsFlag: parameters.customPayloadSaturationFlag ?? false,
+            returnRepayRemainingsFlag: parameters.returnRepayRemainingsFlag ?? false,
             tonForRepayRemainings: 0n,
             priceData: parameters.priceData,
         });
