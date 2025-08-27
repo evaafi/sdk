@@ -68,19 +68,23 @@ export const OPCODES = {
 };
 
 export const FEES = {
-    SUPPLY: toNano('0.3'),
-    SUPPLY_JETTON: toNano('0.35'),
+    // Supply
     SUPPLY_JETTON_FWD: toNano('0.3'),
+
+    // Supply & Withdraw | SW are ballpark estimates, may need refinement
+    SUPPLY_WITHDRAW: toNano('0.8'),
+    SUPPLY_WITHDRAW_JETTON: toNano('1'),
+    SUPPLY_WITHDRAW_JETTON_FWD: toNano('0.8'),
+
+    // Liquidation
     LIQUIDATION: toNano('0.8'),
     LIQUIDATION_JETTON: toNano('1'),
     LIQUIDATION_JETTON_FWD: toNano('0.8'),
+
+    // Reward
     REWARD_MASTER_TON_TOP_UP: toNano('0.03'),
     REWARD_MASTER_DEPLOY: toNano('0.05'),
     REWARD_MASTER_WITHDRAW: toNano('0.1'),
     REWARD_USER_DEPLOY: toNano('0.05'),
     REWARD_USER_CLAIM: toNano('0.1'),
-    // SW are ballpark estimates, may need refinement
-    SUPPLY_WITHDRAW: toNano('0.8'),
-    SUPPLY_WITHDRAW_JETTON: toNano('1'),
-    SUPPLY_WITHDRAW_JETTON_FWD: toNano('0.8'),
 };

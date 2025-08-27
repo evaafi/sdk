@@ -2,6 +2,7 @@ import { beginCell, Cell, Dictionary, DictionaryValue, Slice } from '@ton/core';
 import {
     AssetConfig,
     AssetData,
+    ClassicOracleInfo,
     ExtendedAssetData,
     ExtendedAssetsConfig,
     ExtendedAssetsData,
@@ -9,6 +10,7 @@ import {
     MasterData,
     PoolAssetsConfig,
     PoolConfig,
+    PythOracleInfo,
 } from '../types/Master';
 import { BalanceType, UserBalance, UserData, UserLiteData, UserRewards } from '../types/User';
 import { loadMaybeMyRef, loadMyRef } from './helpers';
@@ -152,15 +154,57 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
     };
 }
 
+export interface OracleParser {
+    parseOracleConfig(masterConfigSlice: Slice): any;
+    getIfActive(masterConfigSlice: Slice): number;
+}
+
+export class ClassicOracleParser implements OracleParser {
+    parseOracleConfig(masterConfigSlice: Slice): ClassicOracleInfo {
+        const oraclesSlice = masterConfigSlice.loadRef().beginParse();
+        return {
+            numOracles: oraclesSlice.loadUint(16),
+            threshold: oraclesSlice.loadUint(16),
+            oracles: loadMaybeMyRef(oraclesSlice),
+        };
+    }
+
+    getIfActive(masterConfigSlice: Slice): number {
+        return masterConfigSlice.loadInt(8);
+    }
+}
+
+export class PythOracleParser implements OracleParser {
+    parseOracleConfig(masterConfigSlice: Slice): PythOracleInfo {
+        const oraclesSlice = masterConfigSlice.loadRef().beginParse();
+        const feedDataCell = oraclesSlice.loadRef();
+        const feedDataSlice = feedDataCell.beginParse();
+
+        return {
+            pythAddress: oraclesSlice.loadAddress(),
+            feedsMap: feedDataSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.Buffer(64)),
+            allowedRefTokens: feedDataSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.BigUint(256)),
+            pricesTtl: oraclesSlice.loadUint(32),
+            pythComputeBaseGas: oraclesSlice.loadUintBig(64),
+            pythComputePerUpdateGas: oraclesSlice.loadUintBig(64),
+            pythSingleUpdateFee: oraclesSlice.loadUintBig(64),
+        };
+    }
+
+    getIfActive(masterConfigSlice: Slice): number {
+        return masterConfigSlice.loadInt(8);
+    }
+}
+
 export function parseMasterData(
     masterDataBOC: string,
     poolAssetsConfig: PoolAssetsConfig,
     masterConstants: MasterConstants,
+    oracleParser: OracleParser,
 ): MasterData {
     const masterSlice = Cell.fromBase64(masterDataBOC).beginParse();
     const meta = masterSlice.loadRef().beginParse().loadStringTail();
     const upgradeConfigParser = masterSlice.loadRef().beginParse();
-
     const upgradeConfig = {
         masterCodeVersion: Number(upgradeConfigParser.loadCoins()),
         userCodeVersion: Number(upgradeConfigParser.loadCoins()),
@@ -172,11 +216,10 @@ export function parseMasterData(
         newUserCode: loadMaybeMyRef(upgradeConfigParser),
     };
     // upgradeConfigParser.endParse(); todo fix with new testnet contract
-
     const masterConfigSlice = masterSlice.loadRef().beginParse();
+
     const assetsConfigDict = masterConfigSlice.loadDict(Dictionary.Keys.BigUint(256), createAssetConfig());
     const assetsDataDict = masterSlice.loadDict(Dictionary.Keys.BigUint(256), createAssetData());
-
     const assetsExtendedData = Dictionary.empty<bigint, ExtendedAssetData>();
     const assetsReserves = Dictionary.empty<bigint, bigint>();
     const apy = {
@@ -184,28 +227,18 @@ export function parseMasterData(
         borrow: Dictionary.empty<bigint, number>(),
     };
 
-    for (const [tokenSymbol, asset] of Object.entries(poolAssetsConfig)) {
+    for (const [, asset] of Object.entries(poolAssetsConfig)) {
         const assetData = calculateAssetData(assetsConfigDict, assetsDataDict, asset.assetId, masterConstants);
         assetsExtendedData.set(asset.assetId, assetData);
     }
 
-    const ifActive = masterConfigSlice.loadInt(8);
-    const oraclesSlice = masterConfigSlice.loadRef().beginParse();
-    const feedDataCell = oraclesSlice.loadRef();
-    const feedDataSlice = feedDataCell.beginParse();
+    const ifActive = oracleParser.getIfActive(masterConfigSlice);
+    const oraclesInfo = oracleParser.parseOracleConfig(masterConfigSlice);
 
     const masterConfig = {
-        ifActive: ifActive,
-        oraclesInfo: {
-            pythAddress: oraclesSlice.loadAddress(),
-            feedsMap: feedDataSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.Buffer(64)),
-            allowedRefTokens: feedDataSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.BigUint(256)),
-            pricesTtl: oraclesSlice.loadUint(32),
-            pythComputeBaseGas: oraclesSlice.loadUintBig(64),
-            pythComputePerUpdateGas: oraclesSlice.loadUintBig(64),
-            pythSingleUpdateFee: oraclesSlice.loadUintBig(64),
-        },
+        ifActive,
         admin: masterConfigSlice.loadAddress(),
+        oraclesInfo,
         tokenKeys: loadMaybeMyRef(masterConfigSlice),
         supervisor: masterConfigSlice.loadMaybeAddress(),
     };
@@ -216,11 +249,9 @@ export function parseMasterData(
         const totalSupply = calculatePresentValue(assetData.sRate, assetData.totalSupply, masterConstants);
         const totalBorrow = calculatePresentValue(assetData.bRate, assetData.totalBorrow, masterConstants);
         assetsReserves.set(asset.assetId, assetData.balance - totalSupply + totalBorrow);
-
         apy.supply.set(asset.assetId, (1 + (Number(assetData.supplyInterest) / 1e12) * 24 * 3600) ** 365 - 1);
         apy.borrow.set(asset.assetId, (1 + (Number(assetData.borrowInterest) / 1e12) * 24 * 3600) ** 365 - 1);
     }
-
     return {
         meta: meta,
         upgradeConfig: upgradeConfig,

@@ -84,12 +84,20 @@ export type OracleConfig = {
     allowedRefTokens: Dictionary<bigint, bigint>;
 };
 
-export type OracleInfo = OracleConfig & {
+export type PythOracleInfo = OracleConfig & {
     pricesTtl: number;
     pythComputeBaseGas: bigint;
     pythComputePerUpdateGas: bigint;
     pythSingleUpdateFee: bigint;
 };
+
+export type ClassicOracleInfo = {
+    numOracles: number;
+    threshold: number;
+    oracles: Cell | null;
+};
+
+export type OracleInfo = PythOracleInfo | ClassicOracleInfo;
 
 export type AssetData = {
     sRate: bigint;
