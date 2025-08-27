@@ -4,14 +4,6 @@ import { UNDEFINED_ASSET } from '../constants/assets';
 
 function getUserJettonData(ownerAddress: Address, assetName: string, jettonWalletCode: Cell, jettonMasterAddress: Address) {
   switch (assetName) {
-      case 'uTON':
-          return beginCell()
-              .storeCoins(0)
-              .storeUint(0, 64)
-              .storeAddress(ownerAddress)
-              .storeAddress(jettonMasterAddress)
-              .storeRef(jettonWalletCode)
-              .endCell();
       case 'DOGS':
       case 'NOT':
       case 'USDT':

@@ -1,40 +1,34 @@
 import { Address } from '@ton/core';
-import { PoolConfig } from '../types/Master';
-import { EvaaRewardsConfig } from '../types/MasterRewards';
+import { PricesCollector } from '../../prices';
+import { PoolConfig } from '../../types/Master';
+import { EvaaRewardsConfig } from '../../types/MasterRewards';
 import {
     CATI_MAINNET,
     DOGS_MAINNET,
-    EUSDT_TESTNET,
     JUSDC_MAINNET,
     JUSDT_MAINNET,
     NOT_MAINNET,
     PT_tsUSDe_01Sep2025_MAINNET,
     STTON_MAINNET,
-    TGBTC_TESTNET,
     TON_MAINNET,
     TON_STORM_MAINNET,
-    TON_TESTNET,
     TONUSDT_DEDUST_MAINNET,
+    TONUSDT_STONFI_MAINNET,
+    STON_MAINNET,
     TSTON_MAINNET,
     TSUSDE_MAINNET,
     USDE_MAINNET,
     USDT_MAINNET,
     USDT_STORM_MAINNET,
-} from './assets';
+} from '../assets';
 import {
     EVAA_ALTS_MAINNET,
     EVAA_ALTS_MAINNET_VERSION,
-    EVAA_ETHENA_MAINNET,
-    EVAA_ETHENA_VERSION,
     EVAA_LP_MAINNET,
     EVAA_LP_MAINNET_VERSION,
     EVAA_MASTER_MAINNET,
-    EVAA_MASTER_TESTNET,
     EVAA_REWARDS_MASTER_CODE_MAINNET,
-    EVAA_REWARDS_MASTER_CODE_TESTNET,
-    EVAA_REWARDS_MASTER_TESTNET,
     EVAA_REWARDS_USER_CODE_MAINNET,
-    EVAA_REWARDS_USER_CODE_TESTNET,
     EVAA_STABLE_MAINNET,
     EVAA_TON_REWARDS_MASTER_MAINNET,
     EVAA_USDT_REWARDS_MASTER_MAINNET,
@@ -44,14 +38,11 @@ import {
     ORACLES_ALTS,
     ORACLES_LP,
     ORACLES_MAINNET,
-    ORACLES_TESTNET,
     STABLE_VERSION,
-    TESTNET_VERSION,
-} from './general';
-import { PricesCollector } from '../prices';
+} from '../general';
 
 // Pool assets configs
-const MAINNET_POOL_ASSETS_CONFIG = [
+export const MAINNET_POOL_ASSETS_CONFIG = [
     TON_MAINNET,
     JUSDT_MAINNET,
     JUSDC_MAINNET,
@@ -60,34 +51,26 @@ const MAINNET_POOL_ASSETS_CONFIG = [
     USDT_MAINNET,
     USDE_MAINNET,
     TSUSDE_MAINNET,
-    // UTON_MAINNET // announce xdddd fake announce 
 ];
 
-const MAINNET_STABLE_POOL_ASSETS_CONFIG = [
-    USDT_MAINNET,
-    USDE_MAINNET,
-    TSUSDE_MAINNET,
-    PT_tsUSDe_01Sep2025_MAINNET
-];
-
-const MAINNET_TEST_ETHENA_POOL_ASSETS_CONFIG = [
-    TON_MAINNET,
-    USDE_MAINNET,
-];
-
-const TESTNET_POOL_ASSETS_CONFIG = [
-    TON_MAINNET,
-    EUSDT_TESTNET,
-    // JUSDC_TESTNET, // если нужен, добавить
-    // STTON_TESTNET // если нужен, добавить
-];
+const MAINNET_STABLE_POOL_ASSETS_CONFIG = [USDT_MAINNET, USDE_MAINNET, TSUSDE_MAINNET, PT_tsUSDe_01Sep2025_MAINNET];
 
 const MAINNET_LP_POOL_ASSETS_CONFIG = [
-    TON_MAINNET, USDT_MAINNET, TONUSDT_DEDUST_MAINNET, TON_STORM_MAINNET, USDT_STORM_MAINNET
+    TON_MAINNET,
+    USDT_MAINNET,
+    TONUSDT_DEDUST_MAINNET,
+    TON_STORM_MAINNET,
+    USDT_STORM_MAINNET,
+    // TONUSDT_STONFI_MAINNET
 ];
 
 const MAINNET_ALTS_POOL_ASSETS_CONFIG = [
-    TON_MAINNET, USDT_MAINNET, CATI_MAINNET, NOT_MAINNET, DOGS_MAINNET
+    TON_MAINNET,
+    USDT_MAINNET,
+    CATI_MAINNET,
+    NOT_MAINNET,
+    DOGS_MAINNET,
+    // STON_MAINNET
 ];
 
 export const MAINNET_POOL_CONFIG: PoolConfig = {
@@ -97,7 +80,7 @@ export const MAINNET_POOL_CONFIG: PoolConfig = {
     oracles: new PricesCollector({
         poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,
         minimalOracles: 3,
-        evaaOracles: ORACLES_MAINNET
+        evaaOracles: ORACLES_MAINNET,
     }),
     poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,
     lendingCode: LENDING_CODE,
@@ -110,36 +93,10 @@ export const MAINNET_STABLE_POOL_CONFIG: PoolConfig = {
     oracles: new PricesCollector({
         poolAssetsConfig: MAINNET_STABLE_POOL_ASSETS_CONFIG,
         minimalOracles: 3,
-        evaaOracles: ORACLES_MAINNET
+        evaaOracles: ORACLES_MAINNET,
     }),
     poolAssetsConfig: MAINNET_STABLE_POOL_ASSETS_CONFIG,
     lendingCode: LENDING_CODE,
-};
-
-export const MAINNET_TEST_ETHENA_POOL_CONFIG: PoolConfig = {
-    masterAddress: EVAA_ETHENA_MAINNET,
-    masterVersion: EVAA_ETHENA_VERSION,
-    masterConstants: MASTER_CONSTANTS,
-    oracles: new PricesCollector({
-        poolAssetsConfig: MAINNET_TEST_ETHENA_POOL_ASSETS_CONFIG,
-        minimalOracles: 3,
-        evaaOracles: ORACLES_MAINNET
-    }),
-    poolAssetsConfig: MAINNET_TEST_ETHENA_POOL_ASSETS_CONFIG,
-    lendingCode: LENDING_CODE,
-};
-
-export const TESTNET_POOL_CONFIG: PoolConfig = {
-    masterAddress: EVAA_MASTER_TESTNET,
-    masterVersion: TESTNET_VERSION,
-    masterConstants: MASTER_CONSTANTS,
-    oracles: new PricesCollector({
-        poolAssetsConfig: TESTNET_POOL_ASSETS_CONFIG,
-        minimalOracles: 3,
-        evaaOracles: ORACLES_TESTNET
-    }),
-    poolAssetsConfig: TESTNET_POOL_ASSETS_CONFIG,
-    lendingCode: LENDING_CODE
 };
 
 export const MAINNET_LP_POOL_CONFIG: PoolConfig = {
@@ -149,7 +106,7 @@ export const MAINNET_LP_POOL_CONFIG: PoolConfig = {
     oracles: new PricesCollector({
         poolAssetsConfig: MAINNET_LP_POOL_ASSETS_CONFIG,
         minimalOracles: 3,
-        evaaOracles: ORACLES_LP
+        evaaOracles: ORACLES_LP,
     }),
     poolAssetsConfig: MAINNET_LP_POOL_ASSETS_CONFIG,
     lendingCode: LENDING_CODE,
@@ -162,30 +119,10 @@ export const MAINNET_ALTS_POOL_CONFIG: PoolConfig = {
     oracles: new PricesCollector({
         poolAssetsConfig: MAINNET_ALTS_POOL_ASSETS_CONFIG,
         minimalOracles: 3,
-        evaaOracles: ORACLES_ALTS
+        evaaOracles: ORACLES_ALTS,
     }),
     poolAssetsConfig: MAINNET_ALTS_POOL_ASSETS_CONFIG,
     lendingCode: LENDING_CODE,
-};
-
-export const TESTNET_MASTER_REWARD_CONFIG: EvaaRewardsConfig = {
-    adminAddress: EVAA_REWARDS_MASTER_TESTNET,
-    evaaMasterAddress: new Address(0, Buffer.alloc(32, 0)),
-    rewardMasterCode: EVAA_REWARDS_MASTER_CODE_TESTNET,
-    rewardUserCode: EVAA_REWARDS_USER_CODE_TESTNET,
-    asset: TON_TESTNET,
-    availableReward: 0,
-    publicKey: Buffer.from('c38be45e033419b49cd22c97fbd23610fbc851a931208f8b4a1817dd11cb63ac', 'hex'), // adminAddress publicKey
-};
-
-export const TESTNET_MASTER_EUSDT_REWARD_CONFIG: EvaaRewardsConfig = {
-    adminAddress: EVAA_REWARDS_MASTER_TESTNET,
-    evaaMasterAddress: new Address(0, Buffer.alloc(32, 0)),
-    rewardMasterCode: EVAA_REWARDS_MASTER_CODE_TESTNET,
-    rewardUserCode: EVAA_REWARDS_USER_CODE_TESTNET,
-    asset: EUSDT_TESTNET,
-    availableReward: 0,
-    publicKey: Buffer.from('c38be45e033419b49cd22c97fbd23610fbc851a931208f8b4a1817dd11cb63ac', 'hex'), // adminAddress publicKey
 };
 
 export const MAINNET_MASTER_TON_REWARD_CONFIG: EvaaRewardsConfig = {

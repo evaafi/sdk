@@ -1,10 +1,9 @@
-import {AssetConfig, calculatePresentValue, createAssetConfig, Evaa, EVAA_MASTER_MAINNET, EvaaUser, FEES, getPrices, getTonConnectSender, JUSDC_MAINNET, JUSDT_MAINNET, JUSDT_TESTNET, PoolAssetConfig, PoolConfig, PriceData, STTON_TESTNET, TESTNET_POOL_CONFIG, TON_MAINNET, TON_STORM_MAINNET, TON_TESTNET, TONUSDT_DEDUST_MAINNET, USDE_MAINNET, USDT_MAINNET, USDT_STORM_MAINNET, UserData, UserDataActive, MAINNET_TEST_ETHENA_POOL_CONFIG, TSUSDE_MAINNET} from '../src';
-import {Address, beginCell, Cell, CellType, Dictionary, OpenedContract, Sender, toNano, TonClient, WalletContractV4, WalletContractV5Beta, WalletContractV5R1} from '@ton/ton';
+import { Evaa, PoolAssetConfig, PriceData, TESTNET_POOL_CONFIG, TSUSDE_MAINNET, UserDataActive } from '../src';
+import { Address, Cell, OpenedContract, Sender, toNano, TonClient, WalletContractV5R1 } from '@ton/ton';
 import dotenv from 'dotenv';
 import { mnemonicToWalletKey } from '@ton/crypto';
-import { MAINNET_LP_POOL_CONFIG, MAINNET_POOL_CONFIG, MAINNET_STABLE_POOL_CONFIG } from '../src/constants/pools';
-import { getHttpEndpoint } from "@orbs-network/ton-access";
-import { exit } from 'process';
+import { MAINNET_STABLE_POOL_CONFIG } from '../src/constants/pools';
+import { USDT_MAINNET } from "@evaafi/sdk";
 
 let client: TonClient;
 let clientMainNet: TonClient;
@@ -209,6 +208,7 @@ test('Just supply mainnet', async () => {
     }
 })
 
+// Uses compatibility layer, it would be better to test SupplyWithdraw directly
 test('Just withdraw', async () => {
     console.log(priceData.dict);
     await evaaMainNet.getSync();

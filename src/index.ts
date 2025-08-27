@@ -46,11 +46,8 @@ export { createAssetData, createAssetConfig, parseMasterData, parseUserData, par
 
 // Prices
 export {
-    DEFAULT_HERMES_ENDPOINT,
-    getPythFeedsUpdates,
     composeFeedsCell,
-    packPythUpdatesData,
-    createRequiredFeedsList,
+    packPythUpdatesData
 } from './api/prices';
 
 // Feeds utils
@@ -66,9 +63,11 @@ export {
     LiquidationParameters,
     PythBaseData,
     ProxySpecificPythParams,
-    OnchainSpecificPythParams,
-    Evaa
-} from './contracts/MasterContract';
+    OnchainSpecificPythParams
+} from './contracts/AbstractMaster';
+export { AbstractEvaaMaster } from './contracts/AbstractMaster';
+export { EvaaMasterClassic } from './contracts/ClassicMaster';
+export { EvaaMasterPyth } from './contracts/PythMaster';
 export { EvaaUser } from './contracts/UserContract';
 
 // Rewards contracts wrappers
