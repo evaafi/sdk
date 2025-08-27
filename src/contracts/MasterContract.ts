@@ -243,11 +243,11 @@ export class Evaa implements Contract {
         const withdrawData = beginCell()
             .storeUint(parameters.withdrawAmount, 64)
             .storeUint(parameters.withdrawAsset.assetId, 256)
-            .storeAddress(parameters.withdrawRecipient)
-            .storeMaybeRef(parameters.priceData);
+            .storeAddress(parameters.withdrawRecipient);
 
         const generalData = beginCell()
             .storeInt(parameters.includeUserCode ? -1 : 0, 2)
+            .storeMaybeRef(parameters.priceData) // to match the main pool message structure
             .storeUint(parameters.tonForRepayRemainings ?? 0n, 64)
             .storeRef(parameters.payload);
 
@@ -263,14 +263,19 @@ export class Evaa implements Contract {
             .storeRef(generalData)
             .endCell();
 
+        let op = OPCODES.SUPPLY_WITHDRAW;
+        if (!parameters.priceData) {
+            op = OPCODES.SUPPLY_WITHDRAW_WITHOUT_PRICES;
+        }
+
         if (!isTonAsset(parameters.supplyAsset)) {
             return this.createJettonTransferMessage(parameters, FEES.SUPPLY_WITHDRAW_JETTON_FWD,
-                beginCell().storeUint(OPCODES.SUPPLY_WITHDRAW, 32)
+                beginCell().storeUint(op, 32)
                     .storeSlice(operationPayload.beginParse()).endCell()
             );
         } else {
             return beginCell()
-                .storeUint(OPCODES.SUPPLY_WITHDRAW, 32)
+                .storeUint(op, 32)
                 .storeUint(parameters.queryID, 64)
                 .storeSlice(operationPayload.beginParse())
                 .endCell();
