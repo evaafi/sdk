@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.7.0 &mdash; 2025-08-28
+### Added
+ - ```TONUSDT_STONFI``` new token in Alts ```PoolConfig```
+
 ## 0.6.4-a &mdash; 2025-08-05
 ### Added
  - *preparing* ```STON``` for listing in Alts ```PoolConfig```
