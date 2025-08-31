@@ -2,7 +2,6 @@ import { beginCell, Cell, Dictionary, DictionaryValue, Slice } from '@ton/core';
 import {
     AssetConfig,
     AssetData,
-    ClassicOracleInfo,
     ExtendedAssetData,
     ExtendedAssetsConfig,
     ExtendedAssetsData,
@@ -10,7 +9,6 @@ import {
     MasterData,
     PoolAssetsConfig,
     PoolConfig,
-    PythOracleInfo,
 } from '../types/Master';
 import { BalanceType, UserBalance, UserData, UserLiteData, UserRewards } from '../types/User';
 import { loadMaybeMyRef, loadMyRef } from './helpers';
@@ -25,6 +23,7 @@ import {
     getAvailableToBorrow,
     presentValue,
 } from './math';
+import { OracleParser } from './parsers/AbstractParser';
 
 export function createUserRewards(): DictionaryValue<UserRewards> {
     return {
@@ -152,48 +151,6 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
             };
         },
     };
-}
-
-export interface OracleParser {
-    parseOracleConfig(masterConfigSlice: Slice): any;
-    getIfActive(masterConfigSlice: Slice): number;
-}
-
-export class ClassicOracleParser implements OracleParser {
-    parseOracleConfig(masterConfigSlice: Slice): ClassicOracleInfo {
-        const oraclesSlice = masterConfigSlice.loadRef().beginParse();
-        return {
-            numOracles: oraclesSlice.loadUint(16),
-            threshold: oraclesSlice.loadUint(16),
-            oracles: loadMaybeMyRef(oraclesSlice),
-        };
-    }
-
-    getIfActive(masterConfigSlice: Slice): number {
-        return masterConfigSlice.loadInt(8);
-    }
-}
-
-export class PythOracleParser implements OracleParser {
-    parseOracleConfig(masterConfigSlice: Slice): PythOracleInfo {
-        const oraclesSlice = masterConfigSlice.loadRef().beginParse();
-        const feedDataCell = oraclesSlice.loadRef();
-        const feedDataSlice = feedDataCell.beginParse();
-
-        return {
-            pythAddress: oraclesSlice.loadAddress(),
-            feedsMap: feedDataSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.Buffer(64)),
-            allowedRefTokens: feedDataSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.BigUint(256)),
-            pricesTtl: oraclesSlice.loadUint(32),
-            pythComputeBaseGas: oraclesSlice.loadUintBig(64),
-            pythComputePerUpdateGas: oraclesSlice.loadUintBig(64),
-            pythSingleUpdateFee: oraclesSlice.loadUintBig(64),
-        };
-    }
-
-    getIfActive(masterConfigSlice: Slice): number {
-        return masterConfigSlice.loadInt(8);
-    }
 }
 
 export function parseMasterData(
