@@ -1,4 +1,6 @@
 import { Address, Cell, Dictionary } from '@ton/core';
+import { ClassicOracleInfo } from '../api/parsers/ClassicParser';
+import { PythOracleInfo } from '../api/parsers/PythParser';
 import { Oracle } from '../prices/Oracle.interface';
 export { FeedMapItem, parseFeedsMapDict } from '../api/feeds';
 
@@ -75,26 +77,6 @@ export type MasterConfig = {
     admin: Address;
     tokenKeys: Cell | null;
     supervisor: Address | null;
-};
-
-export type OracleConfig = {
-    pythAddress: Address;
-    // FYI: The Pyth max feeds count is 7, but it can add more in the future
-    feedsMap: Dictionary<bigint, Buffer>;
-    allowedRefTokens: Dictionary<bigint, bigint>;
-};
-
-export type PythOracleInfo = OracleConfig & {
-    pricesTtl: number;
-    pythComputeBaseGas: bigint;
-    pythComputePerUpdateGas: bigint;
-    pythSingleUpdateFee: bigint;
-};
-
-export type ClassicOracleInfo = {
-    numOracles: number;
-    threshold: number;
-    oracles: Cell | null;
 };
 
 export type OracleInfo = PythOracleInfo | ClassicOracleInfo;
