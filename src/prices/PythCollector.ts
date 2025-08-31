@@ -1,8 +1,9 @@
 import { HermesClient, HexString, PriceUpdate } from '@pythnetwork/hermes-client';
 import { Cell, Dictionary } from '@ton/core';
 import { checkNotInDebtAtAll } from '../api/math';
+import { OracleConfig } from '../api/parsers/PythParser';
 import { packPythUpdatesData } from '../api/prices';
-import { FeedMapItem, OracleConfig, parseFeedsMapDict, PoolAssetConfig, PoolAssetsConfig } from '../types/Master';
+import { FeedMapItem, parseFeedsMapDict, PoolAssetConfig, PoolAssetsConfig } from '../types/Master';
 import { FetchConfig, proxyFetchRetries } from '../utils/utils';
 import { Oracle } from './Oracle.interface';
 import { Prices } from './Prices';
@@ -119,7 +120,7 @@ export class PythCollector implements Oracle {
         if (pythPriceUpdates) {
             // Only set prices for requested assets, not all possible mapped assets
             const requestedAssetIds = new Set(assets.map((a) => a.assetId));
-            
+
             for (const u of pythPriceUpdates) {
                 const pythId = BigInt('0x' + u.id);
                 const price = BigInt(u.price.price);

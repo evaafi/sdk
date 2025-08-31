@@ -12,11 +12,14 @@ import {
 } from '@ton/core';
 import { Maybe } from '@ton/core/dist/utils/maybe';
 import { isTonAsset, isTonAssetId, isValidSubaccountId } from '..';
-import { OracleParser, parseMasterData } from '../api/parser';
+import { parseMasterData } from '../api/parser';
+import { OracleParser } from '../api/parsers/AbstractParser';
 import { FEES, OPCODES } from '../constants/general';
 import { MasterData, PoolAssetConfig, PoolConfig } from '../types/Master';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
+import { ClassicSupplyWithdrawParameters } from './ClassicMaster';
 import { JettonWallet } from './JettonWallet';
+import { PythSupplyWithdrawParameters } from './PythMaster';
 import { EvaaUser } from './UserContract';
 
 // Internal
@@ -98,7 +101,7 @@ export type TonPythParams = PythBaseData & ProxySpecificPythParams;
  * @property includeUserCode - true to include user code for update (needed when user contract code version is outdated)
  * @property priceData - price data cell. Can be obtained from the getPrices function
  */
-export type WithdrawParametersBase = {
+export type WithdrawParameters = {
     queryID: bigint;
     amount: bigint;
     userAddress: Address;
@@ -117,11 +120,11 @@ export type WithdrawParametersBase = {
  * Parameters for the withdraw message
  * @property priceData - price data cell. Can be obtained from the getPrices function
  */
-export type WithdrawParameters = WithdrawParametersBase & {
+export type ClassicWithdrawParameters = WithdrawParameters & {
     priceData: Cell;
 };
 
-export type PythWithdrawParameters = WithdrawParametersBase & {
+export type PythWithdrawParameters = WithdrawParameters & {
     pyth: TonPythParams;
 };
 
@@ -177,10 +180,8 @@ export type SupplyWithdrawParameters = {
     subaccountId?: number;
     returnRepayRemainingsFlag?: boolean;
     customPayloadSaturationFlag?: boolean;
-    priceData?: Cell;
     forwardAmount?: bigint;
     responseAddress?: Address;
-    pyth?: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams);
 };
 
 /**
@@ -231,8 +232,11 @@ export abstract class AbstractEvaaMaster implements Contract {
             .endCell();
     }
 
-    protected buildSupplyWithdrawOperationPayload(parameters: SupplyWithdrawParameters): Cell {
-        const subaccountId = parameters.subaccountId ?? 0;
+    abstract buildGeneralDataPayload(parameters: PythSupplyWithdrawParameters | ClassicSupplyWithdrawParameters): Cell;
+
+    protected buildSupplyWithdrawOperationPayload(
+        parameters: PythSupplyWithdrawParameters | ClassicSupplyWithdrawParameters,
+    ): Cell {
         const isTon = isTonAsset(parameters.supplyAsset);
 
         const supplyData = beginCell();
@@ -243,20 +247,9 @@ export abstract class AbstractEvaaMaster implements Contract {
         const withdrawData = beginCell()
             .storeUint(parameters.withdrawAmount, 64)
             .storeUint(parameters.withdrawAsset.assetId, 256)
-            .storeAddress(parameters.withdrawRecipient)
-            .storeMaybeRef(parameters.priceData);
+            .storeAddress(parameters.withdrawRecipient);
 
-        const generalData = beginCell()
-            .storeInt(parameters.includeUserCode ? -1 : 0, 2)
-            .storeUint(parameters.tonForRepayRemainings ?? 0n, 64)
-            .storeRef(parameters.payload);
-
-        if (subaccountId != 0 || parameters.returnRepayRemainingsFlag || parameters.customPayloadSaturationFlag) {
-            generalData.storeInt(subaccountId, 16);
-            generalData.storeInt(parameters.returnRepayRemainingsFlag ? -1 : 0, 2);
-            generalData.storeInt(parameters.customPayloadSaturationFlag ? -1 : 0, 2);
-        }
-
+        const generalData = this.buildGeneralDataPayload(parameters);
         return beginCell().storeRef(supplyData).storeRef(withdrawData).storeRef(generalData).endCell();
     }
 
@@ -286,7 +279,7 @@ export abstract class AbstractEvaaMaster implements Contract {
     }
 
     // Concrete classes must wrap the operation payload correctly for their oracle
-    protected abstract createSupplyWithdrawMessage(parameters: SupplyWithdrawParameters): Cell;
+    abstract createSupplyWithdrawMessage(parameters: SupplyWithdrawParameters): Cell;
 
     // ---------- Sending operations ----------
     async sendSupply(provider: ContractProvider, via: Sender, value: bigint, parameters: SupplyParameters) {
@@ -311,7 +304,7 @@ export abstract class AbstractEvaaMaster implements Contract {
         provider: ContractProvider,
         via: Sender,
         value: bigint,
-        parameters: SupplyWithdrawParameters,
+        parameters: ClassicSupplyWithdrawParameters,
     ) {
         const message = this.createSupplyWithdrawMessage(parameters);
 

@@ -1,7 +1,7 @@
 import { HexString } from '@pythnetwork/hermes-client';
-import { beginCell, Cell, ContractProvider, Sender, SendMode } from '@ton/core';
+import { beginCell, Cell, ContractProvider, Dictionary, Sender, SendMode } from '@ton/core';
 import { isTonAsset, isTonAssetId, OnchainSpecificPythParams, PythWithdrawParameters } from '..';
-import { PythOracleParser } from '../api/parser';
+import { PythOracleParser } from '../api/parsers/PythParser';
 import { composeFeedsCell, packPythUpdatesData } from '../api/prices';
 import { makeOnchainGetterMasterMessage, makePythProxyMessage } from '../api/pyth';
 import { FEES, OPCODES } from '../constants/general';
@@ -10,18 +10,25 @@ import {
     AbstractEvaaMaster,
     EvaaParameters,
     JettonPythParams,
+    ProxySpecificPythParams,
+    PythBaseData,
     PythLiquidationParameters,
     SupplyWithdrawParameters,
     TonPythParams,
 } from './AbstractMaster';
 import { JettonWallet } from './JettonWallet';
 
+export type PythSupplyWithdrawParameters = SupplyWithdrawParameters & {
+    requestedRefTokens: bigint[];
+    pyth: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams);
+};
+
 export class EvaaMasterPyth extends AbstractEvaaMaster {
     constructor(parameters: EvaaParameters) {
         super(parameters);
     }
 
-    protected createSupplyWithdrawMessage(parameters: SupplyWithdrawParameters): Cell {
+    createSupplyWithdrawMessage(parameters: PythSupplyWithdrawParameters): Cell {
         if (!parameters.pyth) {
             throw new Error('Pyth parameters are required for supply-withdraw in Pyth mode');
         }
@@ -91,6 +98,27 @@ export class EvaaMasterPyth extends AbstractEvaaMaster {
             maxPublishTime,
             wrappedOperationPayload,
         );
+    }
+
+    // TODO: fix to, actually uses mock empty Dictionary
+    buildGeneralDataPayload(parameters: PythSupplyWithdrawParameters): Cell {
+        const refsDict: Dictionary<bigint, Buffer> = Dictionary.empty(
+            Dictionary.Keys.BigUint(256),
+            Dictionary.Values.Buffer(0),
+        );
+
+        for (const refToken of parameters.requestedRefTokens) {
+            refsDict.set(refToken, Buffer.alloc(0));
+        }
+        return beginCell()
+            .storeInt(parameters.includeUserCode ? -1 : 0, 2)
+            .storeDict(refsDict, Dictionary.Keys.BigUint(256), Dictionary.Values.Buffer(0))
+            .storeUint(parameters.tonForRepayRemainings ?? 0n, 64)
+            .storeRef(parameters.payload)
+            .storeInt(parameters.subaccountId ?? 0, 16)
+            .storeInt(parameters.returnRepayRemainingsFlag ? -1 : 0, 2)
+            .storeInt(parameters.customPayloadSaturationFlag ? -1 : 0, 2)
+            .endCell();
     }
 
     async sendWithdraw(

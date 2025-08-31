@@ -1,31 +1,71 @@
 import { beginCell, Cell, ContractProvider, Sender, SendMode } from '@ton/core';
-import { isTonAsset, isTonAssetId, LiquidationParameters, TON_MAINNET, WithdrawParameters } from '..';
-import { ClassicOracleParser } from '../api/parser';
+import { isTonAsset, isTonAssetId, LiquidationParameters, TON_MAINNET } from '..';
+import { ClassicOracleParser } from '../api/parsers/ClassicParser';
 import { FEES, OPCODES } from '../constants/general';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
-import { AbstractEvaaMaster, EvaaParameters, SupplyWithdrawParameters } from './AbstractMaster';
+import {
+    AbstractEvaaMaster,
+    ClassicWithdrawParameters,
+    EvaaParameters,
+    SupplyWithdrawParameters,
+} from './AbstractMaster';
 import { JettonWallet } from './JettonWallet';
+
+export type ClassicSupplyWithdrawParameters = SupplyWithdrawParameters & {
+    priceData?: Cell;
+};
 
 export class EvaaMasterClassic extends AbstractEvaaMaster {
     constructor(parameters: EvaaParameters) {
         super(parameters);
     }
 
-    protected createSupplyWithdrawMessage(parameters: SupplyWithdrawParameters): Cell {
-        const operationPayload = this.buildSupplyWithdrawOperationPayload(parameters);
+    buildGeneralDataPayload(parameters: ClassicSupplyWithdrawParameters): Cell {
+        return beginCell()
+            .storeInt(parameters.includeUserCode ? -1 : 0, 2)
+            .storeMaybeRef(parameters.priceData)
+            .storeUint(parameters.tonForRepayRemainings ?? 0n, 64)
+            .storeRef(parameters.payload)
+            .storeInt(parameters.subaccountId ?? 0, 16)
+            .storeInt(parameters.returnRepayRemainingsFlag ? -1 : 0, 2)
+            .storeInt(parameters.customPayloadSaturationFlag ? -1 : 0, 2)
+            .endCell();
+    }
+
+    createSupplyWithdrawMessage(parameters: ClassicSupplyWithdrawParameters): Cell {
+        const isTon = isTonAsset(parameters.supplyAsset);
+
+        const supplyData = beginCell();
+        if (isTon) {
+            supplyData.storeUint(parameters.supplyAmount, 64);
+        }
+
+        const withdrawData = beginCell()
+            .storeUint(parameters.withdrawAmount, 64)
+            .storeUint(parameters.withdrawAsset.assetId, 256)
+            .storeAddress(parameters.withdrawRecipient);
+
+        const generalData = this.buildGeneralDataPayload(parameters);
+
+        const operationPayload = beginCell()
+            .storeRef(supplyData)
+            .storeRef(withdrawData)
+            .storeRef(generalData)
+            .endCell();
+
+        const refOpCode = parameters.priceData
+            ? OPCODES.SUPPLY_WITHDRAW_MASTER
+            : OPCODES.SUPPLY_WITHDRAW_MASTER_WITHOUT_PRICES;
 
         if (!isTonAsset(parameters.supplyAsset)) {
             return this.createJettonTransferMessage(
                 parameters,
                 FEES.SUPPLY_WITHDRAW_JETTON_FWD,
-                beginCell()
-                    .storeUint(OPCODES.SUPPLY_WITHDRAW_MASTER, 32)
-                    .storeSlice(operationPayload.beginParse())
-                    .endCell(),
+                beginCell().storeUint(refOpCode, 32).storeSlice(operationPayload.beginParse()).endCell(),
             );
         } else {
             return beginCell()
-                .storeUint(OPCODES.SUPPLY_WITHDRAW_MASTER, 32)
+                .storeUint(refOpCode, 32)
                 .storeUint(parameters.queryID, 64)
                 .storeSlice(operationPayload.beginParse())
                 .endCell();
@@ -36,7 +76,7 @@ export class EvaaMasterClassic extends AbstractEvaaMaster {
         provider: ContractProvider,
         via: Sender,
         value: bigint,
-        parameters: WithdrawParameters,
+        parameters: ClassicWithdrawParameters,
     ): Promise<void> {
         // Compatibility layer using supply-withdraw with TON zero supply
         await this.sendSupplyWithdraw(provider, via, value, {
