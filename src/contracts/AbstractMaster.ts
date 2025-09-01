@@ -10,7 +10,6 @@ import {
     SendMode,
     storeStateInit,
 } from '@ton/core';
-import { Maybe } from '@ton/core/dist/utils/maybe';
 import { isTonAsset, isTonAssetId, isValidSubaccountId } from '..';
 import { parseMasterData } from '../api/parser';
 import { OracleParser } from '../api/parsers/AbstractOracleParser';
@@ -199,7 +198,7 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
         return this._poolConfig;
     }
 
-    get data(): Maybe<T> {
+    get data(): T | undefined {
         return this._data;
     }
 
@@ -340,7 +339,7 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
     // ---------- Read helpers ----------
     calculateUserSCAddr(userAddress: Address, lendingCode: Cell, subaccountId: number = 0): Address {
         const subaccount = beginCell();
-        if (subaccountId != 0) {
+        if (subaccountId !== 0) {
             if (!isValidSubaccountId(subaccountId)) throw new Error('Invalid subaccount id');
             subaccount.storeInt(subaccountId, 16);
         }

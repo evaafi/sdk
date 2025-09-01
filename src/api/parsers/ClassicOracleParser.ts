@@ -1,4 +1,4 @@
-import { Cell, Slice } from '@ton/ton';
+import { Cell, Slice } from '@ton/core';
 import { loadMaybeMyRef } from '../helpers';
 import { AbstractOracleParser } from './AbstractOracleParser';
 

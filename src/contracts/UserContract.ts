@@ -85,7 +85,7 @@ export class EvaaUser implements Contract {
             value,
             sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
             body: beginCell()
-                .storeCoins(BigInt(OPCODES.ONCHAIN_GETTER))
+                .storeUint(OPCODES.ONCHAIN_GETTER, 32)
                 .storeUint(queryID, 64)
                 .storeRef(forwardPayload)
                 .endCell(),

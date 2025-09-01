@@ -183,7 +183,7 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
         const subaccountId = parameters.subaccountId ?? 0;
         const isTon = isTonAsset(parameters.asset);
         const innerCell = beginCell().storeRef(parameters.payload);
-        if (subaccountId != 0 || parameters.customPayloadRecipient || parameters.customPayloadSaturationFlag) {
+        if (subaccountId !== 0 || parameters.customPayloadRecipient || parameters.customPayloadSaturationFlag) {
             innerCell.storeInt(subaccountId, 16);
             innerCell.storeAddress(parameters.customPayloadRecipient);
             innerCell.storeInt(parameters.customPayloadSaturationFlag ? -1 : 0, 2);

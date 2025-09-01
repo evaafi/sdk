@@ -1,4 +1,4 @@
-import { Address, Dictionary, Slice } from '@ton/ton';
+import { Address, Dictionary, Slice } from '@ton/core';
 import { AbstractOracleParser } from './AbstractOracleParser';
 
 export type OracleConfig = {
