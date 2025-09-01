@@ -5,16 +5,28 @@ import { FEES, OPCODES } from '../constants/general';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
 import {
     AbstractEvaaMaster,
-    type BaseMasterConfig,
-    type BaseMasterData,
-    type ClassicWithdrawParameters,
-    type EvaaParameters,
-    type SupplyWithdrawParameters,
+    BaseMasterConfig,
+    BaseMasterData,
+    EvaaParameters,
+    SupplyWithdrawParameters,
+    WithdrawParameters,
 } from './AbstractMaster';
 import { JettonWallet } from './JettonWallet';
 
 export type ClassicSupplyWithdrawParameters = SupplyWithdrawParameters & {
     priceData?: Cell;
+};
+
+/**
+ * Parameters for the withdraw message
+ * @property priceData - price data cell. Can be obtained from the getPrices function
+ */
+export type ClassicWithdrawParameters = WithdrawParameters & {
+    priceData: Cell;
+};
+
+export type ClassicLiquidationParameters = LiquidationParameters & {
+    priceData: Cell;
 };
 
 export type ClassicMasterConfig = BaseMasterConfig & {
@@ -107,7 +119,7 @@ export class EvaaMasterClassic extends AbstractEvaaMaster<ClassicMasterData> {
         });
     }
 
-    protected createLiquidationMessage(parameters: LiquidationParameters): Cell {
+    protected createLiquidationMessage(parameters: ClassicLiquidationParameters): Cell {
         const subaccountId = parameters.subaccountId ?? 0;
         const isTon = isTonAsset(parameters.asset);
 
@@ -146,7 +158,7 @@ export class EvaaMasterClassic extends AbstractEvaaMaster<ClassicMasterData> {
         provider: ContractProvider,
         via: Sender,
         value: bigint,
-        parameters: LiquidationParameters,
+        parameters: ClassicLiquidationParameters,
     ): Promise<void> {
         const message = this.createLiquidationMessage(parameters);
 

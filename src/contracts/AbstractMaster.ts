@@ -1,4 +1,3 @@
-import { HexString } from '@pythnetwork/hermes-client';
 import {
     Address,
     beginCell,
@@ -20,9 +19,13 @@ import { PythOracleInfo } from '../api/parsers/PythOracleParser';
 import { FEES, OPCODES } from '../constants/general';
 import { ExtendedAssetsConfig, ExtendedAssetsData, PoolAssetConfig, PoolConfig, UpgradeConfig } from '../types/Master';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
-import { ClassicSupplyWithdrawParameters } from './ClassicMaster';
+import {
+    ClassicLiquidationParameters,
+    ClassicSupplyWithdrawParameters,
+    ClassicWithdrawParameters,
+} from './ClassicMaster';
 import { JettonWallet } from './JettonWallet';
-import { PythSupplyWithdrawParameters } from './PythMaster';
+import { PythLiquidationParameters, PythSupplyWithdrawParameters, PythWithdrawParameters } from './PythMaster';
 import { EvaaUser } from './UserContract';
 
 // Internal
@@ -72,37 +75,12 @@ export type SupplyParameters = {
 };
 
 /**
- * pyth specific parameters
- */
-export type PythBaseData = {
-    priceData: Buffer | Cell;
-    targetFeeds: HexString[];
-};
-
-export type ProxySpecificPythParams = {
-    pythAddress: Address;
-    attachedValue: bigint;
-    minPublishTime: number | bigint;
-    maxPublishTime: number | bigint;
-};
-
-export type OnchainSpecificPythParams = {
-    publishGap: number | bigint;
-    maxStaleness: number | bigint;
-};
-
-export type JettonPythParams = PythBaseData & OnchainSpecificPythParams;
-
-export type TonPythParams = PythBaseData & ProxySpecificPythParams;
-
-/**
  * Parameters for the withdraw message
  * @property queryID - unique query ID
  * @property asset - asset config
  * @property amount - amount to withdraw
  * @property userAddress - user address
  * @property includeUserCode - true to include user code for update (needed when user contract code version is outdated)
- * @property priceData - price data cell. Can be obtained from the getPrices function
  */
 export type WithdrawParameters = {
     queryID: bigint;
@@ -110,25 +88,12 @@ export type WithdrawParameters = {
     userAddress: Address;
     includeUserCode: boolean;
     asset: PoolAssetConfig;
-    priceData: Cell;
     payload: Cell;
     subaccountId?: number;
     forwardAmount?: bigint;
     amountToTransfer: bigint;
     customPayloadSaturationFlag: boolean;
     returnRepayRemainingsFlag: boolean;
-};
-
-/**
- * Parameters for the withdraw message
- * @property priceData - price data cell. Can be obtained from the getPrices function
- */
-export type ClassicWithdrawParameters = WithdrawParameters & {
-    priceData: Cell;
-};
-
-export type PythWithdrawParameters = WithdrawParameters & {
-    pyth: TonPythParams;
 };
 
 /**
@@ -145,7 +110,7 @@ export type PythWithdrawParameters = WithdrawParameters & {
  * @property payload - liquidation operation custom payload
  * @property payloadForwardAmount - amount of coins to forward with payload
  */
-export type LiquidationBaseData = {
+export type LiquidationParameters = {
     borrowerAddress: Address;
     loanAsset: bigint;
     collateralAsset: bigint;
@@ -160,14 +125,6 @@ export type LiquidationBaseData = {
     subaccountId?: number;
     customPayloadRecipient?: Address;
     customPayloadSaturationFlag?: boolean;
-};
-
-export type PythLiquidationParameters = LiquidationBaseData & {
-    pyth: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams);
-};
-
-export type LiquidationParameters = LiquidationBaseData & {
-    priceData: Cell;
 };
 
 export type SupplyWithdrawParameters = {
@@ -315,7 +272,9 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
     }
 
     // Concrete classes must wrap the operation payload correctly for their oracle
-    abstract createSupplyWithdrawMessage(parameters: SupplyWithdrawParameters): Cell;
+    abstract createSupplyWithdrawMessage(
+        parameters: ClassicSupplyWithdrawParameters | PythSupplyWithdrawParameters,
+    ): Cell;
 
     // ---------- Sending operations ----------
     async sendSupply(provider: ContractProvider, via: Sender, value: bigint, parameters: SupplyParameters) {
@@ -340,7 +299,7 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
         provider: ContractProvider,
         via: Sender,
         value: bigint,
-        parameters: ClassicSupplyWithdrawParameters,
+        parameters: ClassicSupplyWithdrawParameters | PythSupplyWithdrawParameters,
     ) {
         const message = this.createSupplyWithdrawMessage(parameters);
 
@@ -364,16 +323,18 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
         provider: ContractProvider,
         via: Sender,
         value: bigint,
-        parameters: WithdrawParameters | PythWithdrawParameters,
+        parameters: ClassicWithdrawParameters | PythWithdrawParameters,
     ): Promise<void>;
 
-    protected abstract createLiquidationMessage(parameters: LiquidationParameters | PythLiquidationParameters): Cell;
+    protected abstract createLiquidationMessage(
+        parameters: ClassicLiquidationParameters | PythLiquidationParameters,
+    ): Cell;
 
     abstract sendLiquidation(
         provider: ContractProvider,
         via: Sender,
         value: bigint,
-        parameters: LiquidationParameters | PythLiquidationParameters,
+        parameters: ClassicLiquidationParameters | PythLiquidationParameters,
     ): Promise<void>;
 
     // ---------- Read helpers ----------

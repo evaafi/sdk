@@ -1,27 +1,56 @@
 import { HexString } from '@pythnetwork/hermes-client';
-import { beginCell, Cell, ContractProvider, Dictionary, Sender, SendMode } from '@ton/core';
-import { isTonAsset, isTonAssetId, OnchainSpecificPythParams, PythWithdrawParameters } from '..';
+import { Address, beginCell, Cell, ContractProvider, Dictionary, Sender, SendMode } from '@ton/core';
 import { PythOracleInfo, PythOracleParser } from '../api/parsers/PythOracleParser';
 import { composeFeedsCell, packPythUpdatesData } from '../api/prices';
 import { makeOnchainGetterMasterMessage, makePythProxyMessage } from '../api/pyth';
 import { FEES, OPCODES } from '../constants/general';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
+import { isTonAsset, isTonAssetId } from '../utils/utils';
 import {
     AbstractEvaaMaster,
-    type BaseMasterConfig,
-    type BaseMasterData,
-    type EvaaParameters,
-    type JettonPythParams,
-    type ProxySpecificPythParams,
-    type PythBaseData,
-    type PythLiquidationParameters,
-    type SupplyWithdrawParameters,
-    type TonPythParams,
+    BaseMasterConfig,
+    BaseMasterData,
+    EvaaParameters,
+    LiquidationParameters,
+    SupplyWithdrawParameters,
+    WithdrawParameters,
 } from './AbstractMaster';
 import { JettonWallet } from './JettonWallet';
 
+/**
+ * pyth specific parameters
+ */
+export type PythBaseData = {
+    priceData: Buffer | Cell;
+    targetFeeds: HexString[];
+};
+
+export type ProxySpecificPythParams = {
+    pythAddress: Address;
+    attachedValue: bigint;
+    minPublishTime: number | bigint;
+    maxPublishTime: number | bigint;
+};
+
+export type OnchainSpecificPythParams = {
+    publishGap: number | bigint;
+    maxStaleness: number | bigint;
+};
+
+export type JettonPythParams = PythBaseData & OnchainSpecificPythParams;
+
+export type TonPythParams = PythBaseData & ProxySpecificPythParams;
+
 export type PythSupplyWithdrawParameters = SupplyWithdrawParameters & {
     requestedRefTokens: bigint[];
+    pyth: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams);
+};
+
+export type PythWithdrawParameters = WithdrawParameters & {
+    pyth: TonPythParams;
+};
+
+export type PythLiquidationParameters = LiquidationParameters & {
     pyth: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams);
 };
 
