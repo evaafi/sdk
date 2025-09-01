@@ -2,7 +2,7 @@ import { Address, Cell } from '@ton/core';
 import { ExtendedEvaaOracle } from '../../types/Master';
 import { EVAA_REWARDS_MASTER_CODE_MAINNET, EVAA_REWARDS_USER_CODE_MAINNET, ORACLES_MAINNET } from './mainnet';
 
-export const EVAA_MASTER_TESTNET_PYTH_TOB_AUDITED = Address.parse('kQCsd7Q0f3rL9qei1C1c61Ncitc6wwUH7-ww52KXPdk0VYCM');
+export const EVAA_MASTER_TESTNET_PYTH_TOB_AUDITED = Address.parse('kQBNhBq8D5F1Red9JX64M32PpFrIPRvLvioAgauCDOpfMipw');
 export const TESTNET_PYTH_VERSION_TOB_AUDITED = 0;
 
 export const EVAA_MASTER_TESTNET_CLASSIC_TOB_AUDITED = Address.parse(

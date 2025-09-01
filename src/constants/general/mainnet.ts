@@ -17,6 +17,14 @@ export const EVAA_ALTS_MAINNET_VERSION = 1;
 export const EVAA_STABLE_MAINNET = Address.parse('EQCdIdXf1kA_2Hd9mbGzSFDEPA-Px-et8qTWHEXgRGo0K3zd');
 export const STABLE_VERSION = 0;
 
+/* EVAA V8 Trail of Bits Audited Pool */
+export const EVAA_TOB_MAINNET = Address.parse('EQDrSGBBunrWNmIdHgdaA7Weu4yUr8Ckw3C9wNWobq7osn3H');
+export const EVAA_TOB_VERSION = 0;
+
+/* EVAA V8 PYTH Trail of Bits Audited Pool */
+export const EVAA_PYTH_TOB_MAINNET = Address.parse('EQCsOdQPDO1Xndzutn9dDcloolWo1wHKICMz2jHL6UP8smcV');
+export const EVAA_PYTH_TOB_VERSION = 0;
+
 export const EVAA_USDT_REWARDS_MASTER_MAINNET = Address.parse('EQD22Fhylp1tX-xoVX81aMTSJNPV8j9klwApTLgjGmofISVD');
 export const EVAA_TON_REWARDS_MASTER_MAINNET = Address.parse('EQDM_gdrntBg4fy5Rg9DgDF0AUu3FYoqxHEOsHNIC4_DTDuC');
 

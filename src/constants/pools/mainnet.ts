@@ -1,8 +1,15 @@
-import { Address } from '@ton/core';
-import { PricesCollector } from '../../prices';
+import { Address, Dictionary } from '@ton/core';
+import {
+    EVAA_JUSDT_PRICE_FEED_ID,
+    packConnectedFeeds,
+    PYTH_TON_PRICE_FEED_ID,
+    PYTH_USDT_PRICE_FEED_ID,
+} from '../../api/feeds';
+import { DefaultPythPriceSourcesConfig, PricesCollector, PythCollector } from '../../prices';
 import { PoolConfig } from '../../types/Master';
 import { EvaaRewardsConfig } from '../../types/MasterRewards';
 import {
+    ASSET_ID,
     CATI_MAINNET,
     DOGS_MAINNET,
     JUSDC_MAINNET,
@@ -13,8 +20,6 @@ import {
     TON_MAINNET,
     TON_STORM_MAINNET,
     TONUSDT_DEDUST_MAINNET,
-    TONUSDT_STONFI_MAINNET,
-    STON_MAINNET,
     TSTON_MAINNET,
     TSUSDE_MAINNET,
     USDE_MAINNET,
@@ -27,9 +32,13 @@ import {
     EVAA_LP_MAINNET,
     EVAA_LP_MAINNET_VERSION,
     EVAA_MASTER_MAINNET,
+    EVAA_PYTH_TOB_MAINNET,
+    EVAA_PYTH_TOB_VERSION,
     EVAA_REWARDS_MASTER_CODE_MAINNET,
     EVAA_REWARDS_USER_CODE_MAINNET,
     EVAA_STABLE_MAINNET,
+    EVAA_TOB_MAINNET,
+    EVAA_TOB_VERSION,
     EVAA_TON_REWARDS_MASTER_MAINNET,
     EVAA_USDT_REWARDS_MASTER_MAINNET,
     LENDING_CODE,
@@ -38,6 +47,7 @@ import {
     ORACLES_ALTS,
     ORACLES_LP,
     ORACLES_MAINNET,
+    PYTH_ORACLE_MAINNET,
     STABLE_VERSION,
 } from '../general';
 
@@ -122,6 +132,45 @@ export const MAINNET_ALTS_POOL_CONFIG: PoolConfig = {
         evaaOracles: ORACLES_ALTS,
     }),
     poolAssetsConfig: MAINNET_ALTS_POOL_ASSETS_CONFIG,
+    lendingCode: LENDING_CODE,
+};
+
+export const MAINNET_PYTH_V8_TOB_POOL_ASSETS_CONFIG = [TON_MAINNET, USDT_MAINNET, JUSDT_MAINNET];
+
+export const MAINNET_PYTH_V8_TOB_POOL_CONFIG: PoolConfig = {
+    masterAddress: EVAA_PYTH_TOB_MAINNET,
+    masterVersion: EVAA_PYTH_TOB_VERSION,
+    masterConstants: MASTER_CONSTANTS,
+    oracles: new PythCollector({
+        pythConfig: DefaultPythPriceSourcesConfig,
+        poolAssetsConfig: MAINNET_PYTH_V8_TOB_POOL_ASSETS_CONFIG,
+        pythOracle: {
+            feedsMap: Dictionary.empty<bigint, Buffer>()
+                .set(BigInt(PYTH_TON_PRICE_FEED_ID), packConnectedFeeds(ASSET_ID.TON, 0n))
+                .set(BigInt(PYTH_USDT_PRICE_FEED_ID), packConnectedFeeds(ASSET_ID.USDT, 0n)),
+            pythAddress: PYTH_ORACLE_MAINNET,
+            allowedRefTokens: Dictionary.empty<bigint, bigint>().set(
+                BigInt(EVAA_JUSDT_PRICE_FEED_ID),
+                BigInt(ASSET_ID.USDT),
+            ),
+        },
+    }),
+    poolAssetsConfig: MAINNET_PYTH_V8_TOB_POOL_ASSETS_CONFIG,
+    lendingCode: LENDING_CODE,
+};
+
+export const MAINNET_V8_TOB_POOL_ASSETS_CONFIG = [TON_MAINNET, USDT_MAINNET];
+
+export const MAINNET_V8_TOB_POOL_CONFIG: PoolConfig = {
+    masterAddress: EVAA_TOB_MAINNET,
+    masterVersion: EVAA_TOB_VERSION,
+    masterConstants: MASTER_CONSTANTS,
+    oracles: new PricesCollector({
+        poolAssetsConfig: MAINNET_V8_TOB_POOL_ASSETS_CONFIG,
+        minimalOracles: 3,
+        evaaOracles: ORACLES_MAINNET,
+    }),
+    poolAssetsConfig: MAINNET_V8_TOB_POOL_ASSETS_CONFIG,
     lendingCode: LENDING_CODE,
 };
 
