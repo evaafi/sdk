@@ -13,7 +13,7 @@ import {
 import { Maybe } from '@ton/core/dist/utils/maybe';
 import { isTonAsset, isTonAssetId, isValidSubaccountId } from '..';
 import { parseMasterData } from '../api/parser';
-import { OracleParser } from '../api/parsers/AbstractParser';
+import { OracleParser } from '../api/parsers/AbstractOracleParser';
 import { FEES, OPCODES } from '../constants/general';
 import { MasterData, PoolAssetConfig, PoolConfig } from '../types/Master';
 import { getUserJettonWallet } from '../utils/userJettonWallet';

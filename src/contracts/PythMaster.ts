@@ -1,7 +1,7 @@
 import { HexString } from '@pythnetwork/hermes-client';
 import { beginCell, Cell, ContractProvider, Dictionary, Sender, SendMode } from '@ton/core';
 import { isTonAsset, isTonAssetId, OnchainSpecificPythParams, PythWithdrawParameters } from '..';
-import { PythOracleParser } from '../api/parsers/PythParser';
+import { PythOracleParser } from '../api/parsers/PythOracleParser';
 import { composeFeedsCell, packPythUpdatesData } from '../api/prices';
 import { makeOnchainGetterMasterMessage, makePythProxyMessage } from '../api/pyth';
 import { FEES, OPCODES } from '../constants/general';

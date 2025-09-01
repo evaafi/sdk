@@ -1,6 +1,6 @@
 import { Cell, Slice } from '@ton/ton';
 import { loadMaybeMyRef } from '../helpers';
-import { AbstractOracleParser } from './AbstractParser';
+import { AbstractOracleParser } from './AbstractOracleParser';
 
 export type ClassicOracleInfo = {
     numOracles: number;

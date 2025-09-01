@@ -1,5 +1,5 @@
 import { Address, Dictionary, Slice } from '@ton/ton';
-import { AbstractOracleParser } from './AbstractParser';
+import { AbstractOracleParser } from './AbstractOracleParser';
 
 export type OracleConfig = {
     pythAddress: Address;

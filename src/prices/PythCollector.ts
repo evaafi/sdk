@@ -1,7 +1,7 @@
 import { HermesClient, HexString, PriceUpdate } from '@pythnetwork/hermes-client';
 import { Cell, Dictionary } from '@ton/core';
 import { checkNotInDebtAtAll } from '../api/math';
-import { OracleConfig } from '../api/parsers/PythParser';
+import { OracleConfig } from '../api/parsers/PythOracleParser';
 import { packPythUpdatesData } from '../api/prices';
 import { FeedMapItem, parseFeedsMapDict, PoolAssetConfig, PoolAssetsConfig } from '../types/Master';
 import { FetchConfig, proxyFetchRetries } from '../utils/utils';

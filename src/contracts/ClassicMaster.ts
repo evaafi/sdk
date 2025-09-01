@@ -1,6 +1,6 @@
 import { beginCell, Cell, ContractProvider, Sender, SendMode } from '@ton/core';
 import { isTonAsset, isTonAssetId, LiquidationParameters, TON_MAINNET } from '..';
-import { ClassicOracleParser } from '../api/parsers/ClassicParser';
+import { ClassicOracleParser } from '../api/parsers/ClassicOracleParser';
 import { FEES, OPCODES } from '../constants/general';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
 import {

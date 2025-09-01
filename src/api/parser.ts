@@ -23,7 +23,7 @@ import {
     getAvailableToBorrow,
     presentValue,
 } from './math';
-import { OracleParser } from './parsers/AbstractParser';
+import { OracleParser } from './parsers/AbstractOracleParser';
 
 export function createUserRewards(): DictionaryValue<UserRewards> {
     return {
