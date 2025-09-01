@@ -1,6 +1,4 @@
 import { Address, Cell, Dictionary } from '@ton/core';
-import { ClassicOracleInfo } from '../api/parsers/ClassicOracleParser';
-import { PythOracleInfo } from '../api/parsers/PythOracleParser';
 import { Oracle } from '../prices/Oracle.interface';
 export { FeedMapItem, parseFeedsMapDict } from '../api/feeds';
 
