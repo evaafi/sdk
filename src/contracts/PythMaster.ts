@@ -1,20 +1,22 @@
 import { HexString } from '@pythnetwork/hermes-client';
 import { beginCell, Cell, ContractProvider, Dictionary, Sender, SendMode } from '@ton/core';
 import { isTonAsset, isTonAssetId, OnchainSpecificPythParams, PythWithdrawParameters } from '..';
-import { PythOracleParser } from '../api/parsers/PythOracleParser';
+import { PythOracleInfo, PythOracleParser } from '../api/parsers/PythOracleParser';
 import { composeFeedsCell, packPythUpdatesData } from '../api/prices';
 import { makeOnchainGetterMasterMessage, makePythProxyMessage } from '../api/pyth';
 import { FEES, OPCODES } from '../constants/general';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
 import {
     AbstractEvaaMaster,
-    EvaaParameters,
-    JettonPythParams,
-    ProxySpecificPythParams,
-    PythBaseData,
-    PythLiquidationParameters,
-    SupplyWithdrawParameters,
-    TonPythParams,
+    type BaseMasterConfig,
+    type BaseMasterData,
+    type EvaaParameters,
+    type JettonPythParams,
+    type ProxySpecificPythParams,
+    type PythBaseData,
+    type PythLiquidationParameters,
+    type SupplyWithdrawParameters,
+    type TonPythParams,
 } from './AbstractMaster';
 import { JettonWallet } from './JettonWallet';
 
@@ -23,7 +25,17 @@ export type PythSupplyWithdrawParameters = SupplyWithdrawParameters & {
     pyth: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams);
 };
 
-export class EvaaMasterPyth extends AbstractEvaaMaster {
+// Specific master configurations
+export type PythMasterConfig = BaseMasterConfig & {
+    oraclesInfo: PythOracleInfo;
+};
+
+// Specific master data types
+export type PythMasterData = BaseMasterData & {
+    masterConfig: PythMasterConfig;
+};
+
+export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
     constructor(parameters: EvaaParameters) {
         super(parameters);
     }

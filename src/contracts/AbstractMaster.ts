@@ -5,6 +5,7 @@ import {
     Cell,
     Contract,
     ContractProvider,
+    Dictionary,
     OpenedContract,
     Sender,
     SendMode,
@@ -14,8 +15,10 @@ import { Maybe } from '@ton/core/dist/utils/maybe';
 import { isTonAsset, isTonAssetId, isValidSubaccountId } from '..';
 import { parseMasterData } from '../api/parser';
 import { OracleParser } from '../api/parsers/AbstractOracleParser';
+import { ClassicOracleInfo } from '../api/parsers/ClassicOracleParser';
+import { PythOracleInfo } from '../api/parsers/PythOracleParser';
 import { FEES, OPCODES } from '../constants/general';
-import { MasterData, PoolAssetConfig, PoolConfig } from '../types/Master';
+import { ExtendedAssetsConfig, ExtendedAssetsData, PoolAssetConfig, PoolConfig, UpgradeConfig } from '../types/Master';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
 import { ClassicSupplyWithdrawParameters } from './ClassicMaster';
 import { JettonWallet } from './JettonWallet';
@@ -184,16 +187,49 @@ export type SupplyWithdrawParameters = {
     responseAddress?: Address;
 };
 
+// Base shared configuration for all master types
+export type BaseMasterConfig = {
+    ifActive: number;
+    admin: Address;
+    tokenKeys: Cell | null;
+    supervisor: Address | null;
+};
+
+export type OracleInfo = PythOracleInfo | ClassicOracleInfo;
+
+// Generic master configuration with oracle info
+export type MasterConfig<T extends OracleInfo> = BaseMasterConfig & {
+    oraclesInfo: T;
+};
+
+// Base shared data for all master types
+export type BaseMasterData = {
+    meta: string;
+    upgradeConfig: UpgradeConfig;
+    assetsConfig: ExtendedAssetsConfig;
+    assetsData: ExtendedAssetsData;
+    assetsReserves: Dictionary<bigint, bigint>;
+    apy: {
+        supply: Dictionary<bigint, number>;
+        borrow: Dictionary<bigint, number>;
+    };
+};
+
+// Generic master data with config
+export type MasterData<T extends MasterConfig<OracleInfo>> = BaseMasterData & {
+    masterConfig: T;
+};
+
 /**
  * Abstract EVAA Master base that encapsulates shared logic and structure.
  * Concrete implementations (Classic/Pyth) should override message creation for
  * withdraw/liquidation and supply-withdraw wrapping.
  */
-export abstract class AbstractEvaaMaster implements Contract {
+export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<OracleInfo>>> implements Contract {
     readonly address: Address;
     protected _poolConfig: PoolConfig;
     protected readonly debug?: boolean;
-    protected _data?: MasterData;
+    protected _data?: T;
     protected lastSync = 0;
 
     constructor(parameters: EvaaParameters) {
@@ -206,7 +242,7 @@ export abstract class AbstractEvaaMaster implements Contract {
         return this._poolConfig;
     }
 
-    get data(): Maybe<MasterData> {
+    get data(): Maybe<T> {
         return this._data;
     }
 
@@ -410,7 +446,7 @@ export abstract class AbstractEvaaMaster implements Contract {
                 this._poolConfig.poolAssetsConfig,
                 this._poolConfig.masterConstants,
                 oracleParser,
-            );
+            ) as T;
             if (this._data.upgradeConfig.masterCodeVersion !== this._poolConfig.masterVersion) {
                 throw Error(
                     `Outdated SDK pool version. It supports only master code version ${this._poolConfig.masterVersion}, but the current master code version is ${this._data.upgradeConfig.masterCodeVersion}`,

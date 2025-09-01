@@ -1,4 +1,5 @@
 import { beginCell, Cell, Dictionary, DictionaryValue, Slice } from '@ton/core';
+import { MasterConfig, MasterData, OracleInfo } from '../contracts/AbstractMaster';
 import {
     AssetConfig,
     AssetData,
@@ -6,7 +7,6 @@ import {
     ExtendedAssetsConfig,
     ExtendedAssetsData,
     MasterConstants,
-    MasterData,
     PoolAssetsConfig,
     PoolConfig,
 } from '../types/Master';
@@ -158,7 +158,7 @@ export function parseMasterData(
     poolAssetsConfig: PoolAssetsConfig,
     masterConstants: MasterConstants,
     oracleParser: OracleParser,
-): MasterData {
+): MasterData<MasterConfig<OracleInfo>> {
     const masterSlice = Cell.fromBase64(masterDataBOC).beginParse();
     const meta = masterSlice.loadRef().beginParse().loadStringTail();
     const upgradeConfigParser = masterSlice.loadRef().beginParse();

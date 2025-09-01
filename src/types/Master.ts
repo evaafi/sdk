@@ -71,16 +71,6 @@ export type AssetConfig = {
     borrowCap: number | bigint;
 };
 
-export type MasterConfig = {
-    ifActive: number;
-    oraclesInfo: OracleInfo;
-    admin: Address;
-    tokenKeys: Cell | null;
-    supervisor: Address | null;
-};
-
-export type OracleInfo = PythOracleInfo | ClassicOracleInfo;
-
 export type AssetData = {
     sRate: bigint;
     bRate: bigint;
@@ -106,19 +96,6 @@ export type AssetApy = {
 export type ExtendedAssetData = AssetData & AssetInterest & AssetApy;
 export type ExtendedAssetsData = Dictionary<bigint, ExtendedAssetData>;
 export type ExtendedAssetsConfig = Dictionary<bigint, AssetConfig>;
-
-export type MasterData = {
-    meta: string;
-    upgradeConfig: UpgradeConfig;
-    masterConfig: MasterConfig;
-    assetsConfig: ExtendedAssetsConfig;
-    assetsData: ExtendedAssetsData;
-    assetsReserves: Dictionary<bigint, bigint>;
-    apy: {
-        supply: Dictionary<bigint, number>;
-        borrow: Dictionary<bigint, number>;
-    };
-};
 
 export type AgregatedBalances = {
     totalBorrow: bigint;

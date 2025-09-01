@@ -1,13 +1,15 @@
 import { beginCell, Cell, ContractProvider, Sender, SendMode } from '@ton/core';
 import { isTonAsset, isTonAssetId, LiquidationParameters, TON_MAINNET } from '..';
-import { ClassicOracleParser } from '../api/parsers/ClassicOracleParser';
+import { ClassicOracleInfo, ClassicOracleParser } from '../api/parsers/ClassicOracleParser';
 import { FEES, OPCODES } from '../constants/general';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
 import {
     AbstractEvaaMaster,
-    ClassicWithdrawParameters,
-    EvaaParameters,
-    SupplyWithdrawParameters,
+    type BaseMasterConfig,
+    type BaseMasterData,
+    type ClassicWithdrawParameters,
+    type EvaaParameters,
+    type SupplyWithdrawParameters,
 } from './AbstractMaster';
 import { JettonWallet } from './JettonWallet';
 
@@ -15,7 +17,15 @@ export type ClassicSupplyWithdrawParameters = SupplyWithdrawParameters & {
     priceData?: Cell;
 };
 
-export class EvaaMasterClassic extends AbstractEvaaMaster {
+export type ClassicMasterConfig = BaseMasterConfig & {
+    oraclesInfo: ClassicOracleInfo;
+};
+
+export type ClassicMasterData = BaseMasterData & {
+    masterConfig: ClassicMasterConfig;
+};
+
+export class EvaaMasterClassic extends AbstractEvaaMaster<ClassicMasterData> {
     constructor(parameters: EvaaParameters) {
         super(parameters);
     }
