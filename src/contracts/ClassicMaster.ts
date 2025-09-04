@@ -65,7 +65,8 @@ export class EvaaMasterClassic extends AbstractEvaaMaster<ClassicMasterData> {
         const withdrawData = beginCell()
             .storeUint(parameters.withdrawAmount, 64)
             .storeUint(parameters.withdrawAsset.assetId, 256)
-            .storeAddress(parameters.withdrawRecipient);
+            .storeAddress(parameters.withdrawRecipient)
+            .endCell();
 
         const generalData = this.buildGeneralDataPayload(parameters);
 
