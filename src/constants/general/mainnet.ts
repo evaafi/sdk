@@ -11,7 +11,7 @@ export const EVAA_LP_MAINNET_VERSION = 4;
 
 /* ALTS POOL */
 export const EVAA_ALTS_MAINNET = Address.parse('EQANURVS3fhBO9bivig34iyJQi97FhMbpivo1aUEAS2GYSu-');
-export const EVAA_ALTS_MAINNET_VERSION = 1;
+export const EVAA_ALTS_MAINNET_VERSION = 2;
 
 /* STABLE POOL */
 export const EVAA_STABLE_MAINNET = Address.parse('EQCdIdXf1kA_2Hd9mbGzSFDEPA-Px-et8qTWHEXgRGo0K3zd');
