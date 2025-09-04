@@ -47,7 +47,7 @@ export type UpgradeConfig = {
 };
 
 export type AssetConfig = {
-    oracle: bigint;
+    jwAddress: bigint;
     decimals: bigint;
     collateralFactor: bigint;
     liquidationThreshold: bigint;

@@ -81,7 +81,7 @@ export function createAssetData(): DictionaryValue<AssetData> {
 export function createAssetConfig(): DictionaryValue<AssetConfig> {
     return {
         serialize: (src: any, builder: any) => {
-            builder.storeUint(src.oracle, 256);
+            builder.storeUint(src.jwAddress, 256);
             builder.storeUint(src.decimals, 8);
             const refBuild = beginCell();
             refBuild.storeUint(src.collateralFactor, 16);
@@ -105,7 +105,7 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
             builder.storeRef(refBuild.endCell());
         },
         parse: (src: Slice) => {
-            const oracle = src.loadUintBig(256);
+            const jwAddress = src.loadUintBig(256);
             const decimals = BigInt(src.loadUint(8));
             const ref = src.loadRef().beginParse();
             const collateralFactor = ref.loadUintBig(16);
@@ -128,7 +128,7 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
             const borrowCap = ref.loadInt(64);
 
             return {
-                oracle,
+                jwAddress,
                 decimals,
                 collateralFactor,
                 liquidationThreshold,
