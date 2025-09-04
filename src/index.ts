@@ -16,12 +16,7 @@ export * from './api/prices';
 export * from './api/feeds';
 
 // Contracts' wrappers
-export * from './contracts/AbstractMaster';
-export { AbstractEvaaMaster } from './contracts/AbstractMaster';
-export { EvaaMasterClassic } from './contracts/ClassicMaster';
-export * from './contracts/JettonWallet';
-export { EvaaMasterPyth } from './contracts/PythMaster';
-export { EvaaUser } from './contracts/UserContract';
+export * from './contracts';
 
 // Rewards contracts wrappers
 export { EvaaUserRewards } from './rewards/EvaaRewards';
@@ -34,7 +29,6 @@ export { type EvaaUserRewardsConfig } from './types/UserRewards';
 
 // Types
 export * from './types/Master';
-
 export * from './types/User';
 
 // Constants
