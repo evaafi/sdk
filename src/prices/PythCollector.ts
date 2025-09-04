@@ -106,7 +106,7 @@ export class PythCollector implements Oracle {
         );
     }
 
-    async getPrices(assets: PoolAssetsConfig, fetchConfig?: FetchConfig): Promise<Prices> {
+    async getPrices(assets: PoolAssetsConfig = this.#poolAssetsConfig, fetchConfig?: FetchConfig): Promise<Prices> {
         if (assets.length === 0) {
             return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY);
         }
