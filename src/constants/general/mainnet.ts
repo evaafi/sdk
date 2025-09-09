@@ -7,15 +7,15 @@ export const MAINNET_VERSION = 7;
 
 /* LP POOL */
 export const EVAA_LP_MAINNET = Address.parse('EQBIlZX2URWkXCSg3QF2MJZU-wC5XkBoLww-hdWk2G37Jc6N');
-export const EVAA_LP_MAINNET_VERSION = 4;
+export const EVAA_LP_MAINNET_VERSION = 5;
 
 /* ALTS POOL */
 export const EVAA_ALTS_MAINNET = Address.parse('EQANURVS3fhBO9bivig34iyJQi97FhMbpivo1aUEAS2GYSu-');
-export const EVAA_ALTS_MAINNET_VERSION = 2;
+export const EVAA_ALTS_MAINNET_VERSION = 3;
 
 /* STABLE POOL */
 export const EVAA_STABLE_MAINNET = Address.parse('EQCdIdXf1kA_2Hd9mbGzSFDEPA-Px-et8qTWHEXgRGo0K3zd');
-export const STABLE_VERSION = 0;
+export const STABLE_VERSION = 1;
 
 /* EVAA V8 Trail of Bits Audited Pool */
 export const EVAA_TOB_MAINNET = Address.parse('EQDrSGBBunrWNmIdHgdaA7Weu4yUr8Ckw3C9wNWobq7osn3H');
