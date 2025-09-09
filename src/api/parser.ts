@@ -102,6 +102,9 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
             refBuild.storeUint(src.baseTrackingSupplySpeed, 64);
             refBuild.storeUint(src.baseTrackingBorrowSpeed, 64);
             refBuild.storeInt(src.borrowCap, 64);
+            refBuild.storeUint(src.heCategory, 8);
+            refBuild.storeUint(src.heCollateralFactor, 16);
+            refBuild.storeUint(src.heLiquidationThreshold, 16);
             builder.storeRef(refBuild.endCell());
         },
         parse: (src: Slice) => {
@@ -126,6 +129,9 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
             const baseTrackingSupplySpeed = ref.loadUintBig(64);
             const baseTrackingBorrowSpeed = ref.loadUintBig(64);
             const borrowCap = ref.loadInt(64);
+            const heCategory = ref.loadUint(8);
+            const heCollateralFactor = ref.loadUint(16);
+            const heLiquidationThreshold = ref.loadUint(16);
 
             return {
                 jwAddress,
@@ -148,6 +154,9 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
                 baseTrackingSupplySpeed,
                 baseTrackingBorrowSpeed,
                 borrowCap,
+                heCategory,
+                heCollateralFactor,
+                heLiquidationThreshold,
             };
         },
     };
