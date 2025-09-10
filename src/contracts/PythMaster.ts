@@ -86,7 +86,7 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
                 maxStaleness,
                 operationPayload,
             });
-            return this.createJettonTransferMessage(parameters, FEES.SUPPLY_WITHDRAW_JETTON_FWD, masterMessage);
+            return this.createJettonTransferMessage(parameters, FEES.SUPPLY_WITHDRAW, masterMessage);
         } else {
             const { priceData, targetFeeds, minPublishTime, maxPublishTime } = parameters.pyth as TonPythParams;
             const wrappedOperationPayload = beginCell()

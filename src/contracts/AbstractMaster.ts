@@ -264,7 +264,7 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
             .endCell();
 
         if (!isTon) {
-            return this.createJettonTransferMessage(parameters, FEES.SUPPLY_JETTON_FWD, operationPayload);
+            return this.createJettonTransferMessage(parameters, FEES.SUPPLY, operationPayload);
         } else {
             return operationPayload;
         }

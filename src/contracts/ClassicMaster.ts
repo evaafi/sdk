@@ -83,7 +83,7 @@ export class EvaaMasterClassic extends AbstractEvaaMaster<ClassicMasterData> {
         if (!isTonAsset(parameters.supplyAsset)) {
             return this.createJettonTransferMessage(
                 parameters,
-                FEES.SUPPLY_WITHDRAW_JETTON_FWD,
+                FEES.SUPPLY_WITHDRAW,
                 beginCell().storeUint(refOpCode, 32).storeSlice(operationPayload.beginParse()).endCell(),
             );
         } else {

@@ -68,13 +68,14 @@ export const OPCODES = {
 };
 
 export const FEES = {
-    // Supply
-    SUPPLY_JETTON_FWD: toNano('0.3'),
+    // General
+    JETTON_FWD: toNano('0.05'),
 
-    // Supply & Withdraw | SW are ballpark estimates, may need refinement
-    SUPPLY_WITHDRAW: toNano('0.8'),
-    SUPPLY_WITHDRAW_JETTON: toNano('1'),
-    SUPPLY_WITHDRAW_JETTON_FWD: toNano('0.8'),
+    // Supply
+    SUPPLY: toNano('0.25'),
+
+    // Supply & Withdraw
+    SUPPLY_WITHDRAW: toNano('0.45'),
 
     // Liquidation
     LIQUIDATION: toNano('0.8'),
