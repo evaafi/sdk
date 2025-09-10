@@ -3,6 +3,7 @@ import { Address, beginCell, Cell, ContractProvider, Dictionary, Sender, SendMod
 import { PythOracleInfo, PythOracleParser } from '../api/parsers/PythOracleParser';
 import { composeFeedsCell, packPythUpdatesData } from '../api/prices';
 import { makeOnchainGetterMasterMessage, makePythProxyMessage } from '../api/pyth';
+import { TON_MAINNET } from '../constants';
 import { FEES, OPCODES } from '../constants/general';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
 import { isTonAsset, isTonAssetId } from '../utils/utils';
@@ -27,7 +28,7 @@ export type PythBaseData = {
 
 export type ProxySpecificPythParams = {
     pythAddress: Address;
-    attachedValue: bigint;
+    // attachedValue: bigint;
     minPublishTime: number | bigint;
     maxPublishTime: number | bigint;
 };
@@ -47,6 +48,7 @@ export type PythSupplyWithdrawParameters = SupplyWithdrawParameters & {
 };
 
 export type PythWithdrawParameters = WithdrawParameters & {
+    requestedRefTokens: bigint[];
     pyth: TonPythParams;
 };
 
@@ -105,41 +107,42 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
         }
     }
 
-    private createPythWithdrawMessage(parameters: PythWithdrawParameters): Cell {
-        const extraTail =
-            (parameters.subaccountId ?? 0) == 0
-                ? beginCell().endCell()
-                : beginCell()
-                      .storeInt(parameters.subaccountId ?? 0, 16)
-                      .storeUint(0, 2)
-                      .endCell();
+    // private createPythWithdrawMessage(parameters: PythWithdrawParameters): Cell {
+    //     const extraTail =
+    //         (parameters.subaccountId ?? 0) == 0
+    //             ? beginCell().endCell()
+    //             : beginCell()
+    //                   .storeInt(parameters.subaccountId ?? 0, 16)
+    //                   .storeUint(0, 2)
+    //                   .endCell();
 
-        const { priceData, targetFeeds, minPublishTime, maxPublishTime } = parameters.pyth as TonPythParams;
-        const wrappedOperationPayload = beginCell()
-            .storeUint(OPCODES.SUPPLY_WITHDRAW_MASTER, 32)
-            .storeUint(parameters.queryID, 64)
-            .storeRef(
-                beginCell()
-                    .storeUint(parameters.asset.assetId, 256)
-                    .storeUint(parameters.amount, 64)
-                    .storeAddress(parameters.userAddress)
-                    .storeInt(parameters.includeUserCode ? -1 : 0, 2)
-                    .storeUint(parameters.amountToTransfer, 64)
-                    .storeRef(parameters.payload)
-                    .storeSlice(extraTail.beginParse())
-                    .endCell(),
-            )
-            .endCell();
+    //     const wrappedOperationPayload = beginCell()
+    //         .storeUint(OPCODES.SUPPLY_WITHDRAW_MASTER, 32) // op_code: 0x4
+    //         .storeUint(parameters.queryID, 64)
+    //         .storeRef(
+    //             beginCell()
+    //                 .storeUint(parameters.asset.assetId, 256)
+    //                 .storeUint(parameters.amount, 64)
+    //                 .storeAddress(parameters.userAddress)
+    //                 .storeInt(parameters.includeUserCode ? -1 : 0, 2)
+    //                 .storeUint(parameters.amountToTransfer, 64)
+    //                 .storeRef(parameters.payload)
+    //                 .storeSlice(extraTail.beginParse())
+    //                 .endCell(),
+    //         )
+    //         .endCell();
 
-        return makePythProxyMessage(
-            this.address,
-            packPythUpdatesData(priceData),
-            composeFeedsCell(targetFeeds),
-            minPublishTime,
-            maxPublishTime,
-            wrappedOperationPayload,
-        );
-    }
+    //     const { priceData, targetFeeds, minPublishTime, maxPublishTime } = parameters.pyth as TonPythParams;
+
+    //     return makePythProxyMessage(
+    //         this.address,
+    //         packPythUpdatesData(priceData),
+    //         composeFeedsCell(targetFeeds),
+    //         minPublishTime,
+    //         maxPublishTime,
+    //         wrappedOperationPayload,
+    //     );
+    // }
 
     // TODO: fix to, actually uses mock empty Dictionary
     buildGeneralDataPayload(parameters: PythSupplyWithdrawParameters): Cell {
@@ -170,7 +173,23 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
     ): Promise<void> {
         const _parameters = { ...parameters };
         _parameters.pyth = { ...parameters.pyth, ...{ attachedValue: value } } as TonPythParams;
-        const message = this.createPythWithdrawMessage(_parameters);
+        const message = this.createSupplyWithdrawMessage({
+            supplyAsset: TON_MAINNET,
+            supplyAmount: 0n,
+            queryID: parameters.queryID,
+            withdrawAsset: parameters.asset,
+            withdrawAmount: parameters.amount,
+            withdrawRecipient: parameters.userAddress,
+            includeUserCode: parameters.includeUserCode,
+            forwardAmount: parameters.forwardAmount,
+            payload: parameters.payload,
+            subaccountId: parameters.subaccountId ?? 0,
+            customPayloadSaturationFlag: parameters.customPayloadSaturationFlag ?? false,
+            returnRepayRemainingsFlag: parameters.returnRepayRemainingsFlag ?? false,
+            tonForRepayRemainings: 0n,
+            pyth: _parameters.pyth,
+            requestedRefTokens: parameters.requestedRefTokens,
+        });
         await via.send({
             value,
             to: (_parameters.pyth as TonPythParams).pythAddress,

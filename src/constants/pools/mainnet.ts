@@ -1,8 +1,16 @@
 import { Address, Dictionary } from '@ton/core';
 import {
     EVAA_JUSDT_PRICE_FEED_ID,
+    EVAA_STTON_PRICE_FEED_ID,
+    EVAA_TSTON_PRICE_FEED_ID,
+    EVAA_TSUSDE_PRICE_FEED_ID,
     packConnectedFeeds,
+    PYTH_STTON_PRICE_FEED_ID,
     PYTH_TON_PRICE_FEED_ID,
+    PYTH_TSTON_PRICE_FEED_ID,
+    PYTH_TSUSDE_PRICE_FEED_ID,
+    PYTH_USDC_PRICE_FEED_ID,
+    PYTH_USDE_PRICE_FEED_ID,
     PYTH_USDT_PRICE_FEED_ID,
 } from '../../api/feeds';
 import { DefaultPythPriceSourcesConfig, PricesCollector, PythCollector } from '../../prices';
@@ -81,10 +89,33 @@ export const MAINNET_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_MASTER_MAINNET,
     masterVersion: MAINNET_VERSION,
     masterConstants: MASTER_CONSTANTS,
-    oracles: new PricesCollector({
+    oracles: new PythCollector({
+        pythConfig: DefaultPythPriceSourcesConfig,
         poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,
-        minimalOracles: 3,
-        evaaOracles: ORACLES_MAINNET,
+        pythOracle: {
+            feedsMap: Dictionary.empty<bigint, Buffer>()
+                .set(BigInt(PYTH_TON_PRICE_FEED_ID), packConnectedFeeds(ASSET_ID.TON, 0n))
+                .set(BigInt(PYTH_USDT_PRICE_FEED_ID), packConnectedFeeds(ASSET_ID.USDT, 0n))
+                .set(
+                    BigInt(PYTH_TSTON_PRICE_FEED_ID),
+                    packConnectedFeeds(EVAA_TSTON_PRICE_FEED_ID, BigInt(PYTH_TON_PRICE_FEED_ID)),
+                )
+                .set(
+                    BigInt(PYTH_STTON_PRICE_FEED_ID),
+                    packConnectedFeeds(EVAA_STTON_PRICE_FEED_ID, BigInt(PYTH_TON_PRICE_FEED_ID)),
+                )
+                .set(BigInt(PYTH_USDC_PRICE_FEED_ID), packConnectedFeeds(ASSET_ID.jUSDC, 0n))
+                .set(BigInt(PYTH_USDE_PRICE_FEED_ID), packConnectedFeeds(ASSET_ID.USDe, 0n))
+                .set(
+                    BigInt(PYTH_TSUSDE_PRICE_FEED_ID),
+                    packConnectedFeeds(EVAA_TSUSDE_PRICE_FEED_ID, BigInt(PYTH_USDE_PRICE_FEED_ID)),
+                ),
+            pythAddress: PYTH_ORACLE_MAINNET,
+            allowedRefTokens: Dictionary.empty<bigint, bigint>().set(
+                BigInt(EVAA_JUSDT_PRICE_FEED_ID),
+                BigInt(ASSET_ID.USDT),
+            ),
+        },
     }),
     poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,
     lendingCode: LENDING_CODE,

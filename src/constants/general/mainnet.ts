@@ -3,7 +3,7 @@ import { ExtendedEvaaOracle } from '../../types/Master';
 
 /* MAIN POOL */
 export const EVAA_MASTER_MAINNET = Address.parse('EQC8rUZqR_pWV1BylWUlPNBzyiTYVoBEmQkMIQDZXICfnuRr');
-export const MAINNET_VERSION = 7;
+export const MAINNET_VERSION = 8;
 
 /* LP POOL */
 export const EVAA_LP_MAINNET = Address.parse('EQBIlZX2URWkXCSg3QF2MJZU-wC5XkBoLww-hdWk2G37Jc6N');

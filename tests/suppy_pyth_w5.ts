@@ -35,12 +35,12 @@ async function supplyJetton() {
         send: WALLET_CONTRACT.sender(WALLET_KEY_PAIR.secretKey).send,
     };
 
-    const amount = 2_000_000_000n;
+    const amount = 800_000_000n;
 
     await EVAA_MAINNET.sendSupply(WALLET_SENDER, amount, {
         queryID: 0n,
         includeUserCode: true,
-        amount: 1_000_000_000n,
+        amount: 500_000_000n,
         userAddress: WALLET_CONTRACT.address,
         asset: TON_MAINNET,
         payload: Cell.EMPTY,

@@ -8,6 +8,7 @@ import { FetchConfig, proxyFetchRetries } from '../utils/utils';
 import { Oracle } from './Oracle.interface';
 import { Prices } from './Prices';
 import { PythFeedUpdateType, PythPriceSourcesConfig } from './Types';
+import { TTL_ORACLE_DATA_SEC } from './constants';
 
 export type PythCollectorConfig = {
     poolAssetsConfig: PoolAssetsConfig;
@@ -107,12 +108,34 @@ export class PythCollector implements Oracle {
     }
 
     async getPrices(assets: PoolAssetsConfig = this.#poolAssetsConfig, fetchConfig?: FetchConfig): Promise<Prices> {
+        // Declare variables at the beginning
+        let minPublishTime: bigint | undefined;
+        let maxPublishTime: bigint | undefined;
+
         if (assets.length === 0) {
             return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY);
         }
 
         const requiredFeeds = this.createRequiredFeedsList(assets.map((a) => a.assetId));
         const pythUpdates = await this.#fetchPythUpdatesWithRetry(requiredFeeds, fetchConfig);
+
+        // Calculate min and max publish times for validation
+
+        if (pythUpdates.parsed && pythUpdates.parsed.length > 0) {
+            const publishTimes = pythUpdates.parsed.map((u) => BigInt(u.price.publish_time));
+            const tmin = publishTimes.reduce((a, b) => (a < b ? a : b));
+            const tmax = publishTimes.reduce((a, b) => (a > b ? a : b));
+
+            if (tmax - tmin > TTL_ORACLE_DATA_SEC) {
+                throw new Error(
+                    `Price feeds don't fit in a single 3-minute window. Time span: ${tmax - tmin} seconds (max allowed: ${TTL_ORACLE_DATA_SEC})`,
+                );
+            }
+
+            // Set boundaries using "from oldest" approach: minPublishTime = tmin, maxPublishTime = tmin + 180
+            minPublishTime = tmin;
+            maxPublishTime = tmin + BigInt(TTL_ORACLE_DATA_SEC);
+        }
 
         const pricesDict = Dictionary.empty<bigint, bigint>();
         const pythPriceUpdates = pythUpdates.parsed;
@@ -152,9 +175,9 @@ export class PythCollector implements Oracle {
             }
 
             const dataCell = packPythUpdatesData(pythUpdates.binary);
-            return new Prices(pricesDict, dataCell);
+            return new Prices(pricesDict, dataCell, minPublishTime, maxPublishTime);
         }
-        return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY);
+        return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY, minPublishTime, maxPublishTime);
     }
 
     /**
