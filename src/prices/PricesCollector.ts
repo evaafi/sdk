@@ -89,7 +89,7 @@ export class PricesCollector implements Oracle {
             return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY);
         }
 
-        await proxyFetchRetries(this.#collectPricesWithValidation(fetchConfig), fetchConfig);
+        await this.#collectPricesWithValidation(fetchConfig);
 
         if (this.#prices.length < this.#minimalOracles) {
             throw new Error(`Error per updating prices, valid ${this.#prices.length} of ${this.#minimalOracles}`);
@@ -131,13 +131,19 @@ export class PricesCollector implements Oracle {
     }
 
     async #collectPrices(fetchConfig?: FetchConfig): Promise<boolean> {
-        try {
-            this.#prices = await Promise.any(
-                this.#priceSources.map((x) => collectAndFilterPrices(x, this.#minimalOracles, fetchConfig)),
-            );
-            return true;
+        for (const priceSource of this.#priceSources) {
+            try {
+                this.#prices = await proxyFetchRetries(
+                    collectAndFilterPrices(priceSource, this.#minimalOracles, fetchConfig),
+                    fetchConfig,
+                );
+                return true;
+            } catch (error) {
+                // Try next source
+                continue;
+            }
         }
-        catch { }
+
         return false;
     }
 
