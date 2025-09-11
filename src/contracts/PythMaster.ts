@@ -44,7 +44,7 @@ export type TonPythParams = PythBaseData & ProxySpecificPythParams;
 
 export type PythSupplyWithdrawParameters = SupplyWithdrawParameters & {
     requestedRefTokens: bigint[];
-    pyth: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams);
+    pyth?: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams);
 };
 
 export type PythWithdrawParameters = WithdrawParameters & {
@@ -72,11 +72,28 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
     }
 
     createSupplyWithdrawMessage(parameters: PythSupplyWithdrawParameters): Cell {
-        if (!parameters.pyth) {
-            throw new Error('Pyth parameters are required for supply-withdraw in Pyth mode');
-        }
         const operationPayload = this.buildSupplyWithdrawOperationPayload(parameters);
 
+        // Handle case without pyth parameters
+        if (!parameters.pyth) {
+            const refOpCode = OPCODES.SUPPLY_WITHDRAW_MASTER_WITHOUT_PRICES;
+
+            if (!isTonAsset(parameters.supplyAsset)) {
+                return this.createJettonTransferMessage(
+                    parameters,
+                    FEES.SUPPLY_WITHDRAW,
+                    beginCell().storeUint(refOpCode, 32).storeSlice(operationPayload.beginParse()).endCell(),
+                );
+            } else {
+                return beginCell()
+                    .storeUint(refOpCode, 32)
+                    .storeUint(parameters.queryID, 64)
+                    .storeSlice(operationPayload.beginParse())
+                    .endCell();
+            }
+        }
+
+        // Handle case with pyth parameters (existing logic)
         if (!isTonAsset(parameters.supplyAsset)) {
             const { priceData, targetFeeds, publishGap, maxStaleness } = parameters.pyth as JettonPythParams;
             const masterMessage = makeOnchainGetterMasterMessage({
