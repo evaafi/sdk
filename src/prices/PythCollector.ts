@@ -3,6 +3,7 @@ import { Cell, Dictionary } from '@ton/core';
 import { checkNotInDebtAtAll } from '../api/math';
 import { OracleConfig } from '../api/parsers/PythOracleParser';
 import { packPythUpdatesData } from '../api/prices';
+import { STTON_MAINNET, TON_MAINNET, TSTON_MAINNET, TSUSDE_MAINNET, USDE_MAINNET } from '../constants';
 import { FeedMapItem, parseFeedsMapDict, PoolAssetConfig, PoolAssetsConfig } from '../types/Master';
 import { FetchConfig, proxyFetchRetries } from '../utils/utils';
 import { Oracle } from './Oracle.interface';
@@ -90,7 +91,7 @@ export class PythCollector implements Oracle {
             (realPrincipals.get(withdrawAsset.assetId) ?? 0n) > 0n &&
             !collateralToDebt
         ) {
-            return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY);
+            return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY, undefined, undefined);
         }
         if (assets.includes(undefined)) {
             throw new Error('User from another pool');
@@ -113,7 +114,7 @@ export class PythCollector implements Oracle {
         let maxPublishTime: bigint | undefined;
 
         if (assets.length === 0) {
-            return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY);
+            return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY, undefined, undefined);
         }
 
         const requiredFeeds = this.createRequiredFeedsList(assets.map((a) => a.assetId));
@@ -138,6 +139,8 @@ export class PythCollector implements Oracle {
         }
 
         const pricesDict = Dictionary.empty<bigint, bigint>();
+        const expoDict = Dictionary.empty<bigint, number>();
+        const confDict = Dictionary.empty<bigint, bigint>();
         const pythPriceUpdates = pythUpdates.parsed;
 
         if (pythPriceUpdates) {
@@ -146,7 +149,8 @@ export class PythCollector implements Oracle {
 
             for (const u of pythPriceUpdates) {
                 const pythId = BigInt('0x' + u.id);
-                const price = BigInt(u.price.price);
+
+                const price = (BigInt(u.price.price) * BigInt(10 ** 9)) / BigInt(10 ** (u.price.expo * -1));
 
                 // Set price for direct mapping if the evaaId is requested
                 const directEvaa = this.#pythToEvaaDirect.get(pythId);
@@ -165,6 +169,31 @@ export class PythCollector implements Oracle {
                 }
             }
 
+            // TODO: fix it
+
+            if (pricesDict.get(TSTON_MAINNET.assetId) && pricesDict.get(TON_MAINNET.assetId)) {
+                pricesDict.set(
+                    TSTON_MAINNET.assetId,
+                    (pricesDict.get(TSTON_MAINNET.assetId)! * pricesDict.get(TON_MAINNET.assetId)!) / BigInt(10 ** 9),
+                );
+            }
+
+            // TODO: fix it
+            if (pricesDict.get(STTON_MAINNET.assetId) && pricesDict.get(TON_MAINNET.assetId)) {
+                pricesDict.set(
+                    STTON_MAINNET.assetId,
+                    (pricesDict.get(STTON_MAINNET.assetId)! * pricesDict.get(TON_MAINNET.assetId)!) / BigInt(10 ** 9),
+                );
+            }
+
+            // TODO: fix it
+            if (pricesDict.get(TSUSDE_MAINNET.assetId) && pricesDict.get(USDE_MAINNET.assetId)) {
+                pricesDict.set(
+                    TSUSDE_MAINNET.assetId,
+                    (pricesDict.get(TSUSDE_MAINNET.assetId)! * pricesDict.get(USDE_MAINNET.assetId)!) / BigInt(10 ** 9),
+                );
+            }
+
             // Check that all requested assets have prices
             const missing = assets.map((a) => a.assetId).filter((id) => pricesDict.get(id) === undefined);
 
@@ -178,6 +207,35 @@ export class PythCollector implements Oracle {
             return new Prices(pricesDict, dataCell, minPublishTime, maxPublishTime);
         }
         return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY, minPublishTime, maxPublishTime);
+    }
+
+    async getPricesForWithdraw(
+        realPrincipals: Dictionary<bigint, bigint>,
+        withdrawAsset: PoolAssetConfig,
+        collateralToDebt = false,
+        fetchConfig?: FetchConfig,
+    ): Promise<Prices> {
+        let assets = this.#filterEmptyPrincipalsAndAssets(realPrincipals);
+        if (
+            checkNotInDebtAtAll(realPrincipals) &&
+            (realPrincipals.get(withdrawAsset.assetId) ?? 0n) > 0n &&
+            !collateralToDebt
+        ) {
+            return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY);
+        }
+        if (assets.includes(undefined)) {
+            throw new Error('User from another pool');
+        }
+        if (!assets.includes(withdrawAsset)) {
+            assets.push(withdrawAsset);
+        }
+        if (collateralToDebt && assets.length == 1) {
+            throw new Error('Cannot debt only one supplied asset');
+        }
+        return await this.getPrices(
+            assets.map((x) => x!),
+            fetchConfig,
+        );
     }
 
     /**
