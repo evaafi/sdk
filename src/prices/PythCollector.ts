@@ -139,8 +139,6 @@ export class PythCollector implements Oracle {
         }
 
         const pricesDict = Dictionary.empty<bigint, bigint>();
-        const expoDict = Dictionary.empty<bigint, number>();
-        const confDict = Dictionary.empty<bigint, bigint>();
         const pythPriceUpdates = pythUpdates.parsed;
 
         if (pythPriceUpdates) {

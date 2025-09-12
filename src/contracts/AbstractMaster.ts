@@ -1,6 +1,7 @@
 import {
     Address,
     beginCell,
+    Builder,
     Cell,
     Contract,
     ContractProvider,
@@ -19,12 +20,18 @@ import { FEES, OPCODES } from '../constants/general';
 import { ExtendedAssetsConfig, ExtendedAssetsData, PoolAssetConfig, PoolConfig, UpgradeConfig } from '../types/Master';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
 import {
+    ClassicLiquidationOperationParameters,
     ClassicLiquidationParameters,
     ClassicSupplyWithdrawParameters,
     ClassicWithdrawParameters,
 } from './ClassicMaster';
 import { JettonWallet } from './JettonWallet';
-import { PythLiquidationParameters, PythSupplyWithdrawParameters, PythWithdrawParameters } from './PythMaster';
+import {
+    PythLiquidationOperationParameters,
+    PythLiquidationParameters,
+    PythSupplyWithdrawParameters,
+    PythWithdrawParameters,
+} from './PythMaster';
 import { EvaaUser } from './UserContract';
 
 // Internal
@@ -96,34 +103,42 @@ export type WithdrawParameters = {
 };
 
 /**
- * Base data for liquidation. Can be obtained from the user contract liquidationParameters getter
- * @property borrowerAddress - borrower address (user address that is being liquidated)
- * @property loanAsset - loan asset ID
- * @property collateralAsset - collateral asset ID
- * @property minCollateralAmount - minimal amount to receive from the liquidation
- * @property liquidationAmount - amount to liquidate
- * @property asset - asset config
- * @property queryID - unique query ID
- * @property liquidatorAddress - liquidator address, where and collateral will be sent
- * @property includeUserCode - true to include user code for update (needed when user contract code version is outdated)
  * @property payload - liquidation operation custom payload
- * @property payloadForwardAmount - amount of coins to forward with payload
  */
-export type LiquidationParameters = {
-    borrowerAddress: Address;
-    loanAsset: bigint;
-    collateralAsset: bigint;
-    minCollateralAmount: bigint;
-    liquidationAmount: bigint;
-    asset: PoolAssetConfig;
-    queryID: bigint;
+export type LiquidationInnerParameters = {
     payload: Cell;
-    // TODO: maybe deprecate it, and use responseAddress instead of
-    liquidatorAddress: Address;
-    includeUserCode: boolean;
     subaccountId?: number;
     customPayloadRecipient?: Address;
     customPayloadSaturationFlag?: boolean;
+};
+
+/**
+ * Base data for liquidation. Can be obtained from the user contract liquidationParameters getter
+ * @property loanAsset - loan asset ID
+ * @property queryID - unique query ID
+ * @property liquidatorAddress - liquidator address, where and collateral will be sent
+ */
+export type LiquidationParameters = {
+    loanAsset: bigint;
+    queryID: bigint;
+    liquidatorAddress: Address;
+};
+
+/**
+ * @property asset - asset config
+ * @property borrowerAddress - borrower address (user address that is being liquidated)
+ * @property collateralAsset - collateral asset ID
+ * @property minCollateralAmount - minimal amount to receive from the liquidation
+ * @property liquidationAmount - amount to liquidate
+ * @property includeUserCode - true to include user code for update (needed when user contract code version is outdated)
+ */
+export type LiquidationOperationBuilderParameters = {
+    asset: PoolAssetConfig;
+    borrowerAddress: Address;
+    collateralAsset: bigint;
+    minCollateralAmount: bigint;
+    liquidationAmount: bigint;
+    includeUserCode: boolean;
 };
 
 export type SupplyWithdrawParameters = {
@@ -328,6 +343,32 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
     protected abstract createLiquidationMessage(
         parameters: ClassicLiquidationParameters | PythLiquidationParameters,
     ): Cell;
+
+    protected buildLiquidationInnerBuilder(parameters: LiquidationInnerParameters): Builder {
+        const subaccountId = parameters.subaccountId ?? 0;
+
+        const innerCell = beginCell().storeRef(parameters.payload);
+        if (subaccountId !== 0 || parameters.customPayloadRecipient || parameters.customPayloadSaturationFlag) {
+            innerCell.storeInt(subaccountId, 16);
+            innerCell.storeAddress(parameters.customPayloadRecipient);
+            innerCell.storeInt(parameters.customPayloadSaturationFlag ? -1 : 0, 2);
+        }
+
+        return innerCell;
+    }
+
+    protected abstract buildLiquidationOperationPayload(
+        parameters: PythLiquidationOperationParameters | ClassicLiquidationOperationParameters,
+    ): Cell | Builder;
+
+    protected buildLiquidationOperationPayloadBuilder(parameters: LiquidationOperationBuilderParameters): Builder {
+        return beginCell()
+            .storeAddress(parameters.borrowerAddress)
+            .storeUint(parameters.collateralAsset, 256)
+            .storeUint(parameters.minCollateralAmount, 64)
+            .storeInt(parameters.includeUserCode ? -1 : 0, 2)
+            .storeUint(isTonAsset(parameters.asset) ? parameters.liquidationAmount : 0, 64);
+    }
 
     abstract sendLiquidation(
         provider: ContractProvider,

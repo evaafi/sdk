@@ -1,4 +1,4 @@
-import { beginCell, Cell, ContractProvider, Sender, SendMode } from '@ton/core';
+import { beginCell, Builder, Cell, ContractProvider, Sender, SendMode } from '@ton/core';
 import { isTonAsset, isTonAssetId, LiquidationParameters, TON_MAINNET } from '..';
 import { ClassicOracleInfo, ClassicOracleParser } from '../api/parsers/ClassicOracleParser';
 import { FEES, OPCODES } from '../constants/general';
@@ -8,6 +8,8 @@ import {
     BaseMasterConfig,
     BaseMasterData,
     EvaaParameters,
+    LiquidationInnerParameters,
+    LiquidationOperationBuilderParameters,
     SupplyWithdrawParameters,
     WithdrawParameters,
 } from './AbstractMaster';
@@ -25,9 +27,12 @@ export type ClassicWithdrawParameters = WithdrawParameters & {
     priceData: Cell;
 };
 
-export type ClassicLiquidationParameters = LiquidationParameters & {
-    priceData: Cell;
-};
+export type ClassicLiquidationOperationParameters = LiquidationOperationBuilderParameters &
+    LiquidationInnerParameters & {
+        priceData: Cell;
+    };
+
+export type ClassicLiquidationParameters = LiquidationParameters & ClassicLiquidationOperationParameters;
 
 export type ClassicMasterConfig = BaseMasterConfig & {
     oraclesInfo: ClassicOracleInfo;
@@ -120,25 +125,16 @@ export class EvaaMasterClassic extends AbstractEvaaMaster<ClassicMasterData> {
         });
     }
 
+    protected buildLiquidationOperationPayload(parameters: ClassicLiquidationOperationParameters): Builder {
+        const operationPayloadBuilder = this.buildLiquidationOperationPayloadBuilder(parameters);
+        const innerBuilder = this.buildLiquidationInnerBuilder(parameters);
+
+        return operationPayloadBuilder.storeRef(innerBuilder).storeRef(parameters.priceData);
+    }
+
     protected createLiquidationMessage(parameters: ClassicLiquidationParameters): Cell {
-        const subaccountId = parameters.subaccountId ?? 0;
         const isTon = isTonAsset(parameters.asset);
-
-        const innerCell = beginCell().storeRef(parameters.payload);
-        if (subaccountId !== 0 || parameters.customPayloadRecipient || parameters.customPayloadSaturationFlag) {
-            innerCell.storeInt(subaccountId, 16);
-            innerCell.storeAddress(parameters.customPayloadRecipient);
-            innerCell.storeInt(parameters.customPayloadSaturationFlag ? -1 : 0, 2);
-        }
-
-        const operationPayload = beginCell()
-            .storeAddress(parameters.borrowerAddress)
-            .storeUint(parameters.collateralAsset, 256)
-            .storeUint(parameters.minCollateralAmount, 64)
-            .storeInt(parameters.includeUserCode ? -1 : 0, 2)
-            .storeUint(isTon ? parameters.liquidationAmount : 0, 64)
-            .storeRef(innerCell)
-            .storeRef(parameters.priceData);
+        const operationPayload = this.buildLiquidationOperationPayload(parameters);
 
         if (!isTon) {
             return this.createJettonTransferMessage(

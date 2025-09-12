@@ -12,6 +12,8 @@ import {
     BaseMasterConfig,
     BaseMasterData,
     EvaaParameters,
+    LiquidationInnerParameters,
+    LiquidationOperationBuilderParameters,
     LiquidationParameters,
     SupplyWithdrawParameters,
     WithdrawParameters,
@@ -51,9 +53,12 @@ export type PythWithdrawParameters = WithdrawParameters & {
     pyth: TonPythParams;
 };
 
-export type PythLiquidationParameters = LiquidationParameters & {
-    pyth: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams);
-};
+export type PythLiquidationOperationParameters = LiquidationOperationBuilderParameters &
+    LiquidationInnerParameters & {
+        pyth: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams);
+    };
+
+export type PythLiquidationParameters = LiquidationParameters & PythLiquidationOperationParameters;
 
 // Specific master configurations
 export type PythMasterConfig = BaseMasterConfig & {
@@ -160,19 +165,23 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
     //     );
     // }
 
-
-    buildGeneralDataPayload(parameters: PythSupplyWithdrawParameters): Cell {
+    buildRefTokensDict(requestedRefTokens: bigint[]): Dictionary<bigint, Buffer> {
         const refsDict: Dictionary<bigint, Buffer> = Dictionary.empty(
             Dictionary.Keys.BigUint(256),
             Dictionary.Values.Buffer(0),
         );
-
-        for (const refToken of parameters.pyth?.requestedRefTokens ?? []) {
+        for (const refToken of requestedRefTokens) {
             refsDict.set(refToken, Buffer.alloc(0));
         }
+
+        return refsDict;
+    }
+
+    buildGeneralDataPayload(parameters: PythSupplyWithdrawParameters): Cell {
+        const refTokensDict = this.buildRefTokensDict(parameters.pyth?.requestedRefTokens ?? []);
         return beginCell()
             .storeInt(parameters.includeUserCode ? -1 : 0, 2)
-            .storeDict(refsDict, Dictionary.Keys.BigUint(256), Dictionary.Values.Buffer(0))
+            .storeDict(refTokensDict, Dictionary.Keys.BigUint(256), Dictionary.Values.Buffer(0))
             .storeUint(parameters.tonForRepayRemainings ?? 0n, 64)
             .storeRef(parameters.payload)
             .storeInt(parameters.subaccountId ?? 0, 16)
@@ -213,33 +222,19 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
         });
     }
 
+    protected buildLiquidationOperationPayload(parameters: PythLiquidationOperationParameters): Cell {
+        const operationPayloadBuilder = this.buildLiquidationOperationPayloadBuilder(parameters);
+        const innerBuilder = this.buildLiquidationInnerBuilder(parameters);
+        
+        const refTokensDict = this.buildRefTokensDict(parameters.pyth.requestedRefTokens);
+
+        return operationPayloadBuilder.storeDict(refTokensDict).storeRef(innerBuilder).endCell();
+    }
+
     protected createLiquidationMessage(parameters: PythLiquidationParameters): Cell {
-        const subaccountId = parameters.subaccountId ?? 0;
         const isTon = isTonAsset(parameters.asset);
-        const innerCell = beginCell().storeRef(parameters.payload);
-        if (subaccountId !== 0 || parameters.customPayloadRecipient || parameters.customPayloadSaturationFlag) {
-            innerCell.storeInt(subaccountId, 16);
-            innerCell.storeAddress(parameters.customPayloadRecipient);
-            innerCell.storeInt(parameters.customPayloadSaturationFlag ? -1 : 0, 2);
-        }
 
-        const refsDict: Dictionary<bigint, Buffer> = Dictionary.empty(
-            Dictionary.Keys.BigUint(256),
-            Dictionary.Values.Buffer(0),
-        );
-        for (const refToken of parameters.pyth.requestedRefTokens) {
-            refsDict.set(refToken, Buffer.alloc(0));
-        }
-
-        const operationPayload = beginCell()
-            .storeAddress(parameters.borrowerAddress)
-            .storeUint(parameters.collateralAsset, 256)
-            .storeUint(parameters.minCollateralAmount, 64)
-            .storeInt(parameters.includeUserCode ? -1 : 0, 2)
-            .storeUint(isTon ? parameters.liquidationAmount : 0, 64)
-            .storeDict(refsDict)
-            .storeRef(innerCell)
-            .endCell();
+        const operationPayload = this.buildLiquidationOperationPayload(parameters);
 
         if (!isTon) {
             const { priceData, targetFeeds, publishGap, maxStaleness } =
