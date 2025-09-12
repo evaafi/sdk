@@ -1,8 +1,7 @@
-import { beginCell, Builder, Cell, ContractProvider, Sender, SendMode } from '@ton/core';
-import { isTonAsset, isTonAssetId, LiquidationParameters, TON_MAINNET } from '..';
+import { beginCell, Builder, Cell, ContractProvider, Sender } from '@ton/core';
+import { isTonAsset, LiquidationParameters, TON_MAINNET } from '..';
 import { ClassicOracleInfo, ClassicOracleParser } from '../api/parsers/ClassicOracleParser';
 import { FEES, OPCODES } from '../constants/general';
-import { getUserJettonWallet } from '../utils/userJettonWallet';
 import {
     AbstractEvaaMaster,
     BaseMasterConfig,
@@ -13,7 +12,6 @@ import {
     SupplyWithdrawParameters,
     WithdrawParameters,
 } from './AbstractMaster';
-import { JettonWallet } from './JettonWallet';
 
 export type ClassicSupplyWithdrawParameters = SupplyWithdrawParameters & {
     priceData?: Cell;
@@ -142,19 +140,7 @@ export class EvaaMasterClassic extends AbstractEvaaMaster<ClassicMasterData> {
     ): Promise<void> {
         const message = this.createLiquidationMessage(parameters);
 
-        if (!isTonAssetId(parameters.loanAsset)) {
-            if (!via.address) throw Error('Via address is required for jetton liquidation');
-            const jettonWallet = provider.open(
-                JettonWallet.createFromAddress(getUserJettonWallet(via.address, parameters.asset)),
-            );
-            await jettonWallet.sendTransfer(via, value, message);
-        } else {
-            await provider.internal(via, {
-                value,
-                sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
-                body: message,
-            });
-        }
+        await this.sendTx(provider, via, value, message, parameters.asset);
     }
 
     async getSync(provider: ContractProvider) {

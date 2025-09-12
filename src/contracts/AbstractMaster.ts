@@ -11,7 +11,7 @@ import {
     SendMode,
     storeStateInit,
 } from '@ton/core';
-import { isTonAsset, isTonAssetId, isValidSubaccountId } from '..';
+import { isTonAsset, isValidSubaccountId } from '..';
 import { parseMasterData } from '../api/parser';
 import { OracleParser } from '../api/parsers/AbstractOracleParser';
 import { ClassicOracleInfo } from '../api/parsers/ClassicOracleParser';
@@ -294,19 +294,7 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
     async sendSupply(provider: ContractProvider, via: Sender, value: bigint, parameters: SupplyParameters) {
         const message = this.createSupplyMessage(parameters);
 
-        if (!isTonAsset(parameters.asset)) {
-            if (!via.address) throw new Error('Via address is required for jetton supply');
-            const jettonWallet = provider.open(
-                JettonWallet.createFromAddress(getUserJettonWallet(via.address, parameters.asset)),
-            );
-            await jettonWallet.sendTransfer(via, value, message);
-        } else {
-            await provider.internal(via, {
-                value,
-                sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
-                body: message,
-            });
-        }
+        await this.sendTx(provider, via, value, message, parameters.asset);
     }
 
     async sendSupplyWithdraw(
@@ -317,19 +305,7 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
     ) {
         const message = this.createSupplyWithdrawMessage(parameters);
 
-        if (!isTonAssetId(parameters.supplyAsset.assetId)) {
-            if (!via.address) throw new Error('Via address is required for jetton supply-withdraw');
-            const jettonWallet = provider.open(
-                JettonWallet.createFromAddress(getUserJettonWallet(via.address, parameters.supplyAsset)),
-            );
-            await jettonWallet.sendTransfer(via, value, message);
-        } else {
-            await provider.internal(via, {
-                value,
-                sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
-                body: message,
-            });
-        }
+        await this.sendTx(provider, via, value, message, parameters.supplyAsset);
     }
 
     // Abstract where oracle path differs
@@ -436,6 +412,20 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
                 .storeRef(forwardPayload)
                 .endCell(),
         });
+    }
+
+    async sendTx(provider: ContractProvider, via: Sender, value: bigint, message: Cell, asset: PoolAssetConfig) {
+        if (!isTonAsset(asset)) {
+            if (!via.address) throw new Error('Via address is required for jetton supply');
+            const jettonWallet = provider.open(JettonWallet.createFromAddress(getUserJettonWallet(via.address, asset)));
+            await jettonWallet.sendTransfer(via, value, message);
+        } else {
+            await provider.internal(via, {
+                value,
+                sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
+                body: message,
+            });
+        }
     }
 
     // Centralized sync logic used by concrete masters (Classic/Pyth)

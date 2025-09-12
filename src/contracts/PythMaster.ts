@@ -5,8 +5,7 @@ import { composeFeedsCell, packPythUpdatesData } from '../api/prices';
 import { makeOnchainGetterMasterMessage, makePythProxyMessage } from '../api/pyth';
 import { TON_MAINNET } from '../constants';
 import { FEES, OPCODES } from '../constants/general';
-import { getUserJettonWallet } from '../utils/userJettonWallet';
-import { isTonAsset, isTonAssetId } from '../utils/utils';
+import { isTonAsset } from '../utils/utils';
 import {
     AbstractEvaaMaster,
     BaseMasterConfig,
@@ -18,7 +17,6 @@ import {
     SupplyWithdrawParameters,
     WithdrawParameters,
 } from './AbstractMaster';
-import { JettonWallet } from './JettonWallet';
 
 /**
  * pyth specific parameters
@@ -44,18 +42,19 @@ export type JettonPythParams = PythBaseData & OnchainSpecificPythParams;
 
 export type TonPythParams = PythBaseData & ProxySpecificPythParams;
 
-export type PythSupplyWithdrawParameters = SupplyWithdrawParameters & {
-    pyth?: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams);
+export type PythProxyParams = {
+    pyth: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams) & { pythAddress: Address };
 };
+
+export type PythSupplyWithdrawParameters = SupplyWithdrawParameters & Partial<PythProxyParams>;
 
 export type PythWithdrawParameters = WithdrawParameters & {
     pyth: TonPythParams;
 };
 
 export type PythLiquidationOperationParameters = LiquidationOperationBuilderParameters &
-    LiquidationInnerParameters & {
-        pyth: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams);
-    };
+    LiquidationInnerParameters &
+    PythProxyParams;
 
 export type PythLiquidationParameters = LiquidationParameters & PythLiquidationOperationParameters;
 
@@ -74,29 +73,10 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
         super(parameters);
     }
 
+    // TODO: support without OPCODES.SUPPLY_WITHDRAW_MASTER_WITHOUT_PRICES
     createSupplyWithdrawMessage(parameters: PythSupplyWithdrawParameters): Cell {
         const operationPayload = this.buildSupplyWithdrawOperationPayload(parameters);
 
-        // Handle case without pyth parameters
-        // if (!parameters.pyth) {
-        //     const refOpCode = OPCODES.SUPPLY_WITHDRAW_MASTER_WITHOUT_PRICES;
-
-        //     if (!isTonAsset(parameters.supplyAsset)) {
-        //         return this.createJettonTransferMessage(
-        //             parameters,
-        //             FEES.SUPPLY_WITHDRAW,
-        //             beginCell().storeUint(refOpCode, 32).storeSlice(operationPayload.beginParse()).endCell(),
-        //         );
-        //     } else {
-        //         return beginCell()
-        //             .storeUint(refOpCode, 32)
-        //             .storeUint(parameters.queryID, 64)
-        //             .storeSlice(operationPayload.beginParse())
-        //             .endCell();
-        //     }
-        // }
-
-        // Handle case with pyth parameters (existing logic)
         if (!isTonAsset(parameters.supplyAsset)) {
             const { priceData, targetFeeds, publishGap, maxStaleness } = parameters.pyth as JettonPythParams;
             const masterMessage = makeOnchainGetterMasterMessage({
@@ -275,19 +255,7 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
     ): Promise<void> {
         const message = this.createLiquidationMessage(parameters);
 
-        if (!isTonAssetId(parameters.loanAsset)) {
-            if (!via.address) throw Error('Via address is required for jetton liquidation');
-            const jettonWallet = provider.open(
-                JettonWallet.createFromAddress(getUserJettonWallet(via.address, parameters.asset)),
-            );
-            await jettonWallet.sendTransfer(via, value, message);
-        } else {
-            await provider.internal(via, {
-                value,
-                sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
-                body: message,
-            });
-        }
+        await this.sendTx(provider, via, value, message, parameters.asset);
     }
 
     async getSync(provider: ContractProvider) {
