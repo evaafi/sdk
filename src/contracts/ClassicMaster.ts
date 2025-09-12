@@ -62,30 +62,13 @@ export class EvaaMasterClassic extends AbstractEvaaMaster<ClassicMasterData> {
     createSupplyWithdrawMessage(parameters: ClassicSupplyWithdrawParameters): Cell {
         const isTon = isTonAsset(parameters.supplyAsset);
 
-        const supplyData = beginCell();
-        if (isTon) {
-            supplyData.storeUint(parameters.supplyAmount, 64);
-        }
-
-        const withdrawData = beginCell()
-            .storeUint(parameters.withdrawAmount, 64)
-            .storeUint(parameters.withdrawAsset.assetId, 256)
-            .storeAddress(parameters.withdrawRecipient)
-            .endCell();
-
-        const generalData = this.buildGeneralDataPayload(parameters);
-
-        const operationPayload = beginCell()
-            .storeRef(supplyData)
-            .storeRef(withdrawData)
-            .storeRef(generalData)
-            .endCell();
+        const operationPayload = this.buildSupplyWithdrawOperationPayload(parameters);
 
         const refOpCode = parameters.priceData
             ? OPCODES.SUPPLY_WITHDRAW_MASTER
             : OPCODES.SUPPLY_WITHDRAW_MASTER_WITHOUT_PRICES;
 
-        if (!isTonAsset(parameters.supplyAsset)) {
+        if (!isTon) {
             return this.createJettonTransferMessage(
                 parameters,
                 FEES.SUPPLY_WITHDRAW,

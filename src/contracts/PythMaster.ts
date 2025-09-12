@@ -31,7 +31,6 @@ export type PythBaseData = {
 
 export type ProxySpecificPythParams = {
     pythAddress: Address;
-    // attachedValue: bigint;
     minPublishTime: number | bigint;
     maxPublishTime: number | bigint;
 };
@@ -196,8 +195,6 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
         value: bigint,
         parameters: PythWithdrawParameters,
     ): Promise<void> {
-        const _parameters = { ...parameters };
-        _parameters.pyth = { ...parameters.pyth, ...{ attachedValue: value } } as TonPythParams;
         const message = this.createSupplyWithdrawMessage({
             supplyAsset: TON_MAINNET,
             supplyAmount: 0n,
@@ -212,11 +209,11 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
             customPayloadSaturationFlag: parameters.customPayloadSaturationFlag ?? false,
             returnRepayRemainingsFlag: parameters.returnRepayRemainingsFlag ?? false,
             tonForRepayRemainings: 0n,
-            pyth: _parameters.pyth,
+            pyth: parameters.pyth,
         });
         await via.send({
             value,
-            to: (_parameters.pyth as TonPythParams).pythAddress,
+            to: parameters.pyth.pythAddress,
             sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
             body: message,
         });
@@ -225,7 +222,7 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
     protected buildLiquidationOperationPayload(parameters: PythLiquidationOperationParameters): Cell {
         const operationPayloadBuilder = this.buildLiquidationOperationPayloadBuilder(parameters);
         const innerBuilder = this.buildLiquidationInnerBuilder(parameters);
-        
+
         const refTokensDict = this.buildRefTokensDict(parameters.pyth.requestedRefTokens);
 
         return operationPayloadBuilder.storeDict(refTokensDict).storeRef(innerBuilder).endCell();
@@ -276,11 +273,7 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
         value: bigint,
         parameters: PythLiquidationParameters,
     ): Promise<void> {
-        const _parameters = { ...parameters };
-        // Preserve full PythBaseData + specific params, just augment with attachedValue
-        const pythWithAttached: any = { ...(parameters.pyth as any), attachedValue: value };
-        (_parameters as any).pyth = pythWithAttached;
-        const message = this.createLiquidationMessage(_parameters);
+        const message = this.createLiquidationMessage(parameters);
 
         if (!isTonAssetId(parameters.loanAsset)) {
             if (!via.address) throw Error('Via address is required for jetton liquidation');
