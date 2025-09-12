@@ -24,6 +24,7 @@ import { JettonWallet } from './JettonWallet';
 export type PythBaseData = {
     priceData: Buffer | Cell;
     targetFeeds: HexString[];
+    requestedRefTokens: bigint[];
 };
 
 export type ProxySpecificPythParams = {
@@ -43,12 +44,10 @@ export type JettonPythParams = PythBaseData & OnchainSpecificPythParams;
 export type TonPythParams = PythBaseData & ProxySpecificPythParams;
 
 export type PythSupplyWithdrawParameters = SupplyWithdrawParameters & {
-    requestedRefTokens: bigint[];
     pyth?: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams);
 };
 
 export type PythWithdrawParameters = WithdrawParameters & {
-    requestedRefTokens: bigint[];
     pyth: TonPythParams;
 };
 
@@ -75,23 +74,23 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
         const operationPayload = this.buildSupplyWithdrawOperationPayload(parameters);
 
         // Handle case without pyth parameters
-        if (!parameters.pyth) {
-            const refOpCode = OPCODES.SUPPLY_WITHDRAW_MASTER_WITHOUT_PRICES;
+        // if (!parameters.pyth) {
+        //     const refOpCode = OPCODES.SUPPLY_WITHDRAW_MASTER_WITHOUT_PRICES;
 
-            if (!isTonAsset(parameters.supplyAsset)) {
-                return this.createJettonTransferMessage(
-                    parameters,
-                    FEES.SUPPLY_WITHDRAW,
-                    beginCell().storeUint(refOpCode, 32).storeSlice(operationPayload.beginParse()).endCell(),
-                );
-            } else {
-                return beginCell()
-                    .storeUint(refOpCode, 32)
-                    .storeUint(parameters.queryID, 64)
-                    .storeSlice(operationPayload.beginParse())
-                    .endCell();
-            }
-        }
+        //     if (!isTonAsset(parameters.supplyAsset)) {
+        //         return this.createJettonTransferMessage(
+        //             parameters,
+        //             FEES.SUPPLY_WITHDRAW,
+        //             beginCell().storeUint(refOpCode, 32).storeSlice(operationPayload.beginParse()).endCell(),
+        //         );
+        //     } else {
+        //         return beginCell()
+        //             .storeUint(refOpCode, 32)
+        //             .storeUint(parameters.queryID, 64)
+        //             .storeSlice(operationPayload.beginParse())
+        //             .endCell();
+        //     }
+        // }
 
         // Handle case with pyth parameters (existing logic)
         if (!isTonAsset(parameters.supplyAsset)) {
@@ -161,14 +160,14 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
     //     );
     // }
 
-    // TODO: fix to, actually uses mock empty Dictionary
+
     buildGeneralDataPayload(parameters: PythSupplyWithdrawParameters): Cell {
         const refsDict: Dictionary<bigint, Buffer> = Dictionary.empty(
             Dictionary.Keys.BigUint(256),
             Dictionary.Values.Buffer(0),
         );
 
-        for (const refToken of parameters.requestedRefTokens) {
+        for (const refToken of parameters.pyth?.requestedRefTokens ?? []) {
             refsDict.set(refToken, Buffer.alloc(0));
         }
         return beginCell()
@@ -205,7 +204,6 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
             returnRepayRemainingsFlag: parameters.returnRepayRemainingsFlag ?? false,
             tonForRepayRemainings: 0n,
             pyth: _parameters.pyth,
-            requestedRefTokens: parameters.requestedRefTokens,
         });
         await via.send({
             value,
@@ -225,12 +223,21 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
             innerCell.storeInt(parameters.customPayloadSaturationFlag ? -1 : 0, 2);
         }
 
+        const refsDict: Dictionary<bigint, Buffer> = Dictionary.empty(
+            Dictionary.Keys.BigUint(256),
+            Dictionary.Values.Buffer(0),
+        );
+        for (const refToken of parameters.pyth.requestedRefTokens) {
+            refsDict.set(refToken, Buffer.alloc(0));
+        }
+
         const operationPayload = beginCell()
             .storeAddress(parameters.borrowerAddress)
             .storeUint(parameters.collateralAsset, 256)
             .storeUint(parameters.minCollateralAmount, 64)
             .storeInt(parameters.includeUserCode ? -1 : 0, 2)
             .storeUint(isTon ? parameters.liquidationAmount : 0, 64)
+            .storeDict(refsDict)
             .storeRef(innerCell)
             .endCell();
 
