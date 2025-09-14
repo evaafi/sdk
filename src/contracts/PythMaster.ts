@@ -2,7 +2,6 @@ import { HexString } from '@pythnetwork/hermes-client';
 import { Address, beginCell, Cell, ContractProvider, Dictionary, Sender, SendMode } from '@ton/core';
 import { PythOracleInfo, PythOracleParser } from '../api/parsers/PythOracleParser';
 import { composeFeedsCell, packPythUpdatesData } from '../api/prices';
-import { makeOnchainGetterMasterMessage, makePythProxyMessage } from '../api/pyth';
 import { TON_MAINNET } from '../constants';
 import { FEES, OPCODES } from '../constants/general';
 import { isTonAsset } from '../utils/utils';
@@ -73,21 +72,69 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
         super(parameters);
     }
 
+    protected buildPythMasterMessage(
+        args: {
+            queryId: number | bigint;
+            opCode: number | bigint;
+            updateDataCell: Cell;
+            targetFeedsCell: Cell;
+            publishGap: number | bigint;
+            maxStaleness: number | bigint;
+        },
+        operationPayload: Cell,
+    ): Cell {
+        return beginCell()
+            .storeUint(args.opCode, 32)
+            .storeUint(args.queryId, 64)
+            .storeRef(
+                beginCell()
+                    .storeRef(args.updateDataCell)
+                    .storeRef(args.targetFeedsCell)
+                    .storeUint(args.publishGap, 64)
+                    .storeUint(args.maxStaleness, 64)
+                    .endCell(),
+            )
+            .storeRef(operationPayload)
+            .endCell();
+    }
+
+    protected buildPythProxyMessage(
+        targetAddress: Address,
+        priceUpdateData: Cell,
+        targetPythFeeds: Cell,
+        minPublishTime: number | bigint,
+        maxPublishTime: number | bigint,
+        operationPayload: Cell,
+    ): Cell {
+        return beginCell()
+            .storeUint(5, 32) // pyth::op_parse_price_feed_updates
+            .storeRef(priceUpdateData)
+            .storeRef(targetPythFeeds)
+            .storeUint(minPublishTime, 64)
+            .storeUint(maxPublishTime, 64)
+            .storeAddress(targetAddress)
+            .storeRef(operationPayload)
+            .endCell();
+    }
+
     // TODO: support without OPCODES.SUPPLY_WITHDRAW_MASTER_WITHOUT_PRICES
     createSupplyWithdrawMessage(parameters: PythSupplyWithdrawParameters): Cell {
         const operationPayload = this.buildSupplyWithdrawOperationPayload(parameters);
 
         if (!isTonAsset(parameters.supplyAsset)) {
             const { priceData, targetFeeds, publishGap, maxStaleness } = parameters.pyth as JettonPythParams;
-            const masterMessage = makeOnchainGetterMasterMessage({
-                queryId: parameters.queryID,
-                opCode: OPCODES.SUPPLY_WITHDRAW_MASTER_JETTON,
-                updateDataCell: packPythUpdatesData(priceData),
-                targetFeedsCell: composeFeedsCell(targetFeeds),
-                publishGap,
-                maxStaleness,
+            const masterMessage = this.buildPythMasterMessage(
+                {
+                    queryId: parameters.queryID,
+                    opCode: OPCODES.SUPPLY_WITHDRAW_MASTER_JETTON,
+                    updateDataCell: packPythUpdatesData(priceData),
+                    targetFeedsCell: composeFeedsCell(targetFeeds),
+                    publishGap,
+                    maxStaleness,
+                },
                 operationPayload,
-            });
+            );
+
             return this.createJettonTransferMessage(parameters, FEES.SUPPLY_WITHDRAW, masterMessage);
         } else {
             const { priceData, targetFeeds, minPublishTime, maxPublishTime } = parameters.pyth as TonPythParams;
@@ -96,7 +143,7 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
                 .storeUint(parameters.queryID, 64)
                 .storeRef(operationPayload)
                 .endCell();
-            return makePythProxyMessage(
+            return this.buildPythProxyMessage(
                 this.address,
                 packPythUpdatesData(priceData),
                 composeFeedsCell(targetFeeds),
@@ -208,7 +255,7 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
         return operationPayloadBuilder.storeDict(refTokensDict).storeRef(innerBuilder).endCell();
     }
 
-    protected createLiquidationMessage(parameters: PythLiquidationParameters): Cell {
+    createLiquidationMessage(parameters: PythLiquidationParameters): Cell {
         const isTon = isTonAsset(parameters.asset);
 
         const operationPayload = this.buildLiquidationOperationPayload(parameters);
@@ -216,15 +263,17 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
         if (!isTon) {
             const { priceData, targetFeeds, publishGap, maxStaleness } =
                 parameters.pyth as OnchainSpecificPythParams & { priceData: Buffer | Cell; targetFeeds: HexString[] };
-            const masterMessage = makeOnchainGetterMasterMessage({
-                queryId: parameters.queryID,
-                opCode: OPCODES.LIQUIDATE_MASTER,
-                updateDataCell: packPythUpdatesData(priceData as Buffer | Cell),
-                targetFeedsCell: composeFeedsCell(targetFeeds),
-                publishGap,
-                maxStaleness,
+            const masterMessage = this.buildPythMasterMessage(
+                {
+                    queryId: parameters.queryID,
+                    opCode: OPCODES.LIQUIDATE_MASTER,
+                    updateDataCell: packPythUpdatesData(priceData as Buffer | Cell),
+                    targetFeedsCell: composeFeedsCell(targetFeeds),
+                    publishGap,
+                    maxStaleness,
+                },
                 operationPayload,
-            });
+            );
             return this.createJettonTransferMessage(parameters, FEES.LIQUIDATION_JETTON_FWD, masterMessage);
         } else {
             const { priceData, targetFeeds, minPublishTime, maxPublishTime } = parameters.pyth as TonPythParams & {
@@ -236,7 +285,7 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
                 .storeUint(parameters.queryID, 64)
                 .storeRef(operationPayload)
                 .endCell();
-            return makePythProxyMessage(
+            return this.buildPythProxyMessage(
                 this.address,
                 packPythUpdatesData(priceData as Buffer | Cell),
                 composeFeedsCell(targetFeeds),

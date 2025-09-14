@@ -113,7 +113,7 @@ export class EvaaMasterClassic extends AbstractEvaaMaster<ClassicMasterData> {
         return operationPayloadBuilder.storeRef(innerBuilder).storeRef(parameters.priceData);
     }
 
-    protected createLiquidationMessage(parameters: ClassicLiquidationParameters): Cell {
+    createLiquidationMessage(parameters: ClassicLiquidationParameters): Cell {
         const isTon = isTonAsset(parameters.asset);
         const operationPayload = this.buildLiquidationOperationPayload(parameters);
 

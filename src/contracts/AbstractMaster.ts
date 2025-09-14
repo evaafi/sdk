@@ -102,15 +102,20 @@ export type WithdrawParameters = {
     returnRepayRemainingsFlag: boolean;
 };
 
+export type LiquidationInnerCustomPayload = {
+    subaccountId: number;
+    customPayloadRecipient: Address;
+    customPayloadSaturationFlag: boolean;
+};
+
 /**
- * @property payload - liquidation operation custom payload
+ * Parameters for liquidation inner operations
+ * @interface LiquidationInnerParameters
  */
 export type LiquidationInnerParameters = {
-    payload: Cell;
-    subaccountId?: number;
-    customPayloadRecipient?: Address;
-    customPayloadSaturationFlag?: boolean;
-};
+    /** Liquidation operation payload cell */
+    readonly payload: Cell;
+} & (LiquidationInnerCustomPayload | { [K in keyof LiquidationInnerCustomPayload]?: never });
 
 /**
  * Base data for liquidation. Can be obtained from the user contract liquidationParameters getter
@@ -316,15 +321,13 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
         parameters: ClassicWithdrawParameters | PythWithdrawParameters,
     ): Promise<void>;
 
-    protected abstract createLiquidationMessage(
-        parameters: ClassicLiquidationParameters | PythLiquidationParameters,
-    ): Cell;
+    abstract createLiquidationMessage(parameters: ClassicLiquidationParameters | PythLiquidationParameters): Cell;
 
     protected buildLiquidationInnerBuilder(parameters: LiquidationInnerParameters): Builder {
         const subaccountId = parameters.subaccountId ?? 0;
 
         const innerCell = beginCell().storeRef(parameters.payload);
-        if (subaccountId !== 0 || parameters.customPayloadRecipient || parameters.customPayloadSaturationFlag) {
+        if (subaccountId && parameters.customPayloadRecipient) {
             innerCell.storeInt(subaccountId, 16);
             innerCell.storeAddress(parameters.customPayloadRecipient);
             innerCell.storeInt(parameters.customPayloadSaturationFlag ? -1 : 0, 2);
