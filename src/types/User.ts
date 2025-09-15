@@ -1,5 +1,13 @@
-import { Address, BitBuilder, Cell, Dictionary } from '@ton/core';
-import { AssetConfig, AssetData, ExtendedAssetData, ExtendedAssetsConfig, ExtendedAssetsData, MasterConfig, MasterConstants, PoolAssetConfig, PoolConfig } from './Master';
+import { Address, Cell, Dictionary } from '@ton/core';
+import {
+    AssetConfig,
+    AssetData,
+    ExtendedAssetsConfig,
+    ExtendedAssetsData,
+    MasterConstants,
+    PoolAssetConfig,
+    PoolConfig,
+} from './Master';
 
 export enum BalanceType {
     supply = 'supply',
@@ -38,7 +46,7 @@ export type UserLiteData = {
     masterAddress: Address;
     ownerAddress: Address;
     principals: Dictionary<bigint, bigint>;
-    realPrincipals: Dictionary<bigint, bigint>;  // principals before applying dusts
+    realPrincipals: Dictionary<bigint, bigint>; // principals before applying dusts
     state: number;
     balances: Dictionary<bigint, UserBalance>;
     trackingSupplyIndex: bigint;
@@ -82,18 +90,18 @@ export type HealthParamsArgs = {
     principals: Dictionary<bigint, bigint>;
     prices: Dictionary<bigint, bigint>;
     poolConfig: PoolConfig;
-}
+};
 
 export enum BalanceChangeType {
     Borrow = 0,
     Repay = 1,
     Supply = 2,
-    Withdraw = 3
+    Withdraw = 3,
 }
 
 export type PredictHealthFactorArgs = {
     balanceChangeType: BalanceChangeType;
-    amount: bigint;  // always positive
+    amount: bigint; // always positive
     asset: PoolAssetConfig;
     principals: Dictionary<bigint, bigint>;
     prices: Dictionary<bigint, bigint>;
@@ -104,7 +112,7 @@ export type PredictHealthFactorArgs = {
 
 export type PredictAPYArgs = {
     balanceChangeType: BalanceChangeType;
-    amount: bigint;  // always positive
+    amount: bigint; // always positive
     assetData: AssetData;
     assetConfig: AssetConfig;
     masterConstants: MasterConstants;
