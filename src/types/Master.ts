@@ -1,17 +1,19 @@
-import { Address, Cell, Dictionary } from '@ton/core'
+import { Address, Cell, Dictionary } from '@ton/core';
+import { Oracle } from '../prices/Oracle.interface';
+export { FeedMapItem, parseFeedsMapDict } from '../api/feeds';
 
 export type MasterConstants = {
-    FACTOR_SCALE: bigint,
-    ASSET_COEFFICIENT_SCALE: bigint,
-    ASSET_PRICE_SCALE: bigint,
-    ASSET_RESERVE_FACTOR_SCALE: bigint,
-    ASSET_LIQUIDATION_RESERVE_FACTOR_SCALE: bigint,
-    ASSET_LIQUIDATION_THRESHOLD_SCALE: bigint,
-    ASSET_LIQUIDATION_BONUS_SCALE: bigint,
-    ASSET_ORIGINATION_FEE_SCALE: bigint,
-    ASSET_SRATE_SCALE: bigint,
-    ASSET_BRATE_SCALE: bigint,
-    COLLATERAL_WORTH_THRESHOLD: bigint,
+    FACTOR_SCALE: bigint;
+    ASSET_COEFFICIENT_SCALE: bigint;
+    ASSET_PRICE_SCALE: bigint;
+    ASSET_RESERVE_FACTOR_SCALE: bigint;
+    ASSET_LIQUIDATION_RESERVE_FACTOR_SCALE: bigint;
+    ASSET_LIQUIDATION_THRESHOLD_SCALE: bigint;
+    ASSET_LIQUIDATION_BONUS_SCALE: bigint;
+    ASSET_ORIGINATION_FEE_SCALE: bigint;
+    ASSET_SRATE_SCALE: bigint;
+    ASSET_BRATE_SCALE: bigint;
+    COLLATERAL_WORTH_THRESHOLD: bigint;
 };
 
 export type PoolAssetsConfig = PoolAssetConfig[];
@@ -21,16 +23,15 @@ export type PoolAssetConfig = {
     assetId: bigint;
     jettonMasterAddress: Address;
     jettonWalletCode: Cell;
-}
+};
 
 export type PoolConfig = {
     masterAddress: Address;
     masterVersion: number;
     masterConstants: MasterConstants;
-    oracles: OracleNFT[];
-    minimalOracles: number;
     poolAssetsConfig: PoolAssetsConfig;
     lendingCode: Cell;
+    oracles: Oracle;
 };
 
 export type UpgradeConfig = {
@@ -46,7 +47,7 @@ export type UpgradeConfig = {
 };
 
 export type AssetConfig = {
-    oracle: bigint;
+    jwAddress: bigint;
     decimals: bigint;
     collateralFactor: bigint;
     liquidationThreshold: bigint;
@@ -65,19 +66,10 @@ export type AssetConfig = {
     minPrincipalForRewards: bigint;
     baseTrackingSupplySpeed: bigint;
     baseTrackingBorrowSpeed: bigint;
-};
-
-export type MasterConfig = {
-    ifActive: number;
-    admin: Address;
-    oraclesInfo: OraclesInfo
-    tokenKeys: Cell | null;
-};
-
-export type OraclesInfo = {
-    numOracles: number;
-    threshold: number;
-    oracles: Cell | null;
+    borrowCap: number | bigint;
+    heCategory: number;
+    heCollateralFactor: number;
+    heLiquidationThreshold: number;
 };
 
 export type AssetData = {
@@ -106,31 +98,16 @@ export type ExtendedAssetData = AssetData & AssetInterest & AssetApy;
 export type ExtendedAssetsData = Dictionary<bigint, ExtendedAssetData>;
 export type ExtendedAssetsConfig = Dictionary<bigint, AssetConfig>;
 
-export type MasterData = {
-    meta: string;
-    upgradeConfig: UpgradeConfig;
-    masterConfig: MasterConfig;
-    assetsConfig: ExtendedAssetsConfig;
-    assetsData: ExtendedAssetsData;
-    assetsReserves: Dictionary<bigint, bigint>;
-    apy: {
-        supply: Dictionary<bigint, number>;
-        borrow: Dictionary<bigint, number>;
-    };
-};
-
 export type AgregatedBalances = {
     totalBorrow: bigint;
     totalSupply: bigint;
-}
+};
 
-export type OracleNFT = {
-    id: number,
-    address: string,
-    pubkey: Buffer
-}
+export type ExtendedEvaaOracle = EvaaOracle & {
+    address: string;
+};
 
-export type Oracle = {
-    id: number,
-    pubkey: Buffer
-}
+export type EvaaOracle = {
+    id: number;
+    pubkey: Buffer;
+};

@@ -1,12 +1,17 @@
-import { Cell, Dictionary } from "@ton/core";
-import { PoolAssetConfig } from "../types/Master";
+import { Cell, Dictionary } from '@ton/core';
+import { PoolAssetConfig } from '../types/Master';
 
 export class Prices {
     #dict: Dictionary<bigint, bigint>;
     #dataCell: Cell;
-    constructor(dict: Dictionary<bigint, bigint>, dataCell: Cell) {
+    #minPublishTime?: bigint;
+    #maxPublishTime?: bigint;
+
+    constructor(dict: Dictionary<bigint, bigint>, dataCell: Cell, minPublishTime?: bigint, maxPublishTime?: bigint) {
         this.#dict = dict;
         this.#dataCell = dataCell;
+        this.#minPublishTime = minPublishTime;
+        this.#maxPublishTime = maxPublishTime;
     }
 
     get dict() {
@@ -19,6 +24,14 @@ export class Prices {
 
     get dataCell() {
         return new Cell(this.#dataCell);
+    }
+
+    get minPublishTime(): bigint | undefined {
+        return this.#minPublishTime;
+    }
+
+    get maxPublishTime(): bigint | undefined {
+        return this.#maxPublishTime;
     }
 
     getAssetPrice<T extends bigint | PoolAssetConfig>(asset: T): bigint | undefined {
