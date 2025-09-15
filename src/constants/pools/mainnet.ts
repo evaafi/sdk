@@ -1,16 +1,12 @@
 import { Address, Dictionary } from '@ton/core';
 import {
     EVAA_JUSDT_PRICE_FEED_ID,
-    EVAA_STTON_PRICE_FEED_ID,
     EVAA_TSTON_PRICE_FEED_ID,
     EVAA_TSUSDE_PRICE_FEED_ID,
     packConnectedFeeds,
-    PYTH_STTON_PRICE_FEED_ID,
     PYTH_TON_PRICE_FEED_ID,
     PYTH_TSTON_PRICE_FEED_ID,
     PYTH_TSUSDE_PRICE_FEED_ID,
-    PYTH_USDC_PRICE_FEED_ID,
-    PYTH_USDE_PRICE_FEED_ID,
     PYTH_USDT_PRICE_FEED_ID,
 } from '../../api/feeds';
 import { DefaultPythPriceSourcesConfig, PricesCollector, PythCollector } from '../../prices';
@@ -101,20 +97,15 @@ export const MAINNET_POOL_CONFIG: PoolConfig = {
                     packConnectedFeeds(EVAA_TSTON_PRICE_FEED_ID, BigInt(PYTH_TON_PRICE_FEED_ID)),
                 )
                 .set(
-                    BigInt(PYTH_STTON_PRICE_FEED_ID),
-                    packConnectedFeeds(EVAA_STTON_PRICE_FEED_ID, BigInt(PYTH_TON_PRICE_FEED_ID)),
-                )
-                .set(BigInt(PYTH_USDC_PRICE_FEED_ID), packConnectedFeeds(ASSET_ID.jUSDC, 0n))
-                .set(BigInt(PYTH_USDE_PRICE_FEED_ID), packConnectedFeeds(ASSET_ID.USDe, 0n))
-                .set(
                     BigInt(PYTH_TSUSDE_PRICE_FEED_ID),
-                    packConnectedFeeds(EVAA_TSUSDE_PRICE_FEED_ID, BigInt(PYTH_USDE_PRICE_FEED_ID)),
+                    packConnectedFeeds(EVAA_TSUSDE_PRICE_FEED_ID, BigInt(PYTH_USDT_PRICE_FEED_ID)),
                 ),
             pythAddress: PYTH_ORACLE_MAINNET,
-            allowedRefTokens: Dictionary.empty<bigint, bigint>().set(
-                BigInt(EVAA_JUSDT_PRICE_FEED_ID),
-                BigInt(ASSET_ID.USDT),
-            ),
+            allowedRefTokens: Dictionary.empty<bigint, bigint>()
+                .set(ASSET_ID.jUSDT, ASSET_ID.USDT)
+                .set(ASSET_ID.jUSDC, ASSET_ID.USDT)
+                .set(ASSET_ID.USDe, ASSET_ID.USDT)
+                .set(ASSET_ID.stTON, ASSET_ID.tsTON),
         },
     }),
     poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,

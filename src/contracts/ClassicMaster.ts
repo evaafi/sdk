@@ -1,17 +1,17 @@
-import { beginCell, Cell, ContractProvider, Sender, SendMode } from '@ton/core';
-import { isTonAsset, isTonAssetId, LiquidationParameters, TON_MAINNET } from '..';
+import { beginCell, Builder, Cell, ContractProvider, Sender } from '@ton/core';
+import { isTonAsset, LiquidationParameters, TON_MAINNET } from '..';
 import { ClassicOracleInfo, ClassicOracleParser } from '../api/parsers/ClassicOracleParser';
 import { FEES, OPCODES } from '../constants/general';
-import { getUserJettonWallet } from '../utils/userJettonWallet';
 import {
     AbstractEvaaMaster,
     BaseMasterConfig,
     BaseMasterData,
     EvaaParameters,
+    LiquidationInnerParameters,
+    LiquidationOperationBuilderParameters,
     SupplyWithdrawParameters,
     WithdrawParameters,
 } from './AbstractMaster';
-import { JettonWallet } from './JettonWallet';
 
 export type ClassicSupplyWithdrawParameters = SupplyWithdrawParameters & {
     priceData?: Cell;
@@ -25,9 +25,12 @@ export type ClassicWithdrawParameters = WithdrawParameters & {
     priceData: Cell;
 };
 
-export type ClassicLiquidationParameters = LiquidationParameters & {
-    priceData: Cell;
-};
+export type ClassicLiquidationOperationParameters = LiquidationOperationBuilderParameters &
+    LiquidationInnerParameters & {
+        priceData: Cell;
+    };
+
+export type ClassicLiquidationParameters = LiquidationParameters & ClassicLiquidationOperationParameters;
 
 export type ClassicMasterConfig = BaseMasterConfig & {
     oraclesInfo: ClassicOracleInfo;
@@ -57,30 +60,13 @@ export class EvaaMasterClassic extends AbstractEvaaMaster<ClassicMasterData> {
     createSupplyWithdrawMessage(parameters: ClassicSupplyWithdrawParameters): Cell {
         const isTon = isTonAsset(parameters.supplyAsset);
 
-        const supplyData = beginCell();
-        if (isTon) {
-            supplyData.storeUint(parameters.supplyAmount, 64);
-        }
-
-        const withdrawData = beginCell()
-            .storeUint(parameters.withdrawAmount, 64)
-            .storeUint(parameters.withdrawAsset.assetId, 256)
-            .storeAddress(parameters.withdrawRecipient)
-            .endCell();
-
-        const generalData = this.buildGeneralDataPayload(parameters);
-
-        const operationPayload = beginCell()
-            .storeRef(supplyData)
-            .storeRef(withdrawData)
-            .storeRef(generalData)
-            .endCell();
+        const operationPayload = this.buildSupplyWithdrawOperationPayload(parameters);
 
         const refOpCode = parameters.priceData
             ? OPCODES.SUPPLY_WITHDRAW_MASTER
             : OPCODES.SUPPLY_WITHDRAW_MASTER_WITHOUT_PRICES;
 
-        if (!isTonAsset(parameters.supplyAsset)) {
+        if (!isTon) {
             return this.createJettonTransferMessage(
                 parameters,
                 FEES.SUPPLY_WITHDRAW,
@@ -120,25 +106,16 @@ export class EvaaMasterClassic extends AbstractEvaaMaster<ClassicMasterData> {
         });
     }
 
-    protected createLiquidationMessage(parameters: ClassicLiquidationParameters): Cell {
-        const subaccountId = parameters.subaccountId ?? 0;
+    protected buildLiquidationOperationPayload(parameters: ClassicLiquidationOperationParameters): Builder {
+        const operationPayloadBuilder = this.buildLiquidationOperationPayloadBuilder(parameters);
+        const innerBuilder = this.buildLiquidationInnerBuilder(parameters);
+
+        return operationPayloadBuilder.storeRef(innerBuilder).storeRef(parameters.priceData);
+    }
+
+    createLiquidationMessage(parameters: ClassicLiquidationParameters): Cell {
         const isTon = isTonAsset(parameters.asset);
-
-        const innerCell = beginCell().storeRef(parameters.payload);
-        if (subaccountId !== 0 || parameters.customPayloadRecipient || parameters.customPayloadSaturationFlag) {
-            innerCell.storeInt(subaccountId, 16);
-            innerCell.storeAddress(parameters.customPayloadRecipient);
-            innerCell.storeInt(parameters.customPayloadSaturationFlag ? -1 : 0, 2);
-        }
-
-        const operationPayload = beginCell()
-            .storeAddress(parameters.borrowerAddress)
-            .storeUint(parameters.collateralAsset, 256)
-            .storeUint(parameters.minCollateralAmount, 64)
-            .storeInt(parameters.includeUserCode ? -1 : 0, 2)
-            .storeUint(isTon ? parameters.liquidationAmount : 0, 64)
-            .storeRef(innerCell)
-            .storeRef(parameters.priceData);
+        const operationPayload = this.buildLiquidationOperationPayload(parameters);
 
         if (!isTon) {
             return this.createJettonTransferMessage(
@@ -163,19 +140,7 @@ export class EvaaMasterClassic extends AbstractEvaaMaster<ClassicMasterData> {
     ): Promise<void> {
         const message = this.createLiquidationMessage(parameters);
 
-        if (!isTonAssetId(parameters.loanAsset)) {
-            if (!via.address) throw Error('Via address is required for jetton liquidation');
-            const jettonWallet = provider.open(
-                JettonWallet.createFromAddress(getUserJettonWallet(via.address, parameters.asset)),
-            );
-            await jettonWallet.sendTransfer(via, value, message);
-        } else {
-            await provider.internal(via, {
-                value,
-                sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
-                body: message,
-            });
-        }
+        await this.sendTx(provider, via, value, message, parameters.asset);
     }
 
     async getSync(provider: ContractProvider) {

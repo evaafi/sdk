@@ -2,21 +2,20 @@ import { HexString } from '@pythnetwork/hermes-client';
 import { Address, beginCell, Cell, ContractProvider, Dictionary, Sender, SendMode } from '@ton/core';
 import { PythOracleInfo, PythOracleParser } from '../api/parsers/PythOracleParser';
 import { composeFeedsCell, packPythUpdatesData } from '../api/prices';
-import { makeOnchainGetterMasterMessage, makePythProxyMessage } from '../api/pyth';
 import { TON_MAINNET } from '../constants';
 import { FEES, OPCODES } from '../constants/general';
-import { getUserJettonWallet } from '../utils/userJettonWallet';
-import { isTonAsset, isTonAssetId } from '../utils/utils';
+import { isTonAsset } from '../utils/utils';
 import {
     AbstractEvaaMaster,
     BaseMasterConfig,
     BaseMasterData,
     EvaaParameters,
+    LiquidationInnerParameters,
+    LiquidationOperationBuilderParameters,
     LiquidationParameters,
     SupplyWithdrawParameters,
     WithdrawParameters,
 } from './AbstractMaster';
-import { JettonWallet } from './JettonWallet';
 
 /**
  * pyth specific parameters
@@ -24,11 +23,11 @@ import { JettonWallet } from './JettonWallet';
 export type PythBaseData = {
     priceData: Buffer | Cell;
     targetFeeds: HexString[];
+    requestedRefTokens: bigint[];
 };
 
 export type ProxySpecificPythParams = {
     pythAddress: Address;
-    // attachedValue: bigint;
     minPublishTime: number | bigint;
     maxPublishTime: number | bigint;
 };
@@ -42,19 +41,21 @@ export type JettonPythParams = PythBaseData & OnchainSpecificPythParams;
 
 export type TonPythParams = PythBaseData & ProxySpecificPythParams;
 
-export type PythSupplyWithdrawParameters = SupplyWithdrawParameters & {
-    requestedRefTokens: bigint[];
-    pyth: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams);
+export type PythProxyParams = {
+    pyth: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams) & { pythAddress: Address };
 };
 
+export type PythSupplyWithdrawParameters = SupplyWithdrawParameters & Partial<PythProxyParams>;
+
 export type PythWithdrawParameters = WithdrawParameters & {
-    requestedRefTokens: bigint[];
     pyth: TonPythParams;
 };
 
-export type PythLiquidationParameters = LiquidationParameters & {
-    pyth: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams);
-};
+export type PythLiquidationOperationParameters = LiquidationOperationBuilderParameters &
+    LiquidationInnerParameters &
+    PythProxyParams;
+
+export type PythLiquidationParameters = LiquidationParameters & PythLiquidationOperationParameters;
 
 // Specific master configurations
 export type PythMasterConfig = BaseMasterConfig & {
@@ -71,23 +72,69 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
         super(parameters);
     }
 
+    protected buildPythMasterMessage(
+        args: {
+            queryId: number | bigint;
+            opCode: number | bigint;
+            updateDataCell: Cell;
+            targetFeedsCell: Cell;
+            publishGap: number | bigint;
+            maxStaleness: number | bigint;
+        },
+        operationPayload: Cell,
+    ): Cell {
+        return beginCell()
+            .storeUint(args.opCode, 32)
+            .storeUint(args.queryId, 64)
+            .storeRef(
+                beginCell()
+                    .storeRef(args.updateDataCell)
+                    .storeRef(args.targetFeedsCell)
+                    .storeUint(args.publishGap, 64)
+                    .storeUint(args.maxStaleness, 64)
+                    .endCell(),
+            )
+            .storeRef(operationPayload)
+            .endCell();
+    }
+
+    protected buildPythProxyMessage(
+        targetAddress: Address,
+        priceUpdateData: Cell,
+        targetPythFeeds: Cell,
+        minPublishTime: number | bigint,
+        maxPublishTime: number | bigint,
+        operationPayload: Cell,
+    ): Cell {
+        return beginCell()
+            .storeUint(5, 32) // pyth::op_parse_price_feed_updates
+            .storeRef(priceUpdateData)
+            .storeRef(targetPythFeeds)
+            .storeUint(minPublishTime, 64)
+            .storeUint(maxPublishTime, 64)
+            .storeAddress(targetAddress)
+            .storeRef(operationPayload)
+            .endCell();
+    }
+
+    // TODO: support without OPCODES.SUPPLY_WITHDRAW_MASTER_WITHOUT_PRICES
     createSupplyWithdrawMessage(parameters: PythSupplyWithdrawParameters): Cell {
-        if (!parameters.pyth) {
-            throw new Error('Pyth parameters are required for supply-withdraw in Pyth mode');
-        }
         const operationPayload = this.buildSupplyWithdrawOperationPayload(parameters);
 
         if (!isTonAsset(parameters.supplyAsset)) {
             const { priceData, targetFeeds, publishGap, maxStaleness } = parameters.pyth as JettonPythParams;
-            const masterMessage = makeOnchainGetterMasterMessage({
-                queryId: parameters.queryID,
-                opCode: OPCODES.SUPPLY_WITHDRAW_MASTER_JETTON,
-                updateDataCell: packPythUpdatesData(priceData),
-                targetFeedsCell: composeFeedsCell(targetFeeds),
-                publishGap,
-                maxStaleness,
+            const masterMessage = this.buildPythMasterMessage(
+                {
+                    queryId: parameters.queryID,
+                    opCode: OPCODES.SUPPLY_WITHDRAW_MASTER_JETTON,
+                    updateDataCell: packPythUpdatesData(priceData),
+                    targetFeedsCell: composeFeedsCell(targetFeeds),
+                    publishGap,
+                    maxStaleness,
+                },
                 operationPayload,
-            });
+            );
+
             return this.createJettonTransferMessage(parameters, FEES.SUPPLY_WITHDRAW, masterMessage);
         } else {
             const { priceData, targetFeeds, minPublishTime, maxPublishTime } = parameters.pyth as TonPythParams;
@@ -96,7 +143,7 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
                 .storeUint(parameters.queryID, 64)
                 .storeRef(operationPayload)
                 .endCell();
-            return makePythProxyMessage(
+            return this.buildPythProxyMessage(
                 this.address,
                 packPythUpdatesData(priceData),
                 composeFeedsCell(targetFeeds),
@@ -144,19 +191,23 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
     //     );
     // }
 
-    // TODO: fix to, actually uses mock empty Dictionary
-    buildGeneralDataPayload(parameters: PythSupplyWithdrawParameters): Cell {
+    buildRefTokensDict(requestedRefTokens: bigint[]): Dictionary<bigint, Buffer> {
         const refsDict: Dictionary<bigint, Buffer> = Dictionary.empty(
             Dictionary.Keys.BigUint(256),
             Dictionary.Values.Buffer(0),
         );
-
-        for (const refToken of parameters.requestedRefTokens) {
+        for (const refToken of requestedRefTokens) {
             refsDict.set(refToken, Buffer.alloc(0));
         }
+
+        return refsDict;
+    }
+
+    buildGeneralDataPayload(parameters: PythSupplyWithdrawParameters): Cell {
+        const refTokensDict = this.buildRefTokensDict(parameters.pyth?.requestedRefTokens ?? []);
         return beginCell()
             .storeInt(parameters.includeUserCode ? -1 : 0, 2)
-            .storeDict(refsDict, Dictionary.Keys.BigUint(256), Dictionary.Values.Buffer(0))
+            .storeDict(refTokensDict, Dictionary.Keys.BigUint(256), Dictionary.Values.Buffer(0))
             .storeUint(parameters.tonForRepayRemainings ?? 0n, 64)
             .storeRef(parameters.payload)
             .storeInt(parameters.subaccountId ?? 0, 16)
@@ -171,8 +222,6 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
         value: bigint,
         parameters: PythWithdrawParameters,
     ): Promise<void> {
-        const _parameters = { ...parameters };
-        _parameters.pyth = { ...parameters.pyth, ...{ attachedValue: value } } as TonPythParams;
         const message = this.createSupplyWithdrawMessage({
             supplyAsset: TON_MAINNET,
             supplyAmount: 0n,
@@ -187,48 +236,44 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
             customPayloadSaturationFlag: parameters.customPayloadSaturationFlag ?? false,
             returnRepayRemainingsFlag: parameters.returnRepayRemainingsFlag ?? false,
             tonForRepayRemainings: 0n,
-            pyth: _parameters.pyth,
-            requestedRefTokens: parameters.requestedRefTokens,
+            pyth: parameters.pyth,
         });
         await via.send({
             value,
-            to: (_parameters.pyth as TonPythParams).pythAddress,
+            to: parameters.pyth.pythAddress,
             sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
             body: message,
         });
     }
 
-    protected createLiquidationMessage(parameters: PythLiquidationParameters): Cell {
-        const subaccountId = parameters.subaccountId ?? 0;
-        const isTon = isTonAsset(parameters.asset);
-        const innerCell = beginCell().storeRef(parameters.payload);
-        if (subaccountId !== 0 || parameters.customPayloadRecipient || parameters.customPayloadSaturationFlag) {
-            innerCell.storeInt(subaccountId, 16);
-            innerCell.storeAddress(parameters.customPayloadRecipient);
-            innerCell.storeInt(parameters.customPayloadSaturationFlag ? -1 : 0, 2);
-        }
+    protected buildLiquidationOperationPayload(parameters: PythLiquidationOperationParameters): Cell {
+        const operationPayloadBuilder = this.buildLiquidationOperationPayloadBuilder(parameters);
+        const innerBuilder = this.buildLiquidationInnerBuilder(parameters);
 
-        const operationPayload = beginCell()
-            .storeAddress(parameters.borrowerAddress)
-            .storeUint(parameters.collateralAsset, 256)
-            .storeUint(parameters.minCollateralAmount, 64)
-            .storeInt(parameters.includeUserCode ? -1 : 0, 2)
-            .storeUint(isTon ? parameters.liquidationAmount : 0, 64)
-            .storeRef(innerCell)
-            .endCell();
+        const refTokensDict = this.buildRefTokensDict(parameters.pyth.requestedRefTokens);
+
+        return operationPayloadBuilder.storeDict(refTokensDict).storeRef(innerBuilder).endCell();
+    }
+
+    createLiquidationMessage(parameters: PythLiquidationParameters): Cell {
+        const isTon = isTonAsset(parameters.asset);
+
+        const operationPayload = this.buildLiquidationOperationPayload(parameters);
 
         if (!isTon) {
             const { priceData, targetFeeds, publishGap, maxStaleness } =
                 parameters.pyth as OnchainSpecificPythParams & { priceData: Buffer | Cell; targetFeeds: HexString[] };
-            const masterMessage = makeOnchainGetterMasterMessage({
-                queryId: parameters.queryID,
-                opCode: OPCODES.LIQUIDATE_MASTER,
-                updateDataCell: packPythUpdatesData(priceData as Buffer | Cell),
-                targetFeedsCell: composeFeedsCell(targetFeeds),
-                publishGap,
-                maxStaleness,
+            const masterMessage = this.buildPythMasterMessage(
+                {
+                    queryId: parameters.queryID,
+                    opCode: OPCODES.LIQUIDATE_MASTER,
+                    updateDataCell: packPythUpdatesData(priceData as Buffer | Cell),
+                    targetFeedsCell: composeFeedsCell(targetFeeds),
+                    publishGap,
+                    maxStaleness,
+                },
                 operationPayload,
-            });
+            );
             return this.createJettonTransferMessage(parameters, FEES.LIQUIDATION_JETTON_FWD, masterMessage);
         } else {
             const { priceData, targetFeeds, minPublishTime, maxPublishTime } = parameters.pyth as TonPythParams & {
@@ -240,7 +285,7 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
                 .storeUint(parameters.queryID, 64)
                 .storeRef(operationPayload)
                 .endCell();
-            return makePythProxyMessage(
+            return this.buildPythProxyMessage(
                 this.address,
                 packPythUpdatesData(priceData as Buffer | Cell),
                 composeFeedsCell(targetFeeds),
@@ -257,25 +302,9 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
         value: bigint,
         parameters: PythLiquidationParameters,
     ): Promise<void> {
-        const _parameters = { ...parameters };
-        // Preserve full PythBaseData + specific params, just augment with attachedValue
-        const pythWithAttached: any = { ...(parameters.pyth as any), attachedValue: value };
-        (_parameters as any).pyth = pythWithAttached;
-        const message = this.createLiquidationMessage(_parameters);
+        const message = this.createLiquidationMessage(parameters);
 
-        if (!isTonAssetId(parameters.loanAsset)) {
-            if (!via.address) throw Error('Via address is required for jetton liquidation');
-            const jettonWallet = provider.open(
-                JettonWallet.createFromAddress(getUserJettonWallet(via.address, parameters.asset)),
-            );
-            await jettonWallet.sendTransfer(via, value, message);
-        } else {
-            await provider.internal(via, {
-                value,
-                sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
-                body: message,
-            });
-        }
+        await this.sendTx(provider, via, value, message, parameters.asset);
     }
 
     async getSync(provider: ContractProvider) {

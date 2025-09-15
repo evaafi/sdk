@@ -1,6 +1,7 @@
 import {
     Address,
     beginCell,
+    Builder,
     Cell,
     Contract,
     ContractProvider,
@@ -10,7 +11,7 @@ import {
     SendMode,
     storeStateInit,
 } from '@ton/core';
-import { isTonAsset, isTonAssetId, isValidSubaccountId } from '..';
+import { isTonAsset, isValidSubaccountId } from '..';
 import { parseMasterData } from '../api/parser';
 import { OracleParser } from '../api/parsers/AbstractOracleParser';
 import { ClassicOracleInfo } from '../api/parsers/ClassicOracleParser';
@@ -19,12 +20,18 @@ import { FEES, OPCODES } from '../constants/general';
 import { ExtendedAssetsConfig, ExtendedAssetsData, PoolAssetConfig, PoolConfig, UpgradeConfig } from '../types/Master';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
 import {
+    ClassicLiquidationOperationParameters,
     ClassicLiquidationParameters,
     ClassicSupplyWithdrawParameters,
     ClassicWithdrawParameters,
 } from './ClassicMaster';
 import { JettonWallet } from './JettonWallet';
-import { PythLiquidationParameters, PythSupplyWithdrawParameters, PythWithdrawParameters } from './PythMaster';
+import {
+    PythLiquidationOperationParameters,
+    PythLiquidationParameters,
+    PythSupplyWithdrawParameters,
+    PythWithdrawParameters,
+} from './PythMaster';
 import { EvaaUser } from './UserContract';
 
 // Internal
@@ -96,34 +103,44 @@ export type WithdrawParameters = {
 };
 
 /**
+ * Parameters for liquidation inner operations
+ * @interface LiquidationInnerParameters
+ */
+export type LiquidationInnerParameters = {
+    /** Liquidation operation payload cell */
+    payload: Cell;
+    subaccountId: number;
+    customPayloadRecipient: Address;
+    customPayloadSaturationFlag: boolean;
+};
+
+/**
  * Base data for liquidation. Can be obtained from the user contract liquidationParameters getter
- * @property borrowerAddress - borrower address (user address that is being liquidated)
  * @property loanAsset - loan asset ID
+ * @property queryID - unique query ID
+ * @property liquidatorAddress - liquidator address, where and collateral will be sent
+ */
+export type LiquidationParameters = {
+    loanAsset: bigint;
+    queryID: bigint;
+    liquidatorAddress: Address;
+};
+
+/**
+ * @property asset - asset config
+ * @property borrowerAddress - borrower address (user address that is being liquidated)
  * @property collateralAsset - collateral asset ID
  * @property minCollateralAmount - minimal amount to receive from the liquidation
  * @property liquidationAmount - amount to liquidate
- * @property asset - asset config
- * @property queryID - unique query ID
- * @property liquidatorAddress - liquidator address, where and collateral will be sent
  * @property includeUserCode - true to include user code for update (needed when user contract code version is outdated)
- * @property payload - liquidation operation custom payload
- * @property payloadForwardAmount - amount of coins to forward with payload
  */
-export type LiquidationParameters = {
+export type LiquidationOperationBuilderParameters = {
+    asset: PoolAssetConfig;
     borrowerAddress: Address;
-    loanAsset: bigint;
     collateralAsset: bigint;
     minCollateralAmount: bigint;
     liquidationAmount: bigint;
-    asset: PoolAssetConfig;
-    queryID: bigint;
-    payload: Cell;
-    // TODO: maybe deprecate it, and use responseAddress instead of
-    liquidatorAddress: Address;
     includeUserCode: boolean;
-    subaccountId?: number;
-    customPayloadRecipient?: Address;
-    customPayloadSaturationFlag?: boolean;
 };
 
 export type SupplyWithdrawParameters = {
@@ -279,19 +296,7 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
     async sendSupply(provider: ContractProvider, via: Sender, value: bigint, parameters: SupplyParameters) {
         const message = this.createSupplyMessage(parameters);
 
-        if (!isTonAsset(parameters.asset)) {
-            if (!via.address) throw new Error('Via address is required for jetton supply');
-            const jettonWallet = provider.open(
-                JettonWallet.createFromAddress(getUserJettonWallet(via.address, parameters.asset)),
-            );
-            await jettonWallet.sendTransfer(via, value, message);
-        } else {
-            await provider.internal(via, {
-                value,
-                sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
-                body: message,
-            });
-        }
+        await this.sendTx(provider, via, value, message, parameters.asset);
     }
 
     async sendSupplyWithdraw(
@@ -302,19 +307,7 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
     ) {
         const message = this.createSupplyWithdrawMessage(parameters);
 
-        if (!isTonAssetId(parameters.supplyAsset.assetId)) {
-            if (!via.address) throw new Error('Via address is required for jetton supply-withdraw');
-            const jettonWallet = provider.open(
-                JettonWallet.createFromAddress(getUserJettonWallet(via.address, parameters.supplyAsset)),
-            );
-            await jettonWallet.sendTransfer(via, value, message);
-        } else {
-            await provider.internal(via, {
-                value,
-                sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
-                body: message,
-            });
-        }
+        await this.sendTx(provider, via, value, message, parameters.supplyAsset);
     }
 
     // Abstract where oracle path differs
@@ -325,9 +318,30 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
         parameters: ClassicWithdrawParameters | PythWithdrawParameters,
     ): Promise<void>;
 
-    protected abstract createLiquidationMessage(
-        parameters: ClassicLiquidationParameters | PythLiquidationParameters,
-    ): Cell;
+    abstract createLiquidationMessage(parameters: ClassicLiquidationParameters | PythLiquidationParameters): Cell;
+
+    protected buildLiquidationInnerBuilder(parameters: LiquidationInnerParameters): Builder {
+        const subaccountId = parameters.subaccountId ?? 0;
+
+        return beginCell()
+            .storeRef(parameters.payload)
+            .storeInt(subaccountId, 16)
+            .storeAddress(parameters.customPayloadRecipient)
+            .storeInt(parameters.customPayloadSaturationFlag ? -1 : 0, 2);
+    }
+
+    protected abstract buildLiquidationOperationPayload(
+        parameters: PythLiquidationOperationParameters | ClassicLiquidationOperationParameters,
+    ): Cell | Builder;
+
+    protected buildLiquidationOperationPayloadBuilder(parameters: LiquidationOperationBuilderParameters): Builder {
+        return beginCell()
+            .storeAddress(parameters.borrowerAddress)
+            .storeUint(parameters.collateralAsset, 256)
+            .storeUint(parameters.minCollateralAmount, 64)
+            .storeInt(parameters.includeUserCode ? -1 : 0, 2)
+            .storeUint(isTonAsset(parameters.asset) ? parameters.liquidationAmount : 0, 64);
+    }
 
     abstract sendLiquidation(
         provider: ContractProvider,
@@ -395,6 +409,20 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
                 .storeRef(forwardPayload)
                 .endCell(),
         });
+    }
+
+    async sendTx(provider: ContractProvider, via: Sender, value: bigint, message: Cell, asset: PoolAssetConfig) {
+        if (!isTonAsset(asset)) {
+            if (!via.address) throw new Error('Via address is required for jetton supply');
+            const jettonWallet = provider.open(JettonWallet.createFromAddress(getUserJettonWallet(via.address, asset)));
+            await jettonWallet.sendTransfer(via, value, message);
+        } else {
+            await provider.internal(via, {
+                value,
+                sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
+                body: message,
+            });
+        }
     }
 
     // Centralized sync logic used by concrete masters (Classic/Pyth)

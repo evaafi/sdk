@@ -1,21 +1,8 @@
 import 'dotenv/config';
 
 import { mnemonicToWalletKey } from '@ton/crypto';
-import { Cell, Dictionary, toNano, TonClient, WalletContractV5R1 } from '@ton/ton';
-import {
-    ASSET_ID,
-    DefaultPythPriceSourcesConfig,
-    EVAA_JUSDT_PRICE_FEED_ID,
-    EvaaMasterPyth,
-    JUSDT_MAINNET,
-    MAINNET_PYTH_V8_TOB_POOL_ASSETS_CONFIG,
-    MAINNET_PYTH_V8_TOB_POOL_CONFIG,
-    packConnectedFeeds,
-    PYTH_ORACLE_MAINNET,
-    PYTH_TON_PRICE_FEED_ID,
-    PYTH_USDT_PRICE_FEED_ID,
-    PythCollector,
-} from '../src';
+import { TonClient, WalletContractV4 } from '@ton/ton';
+import { EvaaMasterPyth, MAINNET_POOL_CONFIG } from '../src';
 
 const TON_CLIENT = new TonClient({
     endpoint: 'https://rpc.evaa.space/api/v2/jsonRPC',
@@ -26,23 +13,21 @@ async function withdrawTON() {
     const WALLET_KEY_PAIR = await mnemonicToWalletKey(process.env.MAINNET_WALLET_MNEMONIC!.split(' '));
 
     const WALLET_CONTRACT = TON_CLIENT.open(
-        WalletContractV5R1.create({
-            workChain: 0,
+        WalletContractV4.create({
+            workchain: 0,
             publicKey: WALLET_KEY_PAIR.publicKey,
         }),
     );
 
     console.log(WALLET_CONTRACT.address.toString());
     const balance = await WALLET_CONTRACT.getBalance();
-    console.log(balance);
+    // console.log(balance);
     if (balance == 0n) {
         console.log(`Wallet ${WALLET_CONTRACT.address} balance is 0, nothing to do`);
         return;
     }
 
-    const EVAA_MAINNET = TON_CLIENT.open(
-        new EvaaMasterPyth({ poolConfig: MAINNET_PYTH_V8_TOB_POOL_CONFIG, debug: true }),
-    );
+    const EVAA_MAINNET = TON_CLIENT.open(new EvaaMasterPyth({ poolConfig: MAINNET_POOL_CONFIG, debug: true }));
     const WALLET_SENDER = {
         address: WALLET_CONTRACT.address,
         send: WALLET_CONTRACT.sender(WALLET_KEY_PAIR.secretKey).send,
@@ -63,51 +48,40 @@ async function withdrawTON() {
     //     returnRepayRemainingsFlag: false,
     // });
 
-    const pythCollector = new PythCollector({
-        pythConfig: DefaultPythPriceSourcesConfig,
-        poolAssetsConfig: MAINNET_PYTH_V8_TOB_POOL_ASSETS_CONFIG,
-        pythOracle: {
-            feedsMap: Dictionary.empty<bigint, Buffer>()
-                .set(BigInt(PYTH_TON_PRICE_FEED_ID), packConnectedFeeds(ASSET_ID.TON, 0n))
-                .set(BigInt(PYTH_USDT_PRICE_FEED_ID), packConnectedFeeds(ASSET_ID.USDT, 0n)),
-            pythAddress: PYTH_ORACLE_MAINNET,
-            allowedRefTokens: Dictionary.empty<bigint, bigint>().set(
-                BigInt(EVAA_JUSDT_PRICE_FEED_ID),
-                BigInt(ASSET_ID.USDT),
-            ),
-        },
-    });
+    const pythCollector = MAINNET_POOL_CONFIG.oracles;
 
     await EVAA_MAINNET.getSync();
 
-    const prices = await pythCollector.getPrices();
+    const prices = await pythCollector.getPrices(MAINNET_POOL_CONFIG.poolAssetsConfig);
 
-    console.dir(prices.dict);
+    // console.log((tonPythPrice! * BigInt(10 ** 9)) / tonExpo);
 
-    await EVAA_MAINNET.sendWithdraw(WALLET_SENDER, toNano('0.6'), {
-        queryID: 0n,
-        includeUserCode: true,
-        // supplyAmount: 0n,
-        // supplyAsset: TON_TESTNET,
-        amount: 100_000n,
-        asset: JUSDT_MAINNET,
-        // withdrawRecipient: WALLET_CONTRACT.address,
-        userAddress: WALLET_CONTRACT.address,
-        amountToTransfer: 0n,
-        subaccountId: 0,
-        payload: Cell.EMPTY,
-        customPayloadSaturationFlag: false,
-        returnRepayRemainingsFlag: false,
-        pyth: {
-            priceData: prices.dataCell,
-            maxPublishTime: prices.maxPublishTime!,
-            minPublishTime: prices.minPublishTime!,
-            // attachedValue: toNano('0.3'),
-            pythAddress: PYTH_ORACLE_MAINNET,
-            targetFeeds: [PYTH_TON_PRICE_FEED_ID, PYTH_USDT_PRICE_FEED_ID],
-        },
-        requestedRefTokens: [EVAA_JUSDT_PRICE_FEED_ID],
-    });
+    console.log(prices.dict);
+
+    // await EVAA_MAINNET.sendWithdraw(WALLET_SENDER, toNano('1'), {
+    //     queryID: 0n,ещт
+    //     includeUserCode: true,
+    //     // supplyAmount: 0n,
+    //     // supplyAsset: TON_TESTNET,
+    //     amount: 100_000n,
+    //     asset: USDE_MAINNET,
+    //     // withdrawRecipient: WALLET_CONTRACT.address,
+    //     userAddress: WALLET_CONTRACT.address,
+    //     amountToTransfer: 0n,
+    //     subaccountId: 0,
+    //     payload: Cell.EMPTY,
+    //     customPayloadSaturationFlag: false,
+    //     returnRepayRemainingsFlag: false,
+    //     pyth: {
+    //         priceData: prices.dataCell,
+    //         maxPublishTime: prices.maxPublishTime!,
+    //         minPublishTime: prices.minPublishTime!,
+    //         // attachedValue: toNano('0.3'),
+    //         pythAddress: PYTH_ORACLE_MAINNET,
+    //         targetFeeds: [PYTH_TON_PRICE_FEED_ID, PYTH_USDT_PRICE_FEED_ID, PYTH_USDE_PRICE_FEED_ID],
+    //     },
+    //     requestedRefTokens: [],
+    // });
 
     console.log('Withdraw sent');
 }

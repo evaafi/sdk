@@ -1,30 +1,28 @@
-import { beginCell, Cell, Dictionary, Slice } from "@ton/core"
-import { signVerify } from "@ton/crypto"
-import { EvaaOracle, ExtendedEvaaOracle } from "../types/Master"
-import { convertToMerkleProof, generateMerkleProofDirect } from "../utils/merkleProof"
-import { FetchConfig } from "../utils/utils"
-import { TTL_ORACLE_DATA_SEC } from "./constants"
-import { BackendPriceSource } from "./sources/Backend"
-import { IcpPriceSource } from "./sources/Icp"
-import { PriceSource } from "./sources/PriceSource"
-import { OraclePricesData, PriceData, PriceSourcesConfig, RawPriceData } from "./Types"
-
+import { beginCell, Cell, Dictionary, Slice } from '@ton/core';
+import { signVerify } from '@ton/crypto';
+import { EvaaOracle, ExtendedEvaaOracle } from '../types/Master';
+import { convertToMerkleProof, generateMerkleProofDirect } from '../utils/merkleProof';
+import { FetchConfig } from '../utils/utils';
+import { TTL_ORACLE_DATA_SEC } from './constants';
+import { BackendPriceSource } from './sources/Backend';
+import { IcpPriceSource } from './sources/Icp';
+import { PriceSource } from './sources/PriceSource';
+import { OraclePricesData, PriceData, PriceSourcesConfig, RawPriceData } from './Types';
 
 export function verifyPricesTimestamp() {
-    return function(priceData: RawPriceData): boolean {
+    return function (priceData: RawPriceData): boolean {
         const timestamp = Date.now() / 1000;
         const pricesTime = priceData.timestamp;
 
         return timestamp - pricesTime < TTL_ORACLE_DATA_SEC;
-    }
+    };
 }
-
 
 export function getMedianPrice(pricesData: PriceData[], asset: bigint): bigint | null {
     try {
-        const usingPrices = pricesData.filter(x => x.dict.has(asset));
-        const sorted = usingPrices.map(x => x.dict.get(asset)!).sort((a, b) => Number(a) - Number(b));
-        
+        const usingPrices = pricesData.filter((x) => x.dict.has(asset));
+        const sorted = usingPrices.map((x) => x.dict.get(asset)!).sort((a, b) => Number(a) - Number(b));
+
         if (sorted.length == 0) {
             return null;
         }
@@ -35,38 +33,33 @@ export function getMedianPrice(pricesData: PriceData[], asset: bigint): bigint |
         } else {
             return sorted[mid];
         }
-    }
-    catch {
+    } catch {
         return null;
     }
 }
 
-export function packAssetsData(assetsData: {assetId: bigint, medianPrice: bigint}[]): Cell {
+export function packAssetsData(assetsData: { assetId: bigint; medianPrice: bigint }[]): Cell {
     if (assetsData.length == 0) {
-        throw new Error("No assets data to pack");
+        throw new Error('No assets data to pack');
     }
     return assetsData.reduceRight(
-        (acc: Cell | null, {assetId, medianPrice}) => beginCell()
-                                                          .storeUint(assetId, 256)
-                                                          .storeCoins(medianPrice)
-                                                          .storeMaybeRef(acc)
-                                                        .endCell(), 
-        null
+        (acc: Cell | null, { assetId, medianPrice }) =>
+            beginCell().storeUint(assetId, 256).storeCoins(medianPrice).storeMaybeRef(acc).endCell(),
+        null,
     )!;
 }
 
 export function packPrices(assetsDataCell: Cell, oraclesDataCell: Cell): Cell {
-    let pricesCell = beginCell()
-      .storeRef(assetsDataCell)
-      .storeRef(oraclesDataCell)
-    .endCell();
+    let pricesCell = beginCell().storeRef(assetsDataCell).storeRef(oraclesDataCell).endCell();
     return pricesCell;
 }
 
-export function createOracleDataProof(oracle: EvaaOracle, 
-    data: OraclePricesData, 
+export function createOracleDataProof(
+    oracle: EvaaOracle,
+    data: OraclePricesData,
     signature: Buffer,
-    assets: Array<bigint>): Slice {
+    assets: Array<bigint>,
+): Slice {
     let prunedDict = generateMerkleProofDirect(data.prices, assets, Dictionary.Keys.BigUint(256));
     let prunedData = beginCell().storeUint(data.timestamp, 32).storeMaybeRef(prunedDict).endCell();
     let merkleProof = convertToMerkleProof(prunedData);
@@ -74,15 +67,20 @@ export function createOracleDataProof(oracle: EvaaOracle,
     return oracleDataProof;
 }
 
-export function packOraclesData(oraclesData: {oracle: EvaaOracle, data: OraclePricesData, signature: Buffer}[], 
-    assets: Array<bigint>): Cell {
+export function packOraclesData(
+    oraclesData: { oracle: EvaaOracle; data: OraclePricesData; signature: Buffer }[],
+    assets: Array<bigint>,
+): Cell {
     if (oraclesData.length == 0) {
-        throw new Error("no oracles data to pack");
+        throw new Error('no oracles data to pack');
     }
-    let proofs = oraclesData.sort((d1, d2) => d1.oracle.id - d2.oracle.id).map(
-        ({oracle, data, signature}) => createOracleDataProof(oracle, data, signature, assets)
-    );
-    return proofs.reduceRight((acc: Cell | null, val) => beginCell().storeSlice(val).storeMaybeRef(acc).endCell(), null)!;
+    let proofs = oraclesData
+        .sort((d1, d2) => d1.oracle.id - d2.oracle.id)
+        .map(({ oracle, data, signature }) => createOracleDataProof(oracle, data, signature, assets));
+    return proofs.reduceRight(
+        (acc: Cell | null, val) => beginCell().storeSlice(val).storeMaybeRef(acc).endCell(),
+        null,
+    )!;
 }
 
 export function sumDicts(result: Dictionary<bigint, bigint>, addendum: Dictionary<bigint, bigint>) {
@@ -100,26 +98,30 @@ export function sumDicts(result: Dictionary<bigint, bigint>, addendum: Dictionar
 }
 
 export function generatePriceSources(config: PriceSourcesConfig, nfts: ExtendedEvaaOracle[]) {
-    let result: PriceSource[] = config.backendEndpoints.map(x => new BackendPriceSource(x, nfts));
+    let result: PriceSource[] = config.backendEndpoints.map((x) => new BackendPriceSource(x, nfts));
 
-    result.push(...config.icpEndpoints.map(x => new IcpPriceSource(x, nfts)));
+    result.push(...config.icpEndpoints.map((x) => new IcpPriceSource(x, nfts)));
 
     return result;
 }
 
-export async function collectAndFilterPrices(priceSource: PriceSource, minimalOracles: number, fetchConfig?: FetchConfig ): Promise<RawPriceData[]> {
+export async function collectAndFilterPrices(
+    priceSource: PriceSource,
+    minimalOracles: number,
+    fetchConfig?: FetchConfig,
+): Promise<RawPriceData[]> {
     const prices = await priceSource.getPrices(fetchConfig);
-         
+
     //console.debug('[FILTERING] before filtering prices len ', priceSource.sourceName, prices.length);
     return (async () => {
-            const acceptedPrices: RawPriceData[] = prices.filter(
-            price => verifyPricesTimestamp()(price) && verifyPricesSign(priceSource.nfts)(price)
+        const acceptedPrices: RawPriceData[] = prices.filter(
+            (price) => verifyPricesTimestamp()(price) && verifyPricesSign(priceSource.nfts)(price),
         );
 
         //console.debug('[FILTERING] after filtering prices len ', priceSource.sourceName, acceptedPrices.length);
 
         if (acceptedPrices.length < minimalOracles) {
-            throw new Error("Prices are outdated");
+            throw new Error('Prices are outdated');
         }
 
         return acceptedPrices;
@@ -142,18 +144,18 @@ export function unpackMedianPrices(pricesCell: Cell): Dictionary<bigint, bigint>
 }
 
 export function verifyPricesSign(nfts: ExtendedEvaaOracle[]) {
-    return function(priceData: RawPriceData): boolean {
-        if (nfts.findIndex(x => x.pubkey.equals(priceData.pubkey as Uint8Array)) == -1) {
+    return function (priceData: RawPriceData): boolean {
+        if (nfts.findIndex((x) => x.pubkey.equals(priceData.pubkey as Uint8Array)) == -1) {
             //console.debug('[verifyPricesSign] nft not found');
             return false;
         }
 
-        return verifyRawPriceDataSign(priceData)
-    }
+        return verifyRawPriceDataSign(priceData);
+    };
 }
 
 export function verifyRawPriceDataSign(priceData: RawPriceData): boolean {
-    const message = priceData.dataCell.refs[0].hash()
+    const message = priceData.dataCell.refs[0].hash();
     const signature = priceData.signature;
     const publicKey = priceData.pubkey;
 
