@@ -35,7 +35,7 @@ import {
 import { EvaaUser } from './UserContract';
 
 // Internal
-type JettonParams = {
+export type JettonParams = {
     queryID: bigint;
     amount?: bigint;
     liquidationAmount?: bigint;

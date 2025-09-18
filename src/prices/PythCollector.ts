@@ -79,8 +79,8 @@ export class PythCollector implements Oracle {
 
     async getPricesForSupplyWithdraw(
         realPrincipals: Dictionary<bigint, bigint>,
-        supplyAsset: PoolAssetConfig | undefined,
-        withdrawAsset: PoolAssetConfig | undefined,
+        supplyAsset: PoolAssetConfig,
+        withdrawAsset: PoolAssetConfig,
         collateralToDebt: boolean,
         fetchConfig?: FetchConfig,
     ): Promise<Prices> {
@@ -96,7 +96,12 @@ export class PythCollector implements Oracle {
         if (assets.includes(undefined)) {
             throw new Error('User from another pool');
         }
-        if (withdrawAsset && !assets.find((a) => a?.assetId === withdrawAsset.assetId)) {
+
+        if (!assets.find((a) => a?.assetId === supplyAsset.assetId)) {
+            assets.push(supplyAsset);
+        }
+
+        if (!assets.find((a) => a?.assetId === withdrawAsset.assetId)) {
             assets.push(withdrawAsset);
         }
         if (collateralToDebt && assets.length == 1) {

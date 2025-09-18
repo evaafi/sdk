@@ -4,12 +4,14 @@ import { PythOracleInfo, PythOracleParser } from '../api/parsers/PythOracleParse
 import { composeFeedsCell, packPythUpdatesData } from '../api/prices';
 import { TON_MAINNET } from '../constants';
 import { FEES, OPCODES } from '../constants/general';
+import { PoolAssetConfig } from '../types/Master';
 import { isTonAsset } from '../utils/utils';
 import {
     AbstractEvaaMaster,
     BaseMasterConfig,
     BaseMasterData,
     EvaaParameters,
+    JettonParams,
     LiquidationInnerParameters,
     LiquidationOperationBuilderParameters,
     LiquidationParameters,
@@ -117,79 +119,116 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
             .endCell();
     }
 
-    // TODO: support without OPCODES.SUPPLY_WITHDRAW_MASTER_WITHOUT_PRICES
-    createSupplyWithdrawMessage(parameters: PythSupplyWithdrawParameters): Cell {
-        const operationPayload = this.buildSupplyWithdrawOperationPayload(parameters);
+    /**
+     * Creates a wrapped operation payload for TON assets
+     */
+    private createWrappedOperationPayload(opCode: number, queryID: number | bigint, operationPayload: Cell): Cell {
+        return beginCell().storeUint(opCode, 32).storeUint(queryID, 64).storeRef(operationPayload).endCell();
+    }
 
-        if (!isTonAsset(parameters.supplyAsset)) {
-            const { priceData, targetFeeds, publishGap, maxStaleness } = parameters.pyth as JettonPythParams;
-            const masterMessage = this.buildPythMasterMessage(
-                {
-                    queryId: parameters.queryID,
-                    opCode: OPCODES.SUPPLY_WITHDRAW_MASTER_JETTON,
-                    updateDataCell: packPythUpdatesData(priceData),
-                    targetFeedsCell: composeFeedsCell(targetFeeds),
-                    publishGap,
-                    maxStaleness,
-                },
+    /**
+     * Creates a jetton transfer message with pyth data
+     */
+    private createJettonPythMessage(
+        parameters: JettonParams & { queryID: number | bigint },
+        operationPayload: Cell,
+        pythParams: JettonPythParams,
+        opCode: number,
+    ): Cell {
+        const { priceData, targetFeeds, publishGap, maxStaleness } = pythParams;
+        const masterMessage = this.buildPythMasterMessage(
+            {
+                queryId: parameters.queryID,
+                opCode,
+                updateDataCell: packPythUpdatesData(priceData),
+                targetFeedsCell: composeFeedsCell(targetFeeds),
+                publishGap,
+                maxStaleness,
+            },
+            operationPayload,
+        );
+
+        return this.createJettonTransferMessage(parameters, FEES.SUPPLY_WITHDRAW, masterMessage);
+    }
+
+    /**
+     * Creates a TON pyth proxy message
+     */
+    private createTonPythMessage(
+        parameters: { queryID: number | bigint },
+        operationPayload: Cell,
+        pythParams: TonPythParams,
+        opCode: number,
+    ): Cell {
+        const { priceData, targetFeeds, minPublishTime, maxPublishTime } = pythParams;
+        const wrappedOperationPayload = this.createWrappedOperationPayload(
+            opCode,
+            parameters.queryID,
+            operationPayload,
+        );
+
+        return this.buildPythProxyMessage(
+            this.address,
+            packPythUpdatesData(priceData),
+            composeFeedsCell(targetFeeds),
+            minPublishTime,
+            maxPublishTime,
+            wrappedOperationPayload,
+        );
+    }
+
+    private routerPythMessage(
+        assetForRoute: PoolAssetConfig,
+        parameters: { queryID: number | bigint } | (JettonParams & { queryID: number | bigint }),
+        operationPayload: Cell,
+        pythParams: JettonPythParams | TonPythParams,
+        opCode: number,
+    ): Cell {
+        if (!isTonAsset(assetForRoute)) {
+            return this.createJettonPythMessage(
+                parameters as JettonParams & { queryID: number | bigint },
                 operationPayload,
+                pythParams as JettonPythParams,
+                opCode,
             );
-
-            return this.createJettonTransferMessage(parameters, FEES.SUPPLY_WITHDRAW, masterMessage);
         } else {
-            const { priceData, targetFeeds, minPublishTime, maxPublishTime } = parameters.pyth as TonPythParams;
-            const wrappedOperationPayload = beginCell()
-                .storeUint(OPCODES.SUPPLY_WITHDRAW_MASTER, 32)
-                .storeUint(parameters.queryID, 64)
-                .storeRef(operationPayload)
-                .endCell();
-            return this.buildPythProxyMessage(
-                this.address,
-                packPythUpdatesData(priceData),
-                composeFeedsCell(targetFeeds),
-                minPublishTime,
-                maxPublishTime,
-                wrappedOperationPayload,
-            );
+            return this.createTonPythMessage(parameters, operationPayload, pythParams as TonPythParams, opCode);
         }
     }
 
-    // private createPythWithdrawMessage(parameters: PythWithdrawParameters): Cell {
-    //     const extraTail =
-    //         (parameters.subaccountId ?? 0) == 0
-    //             ? beginCell().endCell()
-    //             : beginCell()
-    //                   .storeInt(parameters.subaccountId ?? 0, 16)
-    //                   .storeUint(0, 2)
-    //                   .endCell();
+    protected createSupplyWithdrawMessageNoPrices(parameters: SupplyWithdrawParameters, operationPayload: Cell): Cell {
+        const messageBody = beginCell()
+            .storeUint(OPCODES.SUPPLY_WITHDRAW_MASTER_WITHOUT_PRICES, 32)
+            .storeSlice(operationPayload.beginParse())
+            .endCell();
 
-    //     const wrappedOperationPayload = beginCell()
-    //         .storeUint(OPCODES.SUPPLY_WITHDRAW_MASTER, 32) // op_code: 0x4
-    //         .storeUint(parameters.queryID, 64)
-    //         .storeRef(
-    //             beginCell()
-    //                 .storeUint(parameters.asset.assetId, 256)
-    //                 .storeUint(parameters.amount, 64)
-    //                 .storeAddress(parameters.userAddress)
-    //                 .storeInt(parameters.includeUserCode ? -1 : 0, 2)
-    //                 .storeUint(parameters.amountToTransfer, 64)
-    //                 .storeRef(parameters.payload)
-    //                 .storeSlice(extraTail.beginParse())
-    //                 .endCell(),
-    //         )
-    //         .endCell();
+        if (!isTonAsset(parameters.supplyAsset)) {
+            return this.createJettonTransferMessage(parameters, FEES.SUPPLY_WITHDRAW + FEES.JETTON_FWD, messageBody);
+        } else {
+            return beginCell()
+                .storeUint(OPCODES.SUPPLY_WITHDRAW_MASTER_WITHOUT_PRICES, 32)
+                .storeUint(parameters.queryID, 64)
+                .storeSlice(operationPayload.beginParse())
+                .endCell();
+        }
+    }
 
-    //     const { priceData, targetFeeds, minPublishTime, maxPublishTime } = parameters.pyth as TonPythParams;
+    createSupplyWithdrawMessage(parameters: PythSupplyWithdrawParameters): Cell {
+        const operationPayload = this.buildSupplyWithdrawOperationPayload(parameters);
 
-    //     return makePythProxyMessage(
-    //         this.address,
-    //         packPythUpdatesData(priceData),
-    //         composeFeedsCell(targetFeeds),
-    //         minPublishTime,
-    //         maxPublishTime,
-    //         wrappedOperationPayload,
-    //     );
-    // }
+        // Handle case without pyth data
+        if (!parameters.pyth) {
+            return this.createSupplyWithdrawMessageNoPrices(parameters, operationPayload);
+        }
+
+        return this.routerPythMessage(
+            parameters.supplyAsset,
+            parameters,
+            operationPayload,
+            parameters.pyth,
+            OPCODES.SUPPLY_WITHDRAW_MASTER_JETTON,
+        );
+    }
 
     buildRefTokensDict(requestedRefTokens: bigint[]): Dictionary<bigint, Buffer> {
         const refsDict: Dictionary<bigint, Buffer> = Dictionary.empty(
@@ -257,43 +296,15 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
 
     createLiquidationMessage(parameters: PythLiquidationParameters): Cell {
         const isTon = isTonAsset(parameters.asset);
-
         const operationPayload = this.buildLiquidationOperationPayload(parameters);
 
-        if (!isTon) {
-            const { priceData, targetFeeds, publishGap, maxStaleness } =
-                parameters.pyth as OnchainSpecificPythParams & { priceData: Buffer | Cell; targetFeeds: HexString[] };
-            const masterMessage = this.buildPythMasterMessage(
-                {
-                    queryId: parameters.queryID,
-                    opCode: OPCODES.LIQUIDATE_MASTER,
-                    updateDataCell: packPythUpdatesData(priceData as Buffer | Cell),
-                    targetFeedsCell: composeFeedsCell(targetFeeds),
-                    publishGap,
-                    maxStaleness,
-                },
-                operationPayload,
-            );
-            return this.createJettonTransferMessage(parameters, FEES.LIQUIDATION_JETTON_FWD, masterMessage);
-        } else {
-            const { priceData, targetFeeds, minPublishTime, maxPublishTime } = parameters.pyth as TonPythParams & {
-                priceData: Buffer | Cell;
-                targetFeeds: HexString[];
-            };
-            const wrappedOperationPayload = beginCell()
-                .storeUint(OPCODES.LIQUIDATE_MASTER, 32)
-                .storeUint(parameters.queryID, 64)
-                .storeRef(operationPayload)
-                .endCell();
-            return this.buildPythProxyMessage(
-                this.address,
-                packPythUpdatesData(priceData as Buffer | Cell),
-                composeFeedsCell(targetFeeds),
-                minPublishTime,
-                maxPublishTime,
-                wrappedOperationPayload,
-            );
-        }
+        return this.routerPythMessage(
+            parameters.asset,
+            parameters,
+            operationPayload,
+            parameters.pyth,
+            OPCODES.LIQUIDATE_MASTER,
+        );
     }
 
     async sendLiquidation(
