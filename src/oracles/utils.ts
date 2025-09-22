@@ -4,10 +4,11 @@ import { EvaaOracle, ExtendedEvaaOracle } from '../types/Master';
 import { convertToMerkleProof, generateMerkleProofDirect } from '../utils/merkleProof';
 import { FetchConfig } from '../utils/utils';
 import { TTL_ORACLE_DATA_SEC } from './constants';
+import { PriceData } from './prices';
 import { BackendPriceSource } from './sources/Backend';
 import { IcpPriceSource } from './sources/Icp';
 import { PriceSource } from './sources/PriceSource';
-import { OraclePricesData, PriceData, PriceSourcesConfig, RawPriceData } from './Types';
+import { OraclePricesData, PriceSourcesConfig, RawPriceData } from './Types';
 
 export const UPDATE_PRICE_FEEDS_BASE_GAS = 300000n;
 export const UPDATE_PRICE_FEEDS_PER_UPDATE_GAS = 90000n;

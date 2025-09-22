@@ -1,5 +1,5 @@
 import { Cell, Dictionary } from '@ton/core';
-import { PoolAssetConfig } from '../types/Master';
+import { PoolAssetConfig } from '../../types/Master';
 
 /**
  * Basic price data structure

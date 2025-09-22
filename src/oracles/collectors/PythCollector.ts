@@ -1,27 +1,27 @@
 import { HermesClient, HexString, PriceUpdate } from '@pythnetwork/hermes-client';
-import { Cell, Dictionary } from '@ton/core';
-import { checkNotInDebtAtAll } from '../api/math';
-import { OracleConfig } from '../api/parsers/PythOracleParser';
-import { packPythUpdatesData } from '../api/prices';
-import { STTON_MAINNET, TON_MAINNET, TSTON_MAINNET, TSUSDE_MAINNET, USDE_MAINNET } from '../constants';
-import { FeedMapItem, parseFeedsMapDict, PoolAssetConfig, PoolAssetsConfig } from '../types/Master';
-import { FetchConfig, proxyFetchRetries } from '../utils/utils';
-import { Oracle } from './AbstractCollector';
-import { Prices } from './ClassicPrices';
-import { PythFeedUpdateType, PythPriceSourcesConfig } from './Types';
-import { TTL_ORACLE_DATA_SEC } from './constants';
+import { Dictionary } from '@ton/core';
+import { checkNotInDebtAtAll } from '../../api/math';
+import { OracleConfig } from '../../api/parsers/PythOracleParser';
+import { packPythUpdatesData } from '../../api/prices';
+import { STTON_MAINNET, TON_MAINNET, TSTON_MAINNET, TSUSDE_MAINNET, USDE_MAINNET } from '../../constants';
+import { FeedMapItem, parseFeedsMapDict, PoolAssetConfig } from '../../types/Master';
+import { FetchConfig, proxyFetchRetries } from '../../utils/utils';
+import { TTL_ORACLE_DATA_SEC } from '../constants';
+import { PythPrices } from '../prices/PythPrices';
+import { PythFeedUpdateType, PythPriceSourcesConfig } from '../Types';
+import { AbstractCollector } from './AbstractCollector';
 
 export type PythCollectorConfig = {
-    poolAssetsConfig: PoolAssetsConfig;
+    poolAssetsConfig: PoolAssetConfig[];
     pythOracle: OracleConfig;
     pythConfig: PythPriceSourcesConfig;
 };
 
-export class PythCollector implements Oracle {
+export class PythCollector extends AbstractCollector {
     #oracleInfo: OracleConfig;
     #parsedFeedsMap: Map<bigint, FeedMapItem>;
     #pythConfig: PythPriceSourcesConfig;
-    #poolAssetsConfig: PoolAssetsConfig;
+    #poolAssetsConfig: PoolAssetConfig[];
 
     #pythToEvaaDirect = new Map<bigint, bigint>(); // pythId -> evaaId (native)
     #pythToEvaaReferred = new Map<bigint, Set<bigint>>(); // pythId -> Set<evaaId>,
@@ -29,6 +29,7 @@ export class PythCollector implements Oracle {
     #allowedRefEvaa = new Map<bigint, bigint>(); // evaaId -> baseEvaaId (allowedRefTokens)
 
     constructor(config: PythCollectorConfig) {
+        super();
         this.#oracleInfo = config.pythOracle;
         this.#pythConfig = config.pythConfig;
         this.#poolAssetsConfig = config.poolAssetsConfig;
@@ -66,7 +67,7 @@ export class PythCollector implements Oracle {
     async getPricesForLiquidate(
         realPrincipals: Dictionary<bigint, bigint>,
         fetchConfig?: FetchConfig,
-    ): Promise<Prices> {
+    ): Promise<PythPrices> {
         const assets = this.#filterEmptyPrincipalsAndAssets(realPrincipals);
         if (assets.includes(undefined)) {
             throw new Error('User from another pool');
@@ -79,21 +80,21 @@ export class PythCollector implements Oracle {
 
     async getPricesForSupplyWithdraw(
         realPrincipals: Dictionary<bigint, bigint>,
-        supplyAsset: PoolAssetConfig,
-        withdrawAsset: PoolAssetConfig,
+        supplyAsset: PoolAssetConfig | undefined,
+        withdrawAsset: PoolAssetConfig | undefined,
         collateralToDebt: boolean,
         fetchConfig?: FetchConfig,
-    ): Promise<Prices> {
+    ): Promise<PythPrices> {
         let assets = this.#filterEmptyPrincipalsAndAssets(realPrincipals);
         if (assets.includes(undefined)) {
             throw new Error('User from another pool');
         }
 
-        if (!assets.find((a) => a?.assetId === supplyAsset.assetId)) {
+        if (supplyAsset && !assets.find((a) => a?.assetId === supplyAsset.assetId)) {
             assets.push(supplyAsset);
         }
 
-        if (!assets.find((a) => a?.assetId === withdrawAsset.assetId)) {
+        if (withdrawAsset && !assets.find((a) => a?.assetId === withdrawAsset.assetId)) {
             assets.push(withdrawAsset);
         }
         if (collateralToDebt && assets.length == 1) {
@@ -105,24 +106,31 @@ export class PythCollector implements Oracle {
         );
     }
 
-    async getPrices(assets: PoolAssetsConfig = this.#poolAssetsConfig, fetchConfig?: FetchConfig): Promise<Prices> {
+    async getPrices(
+        assets: PoolAssetConfig[] = this.#poolAssetsConfig,
+        fetchConfig?: FetchConfig,
+    ): Promise<PythPrices> {
         // Declare variables at the beginning
-        let minPublishTime: bigint | undefined;
-        let maxPublishTime: bigint | undefined;
+        let minPublishTime: number | undefined;
+        let maxPublishTime: number | undefined;
 
         if (assets.length === 0) {
-            return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY, undefined, undefined);
+            return PythPrices.createEmptyPrices();
         }
 
-        const requiredFeeds = this.createRequiredFeedsList(assets.map((a) => a.assetId));
+        const requiredFeeds = this.createRequiredFeedsList(assets);
         const pythUpdates = await this.#fetchPythUpdatesWithRetry(requiredFeeds, fetchConfig);
 
         // Calculate min and max publish times for validation
-
         if (pythUpdates.parsed && pythUpdates.parsed.length > 0) {
-            const publishTimes = pythUpdates.parsed.map((u) => BigInt(u.price.publish_time));
-            const tmin = publishTimes.reduce((a, b) => (a < b ? a : b));
-            const tmax = publishTimes.reduce((a, b) => (a > b ? a : b));
+            let tmin = pythUpdates.parsed[0].price.publish_time;
+            let tmax = tmin;
+
+            for (let i = 1; i < pythUpdates.parsed.length; i++) {
+                const publishTime = pythUpdates.parsed[i].price.publish_time;
+                if (publishTime < tmin) tmin = publishTime;
+                if (publishTime > tmax) tmax = publishTime;
+            }
 
             if (tmax - tmin > TTL_ORACLE_DATA_SEC) {
                 throw new Error(
@@ -130,9 +138,8 @@ export class PythCollector implements Oracle {
                 );
             }
 
-            // Set boundaries using "from oldest" approach: minPublishTime = tmin, maxPublishTime = tmin + 180
             minPublishTime = tmin;
-            maxPublishTime = tmin + BigInt(TTL_ORACLE_DATA_SEC);
+            maxPublishTime = tmin + TTL_ORACLE_DATA_SEC;
         }
 
         const pricesDict = Dictionary.empty<bigint, bigint>();
@@ -199,9 +206,30 @@ export class PythCollector implements Oracle {
             }
 
             const dataCell = packPythUpdatesData(pythUpdates.binary);
-            return new Prices(pricesDict, dataCell, minPublishTime, maxPublishTime);
+
+            // Filter assets to only include reference tokens
+            const refTokens = assets.filter((asset) => {
+                const assetId = asset.assetId;
+                // Check if asset is a referred token (uses referredPythFeed)
+                const feedInfo = Array.from(this.#parsedFeedsMap.values()).find((f) => f.evaaId === assetId);
+                const isReferredToken = feedInfo && feedInfo.referredPythFeed && feedInfo.referredPythFeed !== 0n;
+
+                // Check if asset is an allowed reference token
+                const isAllowedRefToken = this.#allowedRefEvaa.has(assetId);
+
+                return isReferredToken || isAllowedRefToken;
+            });
+
+            return new PythPrices({
+                dict: pricesDict,
+                dataCell,
+                minPublishTime,
+                maxPublishTime,
+                requestedRefTokens: refTokens,
+                targetFeeds: requiredFeeds,
+            });
         }
-        return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY, minPublishTime, maxPublishTime);
+        return PythPrices.createEmptyPrices();
     }
 
     async getPricesForWithdraw(
@@ -209,14 +237,14 @@ export class PythCollector implements Oracle {
         withdrawAsset: PoolAssetConfig,
         collateralToDebt = false,
         fetchConfig?: FetchConfig,
-    ): Promise<Prices> {
+    ): Promise<PythPrices> {
         let assets = this.#filterEmptyPrincipalsAndAssets(realPrincipals);
         if (
             checkNotInDebtAtAll(realPrincipals) &&
             (realPrincipals.get(withdrawAsset.assetId) ?? 0n) > 0n &&
             !collateralToDebt
         ) {
-            return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY);
+            return PythPrices.createEmptyPrices();
         }
         if (assets.includes(undefined)) {
             throw new Error('User from another pool');
@@ -258,15 +286,15 @@ export class PythCollector implements Oracle {
         return proxyFetchRetries(this.#getPythFeedsUpdates(requiredFeeds), fetchConfig);
     }
 
-    public createRequiredFeedsList(evaaIds: bigint[]): HexString[] {
+    public createRequiredFeedsList(assets: PoolAssetConfig[]): HexString[] {
         const requiredFeeds = new Set<bigint>();
 
-        for (const evaaId of evaaIds) {
-            let pythId = this.#evaaToPythDirect.get(evaaId);
+        for (const asset of assets) {
+            let pythId = this.#evaaToPythDirect.get(asset.assetId);
 
             // If evaaId no have native feed — try by allowedRefTokens (evAA->baseEvAA->pyth)
             if (!pythId) {
-                const baseEvaa = this.#allowedRefEvaa.get(evaaId);
+                const baseEvaa = this.#allowedRefEvaa.get(asset.assetId);
                 if (baseEvaa) pythId = this.#evaaToPythDirect.get(baseEvaa) ?? null!;
             }
 

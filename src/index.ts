@@ -37,7 +37,7 @@ export * from './constants/general';
 export * from './constants/pools';
 
 export * from './constants/assets';
-export * from './prices';
+export * from './oracles';
 export * from './utils/utils';
 
 // Utils

@@ -1,11 +1,10 @@
-import { Cell, Dictionary } from '@ton/core';
-import { checkNotInDebtAtAll } from '../api/math';
-import { ExtendedEvaaOracle, PoolAssetConfig, PoolAssetsConfig } from '../types/Master';
-import { FetchConfig, proxyFetchRetries } from '../utils/utils';
-import { AbstractCollector } from './AbstractCollector';
-import { ClassicPrices } from './ClassicPrices';
-import { PriceSource } from './sources';
-import { DefaultPriceSourcesConfig, PriceSourcesConfig, RawPriceData } from './Types';
+import { Dictionary } from '@ton/core';
+import { checkNotInDebtAtAll } from '../../api/math';
+import { ExtendedEvaaOracle, PoolAssetConfig } from '../../types/Master';
+import { FetchConfig, proxyFetchRetries } from '../../utils/utils';
+import { ClassicPrices, ClassicPricesMode } from '../prices/ClassicPrices';
+import { PriceSource } from '../sources';
+import { DefaultPriceSourcesConfig, PriceSourcesConfig, RawPriceData } from '../Types';
 import {
     collectAndFilterPrices,
     generatePriceSources,
@@ -14,10 +13,11 @@ import {
     packOraclesData,
     packPrices,
     verifyPricesTimestamp,
-} from './utils';
+} from '../utils';
+import { AbstractCollector } from './AbstractCollector';
 
 export type ClassicCollectorConfig = {
-    poolAssetsConfig: PoolAssetsConfig;
+    poolAssetsConfig: PoolAssetConfig[];
     minimalOracles: number;
     evaaOracles: ExtendedEvaaOracle[];
     sourcesConfig?: PriceSourcesConfig;
@@ -26,7 +26,7 @@ export type ClassicCollectorConfig = {
 
 export class ClassicCollector extends AbstractCollector {
     #prices: RawPriceData[];
-    #poolAssetsConfig: PoolAssetsConfig;
+    #poolAssetsConfig: PoolAssetConfig[];
     #sourcesConfig: PriceSourcesConfig;
     #priceSources: PriceSource[];
     #minimalOracles: number;
@@ -52,15 +52,11 @@ export class ClassicCollector extends AbstractCollector {
         if (assets.includes(undefined)) {
             throw new Error('User from another pool');
         }
-        // remove not TWAP prices
+
         const validAssets = assets.map((x) => x!);
-        const assetIds = new Set(validAssets.map((asset) => asset!.assetId));
-        const twapAssets = validAssets.filter((asset) => assetIds.has(asset.assetId - 1n));
-        // .filter((asset): asset is PoolAssetConfig => asset.assetId !== sha256Hash(asset.name));
+        const spotAssets = this.#convertToSpotAssets(validAssets);
 
-        console.dir(twapAssets);
-
-        return await this.getPrices(twapAssets, fetchConfig);
+        return await this.#getPricesWithMode(spotAssets, ClassicPricesMode.SPOT, fetchConfig);
     }
 
     async getPricesForWithdraw(
@@ -98,8 +94,7 @@ export class ClassicCollector extends AbstractCollector {
         withdrawAsset: PoolAssetConfig | undefined,
         collateralToDebt: boolean,
         fetchConfig?: FetchConfig,
-    ): Promise<Prices> {
-        // Используем ту же логику, что и getPricesForWithdraw, но supplyAsset не используется
+    ): Promise<ClassicPrices> {
         let assets = this.#filterEmptyPrincipalsAndAssets(realPrincipals);
         if (
             checkNotInDebtAtAll(realPrincipals) &&
@@ -107,7 +102,7 @@ export class ClassicCollector extends AbstractCollector {
             (realPrincipals.get(withdrawAsset.assetId) ?? 0n) > 0n &&
             !collateralToDebt
         ) {
-            return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY);
+            return ClassicPrices.createEmptyTwapPrices();
         }
         if (assets.includes(undefined)) {
             throw new Error('User from another pool');
@@ -118,15 +113,19 @@ export class ClassicCollector extends AbstractCollector {
         if (collateralToDebt && assets.length == 1) {
             throw new Error('Cannot debt only one supplied asset');
         }
-        return await this.getPrices(
-            assets.map((x) => x!),
-            fetchConfig,
-        );
+
+        const validAssets = assets.map((x) => x!);
+        const twapAssets = this.#convertToTwapAssets(validAssets);
+
+        return await this.#getPricesWithMode(twapAssets, ClassicPricesMode.TWAP, fetchConfig);
     }
 
-    async getPrices(assets: PoolAssetsConfig = this.#poolAssetsConfig, fetchConfig?: FetchConfig): Promise<Prices> {
+    async getPrices(
+        assets: PoolAssetConfig[] = this.#poolAssetsConfig,
+        fetchConfig?: FetchConfig,
+    ): Promise<ClassicPrices> {
         if (assets.length == 0) {
-            return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY);
+            return ClassicPrices.createEmptyTwapPrices();
         }
 
         await this.#collectPricesWithValidation(fetchConfig);
@@ -135,10 +134,16 @@ export class ClassicCollector extends AbstractCollector {
             throw new Error(`Error per updating prices, valid ${this.#prices.length} of ${this.#minimalOracles}`);
         }
         const prices = this.#getPricesByAssetList(assets);
-        return new Prices(prices.dict, prices.dataCell);
+        return new ClassicPrices({
+            mode: ClassicPricesMode.TWAP,
+            dict: prices.dict,
+            dataCell: prices.dataCell,
+            minPublishTime: undefined,
+            maxPublishTime: undefined,
+        });
     }
 
-    #getPricesByAssetList(assets: PoolAssetsConfig) {
+    #getPricesByAssetList(assets: PoolAssetConfig[]) {
         let pricesFiltered = this.#prices;
         if (pricesFiltered.length < this.#minimalOracles) {
             throw new Error('Not enough price data');
@@ -214,5 +219,46 @@ export class ClassicCollector extends AbstractCollector {
             .keys()
             .filter((x) => principals.get(x)! != 0n)
             .map((x) => this.#poolAssetsConfig.find((asset) => asset.assetId == x));
+    }
+
+    #convertToTwapAssets(assets: PoolAssetConfig[]): PoolAssetConfig[] {
+        return assets.map((asset) => ({
+            ...asset,
+            assetId: asset.assetId - (asset.assetId % 2n),
+        }));
+    }
+
+    #convertToSpotAssets(assets: PoolAssetConfig[]): PoolAssetConfig[] {
+        return assets.map((asset) => ({
+            ...asset,
+            assetId: asset.assetId - (asset.assetId % 2n) + 1n,
+        }));
+    }
+
+    async #getPricesWithMode(
+        assets: PoolAssetConfig[],
+        mode: ClassicPricesMode,
+        fetchConfig?: FetchConfig,
+    ): Promise<ClassicPrices> {
+        if (assets.length == 0) {
+            return ClassicPricesMode.TWAP
+                ? ClassicPrices.createEmptyTwapPrices()
+                : ClassicPrices.createEmptySpotPrices();
+        }
+
+        await this.#collectPricesWithValidation(fetchConfig);
+
+        if (this.#prices.length < this.#minimalOracles) {
+            throw new Error(`Error per updating prices, valid ${this.#prices.length} of ${this.#minimalOracles}`);
+        }
+
+        const prices = this.#getPricesByAssetList(assets);
+        return new ClassicPrices({
+            mode,
+            dict: prices.dict,
+            dataCell: prices.dataCell,
+            minPublishTime: undefined,
+            maxPublishTime: undefined,
+        });
     }
 }

@@ -1,8 +1,8 @@
 import { Dictionary } from '@ton/core';
-import { PoolAssetConfig, PoolAssetsConfig } from '../types/Master';
-import { FetchConfig } from '../utils/utils';
-import { ClassicPrices } from './ClassicPrices';
-import { PythPrices } from './PythPrices';
+import { PoolAssetConfig } from '../../types/Master';
+import { FetchConfig } from '../../utils/utils';
+import { ClassicPrices } from '../prices/ClassicPrices';
+import { PythPrices } from '../prices/PythPrices';
 
 export abstract class AbstractCollector {
     abstract getPricesForLiquidate(
@@ -18,5 +18,5 @@ export abstract class AbstractCollector {
         fetchConfig?: FetchConfig,
     ): Promise<ClassicPrices | PythPrices>;
 
-    abstract getPrices(assets: PoolAssetsConfig, fetchConfig?: FetchConfig): Promise<ClassicPrices | PythPrices>;
+    abstract getPrices(assets: PoolAssetConfig[], fetchConfig?: FetchConfig): Promise<ClassicPrices | PythPrices>;
 }

@@ -1,5 +1,5 @@
 import { Address, Cell, Dictionary } from '@ton/core';
-import { AbstractCollector } from '../prices/AbstractCollector';
+import { AbstractCollector } from '../oracles';
 export { FeedMapItem, parseFeedsMapDict } from '../api/feeds';
 
 export type MasterConstants = {
@@ -16,8 +16,6 @@ export type MasterConstants = {
     COLLATERAL_WORTH_THRESHOLD: bigint;
 };
 
-export type PoolAssetsConfig = PoolAssetConfig[];
-
 export type PoolAssetConfig = {
     name: string;
     assetId: bigint;
@@ -29,7 +27,7 @@ export type PoolConfig = {
     masterAddress: Address;
     masterVersion: number;
     masterConstants: MasterConstants;
-    poolAssetsConfig: PoolAssetsConfig;
+    poolAssetsConfig: PoolAssetConfig[];
     lendingCode: Cell;
     collector: AbstractCollector;
 };

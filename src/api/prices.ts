@@ -4,6 +4,7 @@ import { Cell } from '@ton/core';
 import { beginCell } from '@ton/ton';
 import { Buffer } from 'buffer';
 
+// TODO: move to PythCollector
 export function composeFeedsCell(feeds: HexString[]): Cell {
     if (feeds.length === 0) {
         return beginCell().storeUint(0, 8).endCell();

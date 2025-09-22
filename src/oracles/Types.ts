@@ -51,11 +51,6 @@ export type PythFeedUpdateType = {
     binary: Buffer;
 };
 
-export type PriceData = {
-    dict: Dictionary<bigint, bigint>;
-    dataCell: Cell;
-};
-
 export type OraclePricesData = {
     timestamp: number;
     prices: Dictionary<bigint, bigint>;

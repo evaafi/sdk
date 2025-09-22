@@ -9,7 +9,7 @@ import {
     PYTH_TSUSDE_PRICE_FEED_ID,
     PYTH_USDT_PRICE_FEED_ID,
 } from '../../api/feeds';
-import { ClassicCollector, DefaultPythPriceSourcesConfig, PythCollector } from '../../prices';
+import { ClassicCollector, DefaultPythPriceSourcesConfig, PythCollector } from '../../oracles';
 import { PoolConfig } from '../../types/Master';
 import { EvaaRewardsConfig } from '../../types/MasterRewards';
 import {
@@ -85,7 +85,7 @@ export const MAINNET_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_MASTER_MAINNET,
     masterVersion: MAINNET_VERSION,
     masterConstants: MASTER_CONSTANTS,
-    oracles: new PythCollector({
+    collector: new PythCollector({
         pythConfig: DefaultPythPriceSourcesConfig,
         poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,
         pythOracle: {
@@ -116,7 +116,7 @@ export const MAINNET_STABLE_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_STABLE_MAINNET,
     masterVersion: STABLE_VERSION,
     masterConstants: MASTER_CONSTANTS,
-    oracles: new ClassicCollector({
+    collector: new ClassicCollector({
         poolAssetsConfig: MAINNET_STABLE_POOL_ASSETS_CONFIG,
         minimalOracles: 3,
         evaaOracles: ORACLES_MAINNET,
@@ -129,7 +129,7 @@ export const MAINNET_LP_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_LP_MAINNET,
     masterVersion: EVAA_LP_MAINNET_VERSION,
     masterConstants: MASTER_CONSTANTS,
-    oracles: new ClassicCollector({
+    collector: new ClassicCollector({
         poolAssetsConfig: MAINNET_LP_POOL_ASSETS_CONFIG,
         minimalOracles: 3,
         evaaOracles: ORACLES_LP,
@@ -142,7 +142,7 @@ export const MAINNET_ALTS_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_ALTS_MAINNET,
     masterVersion: EVAA_ALTS_MAINNET_VERSION,
     masterConstants: MASTER_CONSTANTS,
-    oracles: new ClassicCollector({
+    collector: new ClassicCollector({
         poolAssetsConfig: MAINNET_ALTS_POOL_ASSETS_CONFIG,
         minimalOracles: 3,
         evaaOracles: ORACLES_ALTS,
@@ -157,7 +157,7 @@ export const MAINNET_PYTH_V8_TOB_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_PYTH_TOB_MAINNET,
     masterVersion: EVAA_PYTH_TOB_VERSION,
     masterConstants: MASTER_CONSTANTS,
-    oracles: new PythCollector({
+    collector: new PythCollector({
         pythConfig: DefaultPythPriceSourcesConfig,
         poolAssetsConfig: MAINNET_PYTH_V8_TOB_POOL_ASSETS_CONFIG,
         pythOracle: {
@@ -181,7 +181,7 @@ export const MAINNET_V8_TOB_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_TOB_MAINNET,
     masterVersion: EVAA_TOB_VERSION,
     masterConstants: MASTER_CONSTANTS,
-    oracles: new ClassicCollector({
+    collector: new ClassicCollector({
         poolAssetsConfig: MAINNET_V8_TOB_POOL_ASSETS_CONFIG,
         minimalOracles: 3,
         evaaOracles: ORACLES_MAINNET,

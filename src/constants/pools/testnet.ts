@@ -1,6 +1,6 @@
 import { Address } from '@ton/core';
 import { TESTNET_ALLOWED_REF_TOKENS, TESTNET_FEEDS_MAP } from '../../api/feeds';
-import { ClassicCollector, DefaultPythPriceSourcesConfig, PythCollector } from '../../prices';
+import { ClassicCollector, DefaultPythPriceSourcesConfig, PythCollector } from '../../oracles';
 import { PoolConfig } from '../../types/Master';
 import { EvaaRewardsConfig } from '../../types/MasterRewards';
 import { EUSDT_TESTNET, JUSDC_TESTNET, TON_TESTNET } from '../assets';
@@ -26,7 +26,7 @@ export const TESTNET_PYTH_POOL_CONFIG_TOB_AUDITED: PoolConfig = {
     masterAddress: EVAA_MASTER_TESTNET_PYTH_TOB_AUDITED,
     masterVersion: TESTNET_PYTH_VERSION_TOB_AUDITED,
     masterConstants: MASTER_CONSTANTS,
-    oracles: new PythCollector({
+    collector: new PythCollector({
         poolAssetsConfig: TESTNET_POOL_ASSETS_CONFIG_TOB_AUDITED,
         pythOracle: {
             feedsMap: TESTNET_FEEDS_MAP,
@@ -43,7 +43,7 @@ export const TESTNET_CLASSIC_POOL_CONFIG_TOB_AUDITED: PoolConfig = {
     masterAddress: EVAA_MASTER_TESTNET_CLASSIC_TOB_AUDITED,
     masterVersion: TESTNET_CLASSIC_TOB_AUDITED,
     masterConstants: MASTER_CONSTANTS,
-    oracles: new ClassicCollector({
+    collector: new ClassicCollector({
         poolAssetsConfig: TESTNET_POOL_ASSETS_CONFIG,
         minimalOracles: 3,
         evaaOracles: ORACLES_TESTNET,

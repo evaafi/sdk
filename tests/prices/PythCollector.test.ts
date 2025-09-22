@@ -13,6 +13,7 @@ import {
     PythCollector,
     TON_MAINNET,
     TSTON_MAINNET,
+    UNDEFINED_ASSET,
     USDT_MAINNET,
 } from '../../src';
 
@@ -48,8 +49,8 @@ describe('PythOracle', () => {
 
     describe('Feeds', () => {
         it('should create a required feeds list for basic assets', () => {
-            const evaaIds = [TON_MAINNET.assetId, USDT_MAINNET.assetId];
-            const requiredFeeds = oracle.createRequiredFeedsList(evaaIds);
+            const evaaAssets = [TON_MAINNET, USDT_MAINNET];
+            const requiredFeeds = oracle.createRequiredFeedsList(evaaAssets);
             expect(requiredFeeds).toHaveLength(2);
             expect(requiredFeeds).toEqual(
                 expect.arrayContaining([
@@ -67,23 +68,22 @@ describe('PythOracle', () => {
 
         it('should include referred feeds for assets with references', () => {
             // tsTON has a reference to TON feed
-            const evaaIds = [TSTON_MAINNET.assetId];
-            const requiredFeeds = oracle.createRequiredFeedsList(evaaIds);
+            const evaaAssets = [TSTON_MAINNET];
+            const requiredFeeds = oracle.createRequiredFeedsList(evaaAssets);
             // Should include both tsTON feed and its referred TON feed
             expect(requiredFeeds.length).toBeGreaterThanOrEqual(1);
             expect(requiredFeeds).toEqual(expect.arrayContaining([expect.stringMatching(/^0x[0-9a-f]+$/)]));
         });
 
         it('should handle duplicate evaaIds without duplicating feeds', () => {
-            const evaaIds = [TON_MAINNET.assetId, TON_MAINNET.assetId, USDT_MAINNET.assetId];
-            const requiredFeeds = oracle.createRequiredFeedsList(evaaIds);
+            const evaaAssets = [TON_MAINNET, TON_MAINNET, USDT_MAINNET];
+            const requiredFeeds = oracle.createRequiredFeedsList(evaaAssets);
             expect(requiredFeeds).toHaveLength(2); // Should deduplicate
         });
 
         it('should handle non-existent evaaIds gracefully', () => {
-            const nonExistentId = 999999n;
-            const evaaIds = [TON_MAINNET.assetId, nonExistentId, USDT_MAINNET.assetId];
-            const requiredFeeds = oracle.createRequiredFeedsList(evaaIds);
+            const evaaAssets = [TON_MAINNET, UNDEFINED_ASSET, USDT_MAINNET];
+            const requiredFeeds = oracle.createRequiredFeedsList(evaaAssets);
             expect(requiredFeeds).toHaveLength(2); // Should only include existing feeds
         });
     });
@@ -168,8 +168,8 @@ describe('PythOracle', () => {
 
     describe('Feed List Generation', () => {
         it('should generate feeds including references for referred assets', () => {
-            const evaaIds = [TSTON_MAINNET.assetId]; // tsTON refers to TON
-            const requiredFeeds = oracle.createRequiredFeedsList(evaaIds);
+            const evaaAssets = [TSTON_MAINNET]; // tsTON refers to TON
+            const requiredFeeds = oracle.createRequiredFeedsList(evaaAssets);
 
             // Should include both tsTON feed and its referred TON feed
             expect(requiredFeeds).toContain('0x3d1784128eeab5961ec60648fe497d3901eebd211b7f51e4bb0db9f024977d25'); // tsTON
@@ -178,13 +178,13 @@ describe('PythOracle', () => {
         });
 
         it('should deduplicate feeds for complex scenarios', () => {
-            const evaaIds = [
-                TON_MAINNET.assetId, // Direct TON feed
-                TSTON_MAINNET.assetId, // Refers to TON feed
-                USDT_MAINNET.assetId, // Direct USDT feed
-                JUSDT_MAINNET.assetId, // Refers to USDT feed
+            const evaaAssets = [
+                TON_MAINNET, // Direct TON feed
+                TSTON_MAINNET, // Refers to TON feed
+                USDT_MAINNET, // Direct USDT feed
+                JUSDT_MAINNET, // Refers to USDT feed
             ];
-            const requiredFeeds = oracle.createRequiredFeedsList(evaaIds);
+            const requiredFeeds = oracle.createRequiredFeedsList(evaaAssets);
 
             // Should contain unique feeds: TON, USDT, tsTON
             expect(requiredFeeds).toHaveLength(3);

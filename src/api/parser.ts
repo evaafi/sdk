@@ -7,7 +7,7 @@ import {
     ExtendedAssetsConfig,
     ExtendedAssetsData,
     MasterConstants,
-    PoolAssetsConfig,
+    PoolAssetConfig,
     PoolConfig,
 } from '../types/Master';
 import { BalanceType, UserBalance, UserData, UserLiteData, UserRewards } from '../types/User';
@@ -164,7 +164,7 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
 
 export function parseMasterData(
     masterDataBOC: string,
-    poolAssetsConfig: PoolAssetsConfig,
+    poolAssetsConfig: PoolAssetConfig[],
     masterConstants: MasterConstants,
     oracleParser: OracleParser,
 ): MasterData<MasterConfig<OracleInfo>> {
