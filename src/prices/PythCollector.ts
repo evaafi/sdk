@@ -6,8 +6,8 @@ import { packPythUpdatesData } from '../api/prices';
 import { STTON_MAINNET, TON_MAINNET, TSTON_MAINNET, TSUSDE_MAINNET, USDE_MAINNET } from '../constants';
 import { FeedMapItem, parseFeedsMapDict, PoolAssetConfig, PoolAssetsConfig } from '../types/Master';
 import { FetchConfig, proxyFetchRetries } from '../utils/utils';
-import { Oracle } from './Oracle.interface';
-import { Prices } from './Prices';
+import { Oracle } from './AbstractCollector';
+import { Prices } from './ClassicPrices';
 import { PythFeedUpdateType, PythPriceSourcesConfig } from './Types';
 import { TTL_ORACLE_DATA_SEC } from './constants';
 
@@ -85,14 +85,6 @@ export class PythCollector implements Oracle {
         fetchConfig?: FetchConfig,
     ): Promise<Prices> {
         let assets = this.#filterEmptyPrincipalsAndAssets(realPrincipals);
-        if (
-            checkNotInDebtAtAll(realPrincipals) &&
-            withdrawAsset &&
-            (realPrincipals.get(withdrawAsset.assetId) ?? 0n) > 0n &&
-            !collateralToDebt
-        ) {
-            return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY, undefined, undefined);
-        }
         if (assets.includes(undefined)) {
             throw new Error('User from another pool');
         }
@@ -107,7 +99,7 @@ export class PythCollector implements Oracle {
         if (collateralToDebt && assets.length == 1) {
             throw new Error('Cannot debt only one supplied asset');
         }
-        return await this.getPrices(
+        return this.getPrices(
             assets.map((x) => x!),
             fetchConfig,
         );

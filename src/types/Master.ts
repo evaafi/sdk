@@ -1,5 +1,5 @@
 import { Address, Cell, Dictionary } from '@ton/core';
-import { Oracle } from '../prices/Oracle.interface';
+import { AbstractCollector } from '../prices/AbstractCollector';
 export { FeedMapItem, parseFeedsMapDict } from '../api/feeds';
 
 export type MasterConstants = {
@@ -31,7 +31,7 @@ export type PoolConfig = {
     masterConstants: MasterConstants;
     poolAssetsConfig: PoolAssetsConfig;
     lendingCode: Cell;
-    oracles: Oracle;
+    collector: AbstractCollector;
 };
 
 export type UpgradeConfig = {
@@ -77,7 +77,7 @@ export type AssetData = {
     bRate: bigint;
     totalSupply: bigint;
     totalBorrow: bigint;
-    lastAccural: bigint;
+    lastAccrual: bigint;
     balance: bigint;
     trackingSupplyIndex: bigint;
     trackingBorrowIndex: bigint;

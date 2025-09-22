@@ -13,17 +13,17 @@ import {
     WithdrawParameters,
 } from './AbstractMaster';
 
-export type ClassicSupplyWithdrawParameters = SupplyWithdrawParameters & {
-    priceData?: Cell;
-};
+export interface ClassicSupplyWithdrawParameters extends SupplyWithdrawParameters {
+    readonly priceData?: Cell;
+}
 
 /**
  * Parameters for the withdraw message
  * @property priceData - price data cell. Can be obtained from the getPrices function
  */
-export type ClassicWithdrawParameters = WithdrawParameters & {
-    priceData: Cell;
-};
+export interface ClassicWithdrawParameters extends WithdrawParameters {
+    readonly priceData?: Cell;
+}
 
 export type ClassicLiquidationOperationParameters = LiquidationOperationBuilderParameters &
     LiquidationInnerParameters & {
@@ -32,13 +32,13 @@ export type ClassicLiquidationOperationParameters = LiquidationOperationBuilderP
 
 export type ClassicLiquidationParameters = LiquidationParameters & ClassicLiquidationOperationParameters;
 
-export type ClassicMasterConfig = BaseMasterConfig & {
-    oraclesInfo: ClassicOracleInfo;
-};
+export interface ClassicMasterConfig extends BaseMasterConfig {
+    readonly oraclesInfo: ClassicOracleInfo;
+}
 
-export type ClassicMasterData = BaseMasterData & {
-    masterConfig: ClassicMasterConfig;
-};
+export interface ClassicMasterData extends BaseMasterData {
+    readonly masterConfig: ClassicMasterConfig;
+}
 
 export class EvaaMasterClassic extends AbstractEvaaMaster<ClassicMasterData> {
     constructor(parameters: EvaaParameters) {

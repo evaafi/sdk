@@ -4,7 +4,6 @@ import { PythOracleInfo, PythOracleParser } from '../api/parsers/PythOracleParse
 import { composeFeedsCell, packPythUpdatesData } from '../api/prices';
 import { TON_MAINNET } from '../constants';
 import { FEES, OPCODES } from '../constants/general';
-import { PoolAssetConfig } from '../types/Master';
 import { isTonAsset } from '../utils/utils';
 import {
     AbstractEvaaMaster,
@@ -22,26 +21,26 @@ import {
 /**
  * pyth specific parameters
  */
-export type PythBaseData = {
-    priceData: Buffer | Cell;
-    targetFeeds: HexString[];
-    requestedRefTokens: bigint[];
-};
+export interface PythBaseData {
+    readonly priceData: Buffer | Cell;
+    readonly targetFeeds: HexString[];
+    readonly requestedRefTokens: bigint[];
+}
 
-export type ProxySpecificPythParams = {
-    pythAddress: Address;
-    minPublishTime: number | bigint;
-    maxPublishTime: number | bigint;
-};
+export interface ProxySpecificPythParams {
+    readonly pythAddress: Address;
+    readonly minPublishTime: number | bigint;
+    readonly maxPublishTime: number | bigint;
+}
 
-export type OnchainSpecificPythParams = {
-    publishGap: number | bigint;
-    maxStaleness: number | bigint;
-};
+export interface OnchainSpecificPythParams {
+    readonly publishGap: number | bigint;
+    readonly maxStaleness: number | bigint;
+}
 
-export type JettonPythParams = PythBaseData & OnchainSpecificPythParams;
+export interface JettonPythParams extends PythBaseData, OnchainSpecificPythParams {}
 
-export type TonPythParams = PythBaseData & ProxySpecificPythParams;
+export interface TonPythParams extends PythBaseData, ProxySpecificPythParams {}
 
 export type PythProxyParams = {
     pyth: PythBaseData & (ProxySpecificPythParams | OnchainSpecificPythParams) & { pythAddress: Address };
@@ -50,7 +49,7 @@ export type PythProxyParams = {
 export type PythSupplyWithdrawParameters = SupplyWithdrawParameters & Partial<PythProxyParams>;
 
 export type PythWithdrawParameters = WithdrawParameters & {
-    pyth: TonPythParams;
+    pyth?: TonPythParams;
 };
 
 export type PythLiquidationOperationParameters = LiquidationOperationBuilderParameters &
@@ -60,14 +59,14 @@ export type PythLiquidationOperationParameters = LiquidationOperationBuilderPara
 export type PythLiquidationParameters = LiquidationParameters & PythLiquidationOperationParameters;
 
 // Specific master configurations
-export type PythMasterConfig = BaseMasterConfig & {
-    oraclesInfo: PythOracleInfo;
-};
+export interface PythMasterConfig extends BaseMasterConfig {
+    readonly oraclesInfo: PythOracleInfo;
+}
 
 // Specific master data types
-export type PythMasterData = BaseMasterData & {
-    masterConfig: PythMasterConfig;
-};
+export interface PythMasterData extends BaseMasterData {
+    readonly masterConfig: PythMasterConfig;
+}
 
 export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
     constructor(parameters: EvaaParameters) {
@@ -177,25 +176,6 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
         );
     }
 
-    private routerPythMessage(
-        assetForRoute: PoolAssetConfig,
-        parameters: { queryID: number | bigint } | (JettonParams & { queryID: number | bigint }),
-        operationPayload: Cell,
-        pythParams: JettonPythParams | TonPythParams,
-        opCode: number,
-    ): Cell {
-        if (!isTonAsset(assetForRoute)) {
-            return this.createJettonPythMessage(
-                parameters as JettonParams & { queryID: number | bigint },
-                operationPayload,
-                pythParams as JettonPythParams,
-                opCode,
-            );
-        } else {
-            return this.createTonPythMessage(parameters, operationPayload, pythParams as TonPythParams, opCode);
-        }
-    }
-
     protected createSupplyWithdrawMessageNoPrices(parameters: SupplyWithdrawParameters, operationPayload: Cell): Cell {
         const messageBody = beginCell()
             .storeUint(OPCODES.SUPPLY_WITHDRAW_MASTER_WITHOUT_PRICES, 32)
@@ -221,13 +201,21 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
             return this.createSupplyWithdrawMessageNoPrices(parameters, operationPayload);
         }
 
-        return this.routerPythMessage(
-            parameters.supplyAsset,
-            parameters,
-            operationPayload,
-            parameters.pyth,
-            OPCODES.SUPPLY_WITHDRAW_MASTER_JETTON,
-        );
+        if (!isTonAsset(parameters.supplyAsset)) {
+            return this.createJettonPythMessage(
+                parameters, // as JettonParams & { queryID: number | bigint },
+                operationPayload,
+                parameters.pyth as JettonPythParams,
+                OPCODES.SUPPLY_WITHDRAW_MASTER_JETTON,
+            );
+        } else {
+            return this.createTonPythMessage(
+                parameters,
+                operationPayload,
+                parameters.pyth as TonPythParams,
+                OPCODES.SUPPLY_WITHDRAW_MASTER,
+            );
+        }
     }
 
     buildRefTokensDict(requestedRefTokens: bigint[]): Dictionary<bigint, Buffer> {
@@ -279,7 +267,7 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
         });
         await via.send({
             value,
-            to: parameters.pyth.pythAddress,
+            to: parameters.pyth?.pythAddress ?? this.address,
             sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
             body: message,
         });
@@ -295,16 +283,23 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
     }
 
     createLiquidationMessage(parameters: PythLiquidationParameters): Cell {
-        const isTon = isTonAsset(parameters.asset);
         const operationPayload = this.buildLiquidationOperationPayload(parameters);
 
-        return this.routerPythMessage(
-            parameters.asset,
-            parameters,
-            operationPayload,
-            parameters.pyth,
-            OPCODES.LIQUIDATE_MASTER,
-        );
+        if (!isTonAsset(parameters.asset)) {
+            return this.createJettonPythMessage(
+                parameters,
+                operationPayload,
+                parameters.pyth as JettonPythParams,
+                OPCODES.LIQUIDATE_MASTER,
+            );
+        } else {
+            return this.createTonPythMessage(
+                parameters,
+                operationPayload,
+                parameters.pyth as TonPythParams,
+                OPCODES.LIQUIDATE_MASTER,
+            );
+        }
     }
 
     async sendLiquidation(

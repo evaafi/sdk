@@ -75,7 +75,7 @@ export const FEES = {
     SUPPLY: toNano('0.25'),
 
     // Supply & Withdraw
-    SUPPLY_WITHDRAW: toNano('0.45'),
+    SUPPLY_WITHDRAW: toNano('0.42'),
 
     // Liquidation
     LIQUIDATION: toNano('0.8'),
@@ -88,4 +88,19 @@ export const FEES = {
     REWARD_MASTER_WITHDRAW: toNano('0.1'),
     REWARD_USER_DEPLOY: toNano('0.05'),
     REWARD_USER_CLAIM: toNano('0.1'),
-};
+} as const;
+
+/**
+ * Common validation constants and error messages
+ */
+export const VALIDATION = {
+    ERRORS: {
+        INVALID_AMOUNT: 'Amount must be positive',
+        INVALID_SUBACCOUNT_ID: 'Subaccount ID must be between 0 and 255',
+        MISSING_JETTON_AMOUNT: 'Either amount, liquidationAmount, or supplyAmount must be provided',
+        MISSING_RESPONSE_ADDRESS: 'responseAddress, userAddress, or liquidatorAddress must be provided',
+        INVALID_ASSET_CONFIG: 'Invalid asset configuration provided',
+        MASTER_CONTRACT_INACTIVE: 'Master contract is not active',
+        OUTDATED_SDK_VERSION: 'Outdated SDK pool version',
+    } as const,
+} as const;

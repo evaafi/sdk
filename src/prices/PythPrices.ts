@@ -1,7 +1,10 @@
 import { Cell, Dictionary } from '@ton/core';
 import { PoolAssetConfig } from '../types/Master';
 
-export class Prices {
+
+type PricesMode = 'spot' | 'twap';
+
+export class PythPrices {
     #dict: Dictionary<bigint, bigint>;
     #dataCell: Cell;
     #minPublishTime?: bigint;

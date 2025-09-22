@@ -1,3 +1,5 @@
+import { Dictionary } from '@ton/core';
+import { UNDEFINED_ASSET } from '../constants/assets';
 import {
     AgregatedBalances,
     AssetApy,
@@ -8,9 +10,8 @@ import {
     ExtendedAssetsConfig,
     ExtendedAssetsData,
     MasterConstants,
-    PoolConfig
+    PoolConfig,
 } from '../types/Master';
-import { Dictionary } from '@ton/core';
 import {
     BalanceChangeType,
     BalanceType,
@@ -18,9 +19,8 @@ import {
     LiquidationData,
     PredictAPYArgs,
     PredictHealthFactorArgs,
-    UserBalance
+    UserBalance,
 } from '../types/User';
-import { UNDEFINED_ASSET } from '../constants/assets';
 import { addReserve, isBadDebt } from './liquidation';
 
 export function mulFactor(decimal: bigint, a: bigint, b: bigint): bigint {
@@ -61,9 +61,13 @@ export function getAssetLiquidityMinusReserves(assetData: AssetData, masterConst
     return bigIntMin(total_supply - total_borrow, assetData.balance);
 }
 
-export function calculateCurrentRates(assetConfig: AssetConfig, assetData: AssetData, masterConstants: MasterConstants) {
+export function calculateCurrentRates(
+    assetConfig: AssetConfig,
+    assetData: AssetData,
+    masterConstants: MasterConstants,
+) {
     const now = BigInt(Math.floor(Date.now() / 1000));
-    const timeElapsed = now - assetData.lastAccural;
+    const timeElapsed = now - assetData.lastAccrual;
     const { supplyInterest, borrowInterest } = calculateAssetInterest(assetConfig, assetData, masterConstants);
 
     if (timeElapsed > 0) {
@@ -76,7 +80,7 @@ export function calculateCurrentRates(assetConfig: AssetConfig, assetData: Asset
             bRate: updatedBRate,
             supplyInterest,
             borrowInterest,
-            now
+            now,
         };
     }
 
@@ -85,7 +89,7 @@ export function calculateCurrentRates(assetConfig: AssetConfig, assetData: Asset
         bRate: assetData.bRate,
         supplyInterest,
         borrowInterest,
-        now
+        now,
     };
 }
 
@@ -93,7 +97,7 @@ export function calculateAssetData(
     assetsConfigDict: ExtendedAssetsConfig,
     assetsDataDict: Dictionary<bigint, AssetData>,
     assetId: bigint,
-    masterConstants: MasterConstants
+    masterConstants: MasterConstants,
 ): ExtendedAssetData {
     const config = assetsConfigDict.get(assetId);
     const data = assetsDataDict.get(assetId);
@@ -105,7 +109,7 @@ export function calculateAssetData(
     const { sRate, bRate, supplyInterest, borrowInterest, now } = calculateCurrentRates(config, data, masterConstants);
     data.sRate = sRate || 0n;
     data.bRate = bRate || 0n;
-    data.lastAccural = now;
+    data.lastAccrual = now;
 
     const supplyApy = (1 + (Number(supplyInterest) / 1e12) * 24 * 3600) ** 365 - 1;
     const borrowApy = (1 + (Number(borrowInterest) / 1e12) * 24 * 3600) ** 365 - 1;
@@ -113,31 +117,26 @@ export function calculateAssetData(
     return {
         ...data,
         ...{ supplyInterest, borrowInterest },
-        ...{ supplyApy, borrowApy }
+        ...{ supplyApy, borrowApy },
     };
 }
 
 export function calculateAssetInterest(
     assetConfig: AssetConfig,
     assetData: AssetData,
-    masterConstants: MasterConstants
+    masterConstants: MasterConstants,
 ): AssetInterest {
     const totalSupply = calculatePresentValue(assetData.sRate, assetData.totalSupply, masterConstants);
     const totalBorrow = calculatePresentValue(assetData.bRate, assetData.totalBorrow, masterConstants);
 
-    return calculateInterestWithSupplyBorrow(
-        totalSupply,
-        totalBorrow,
-        assetConfig,
-        masterConstants
-    );
+    return calculateInterestWithSupplyBorrow(totalSupply, totalBorrow, assetConfig, masterConstants);
 }
 
 export function calculateInterestWithSupplyBorrow(
     totalSupply: bigint,
     totalBorrow: bigint,
     assetConfig: AssetConfig,
-    masterConstants: MasterConstants
+    masterConstants: MasterConstants,
 ): AssetInterest {
     let utilization = 0n;
     let supplyInterest = 0n;
@@ -158,25 +157,24 @@ export function calculateInterestWithSupplyBorrow(
             mulFactor(
                 masterConstants.FACTOR_SCALE,
                 assetConfig.borrowRateSlopeHigh,
-                utilization - assetConfig.targetUtilization
+                utilization - assetConfig.targetUtilization,
             );
     }
 
     supplyInterest = mulDiv(
         mulDiv(borrowInterest, utilization, masterConstants.FACTOR_SCALE),
         masterConstants.ASSET_RESERVE_FACTOR_SCALE - assetConfig.reserveFactor,
-        masterConstants.ASSET_RESERVE_FACTOR_SCALE
+        masterConstants.ASSET_RESERVE_FACTOR_SCALE,
     );
 
     return {
         supplyInterest,
-        borrowInterest
+        borrowInterest,
     };
 }
 
-
 export function checkNotInDebtAtAll(principals: Dictionary<bigint, bigint>): boolean {
-    return principals.values().every(x => x >= 0n);
+    return principals.values().every((x) => x >= 0n);
 }
 
 export function getAgregatedBalances(
@@ -184,14 +182,13 @@ export function getAgregatedBalances(
     assetsConfig: ExtendedAssetsConfig,
     principals: Dictionary<bigint, bigint>,
     prices: Dictionary<bigint, bigint>,
-    masterConstants: MasterConstants
+    masterConstants: MasterConstants,
 ): AgregatedBalances {
     let user_total_supply = 0n;
     let user_total_borrow = 0n;
 
     for (const [assetId, principal] of principals) {
         if (principal) {
-
             if (!prices.has(assetId)) {
                 return { totalSupply: 0n, totalBorrow: 0n };
             }
@@ -200,9 +197,13 @@ export function getAgregatedBalances(
             const assetConfig = assetsConfig.get(assetId)!;
 
             if (principal < 0) {
-                user_total_borrow += presentValue(assetData.sRate, assetData.bRate, principal, masterConstants).amount * price / 10n ** assetConfig.decimals;
+                user_total_borrow +=
+                    (presentValue(assetData.sRate, assetData.bRate, principal, masterConstants).amount * price) /
+                    10n ** assetConfig.decimals;
             } else {
-                user_total_supply += presentValue(assetData.sRate, assetData.bRate, principal, masterConstants).amount * price / 10n ** assetConfig.decimals;
+                user_total_supply +=
+                    (presentValue(assetData.sRate, assetData.bRate, principal, masterConstants).amount * price) /
+                    10n ** assetConfig.decimals;
             }
         }
     }
@@ -215,7 +216,7 @@ export function calculateMaximumWithdrawAmount(
     principals: Dictionary<bigint, bigint>,
     prices: Dictionary<bigint, bigint>,
     masterConstants: MasterConstants,
-    assetId: bigint
+    assetId: bigint,
 ): bigint {
     let withdrawAmountMax = 0n;
 
@@ -240,19 +241,18 @@ export function calculateMaximumWithdrawAmount(
             if (assetConfig.collateralFactor == 0n) {
                 maxAmountToReclaim = oldPresentValue.amount;
             } else if (price > 0) {
-                maxAmountToReclaim =
-                    bigIntMax(0n,
-                        mulDiv(
-                            mulDiv(borrowable, masterConstants.ASSET_COEFFICIENT_SCALE, assetConfig.collateralFactor),
-                            10n ** assetConfig.decimals, price)
-                            - calculatePresentValue(assetData.sRate, assetConfig.dust, masterConstants) / 2n
-                        );
+                maxAmountToReclaim = bigIntMax(
+                    0n,
+                    mulDiv(
+                        mulDiv(borrowable, masterConstants.ASSET_COEFFICIENT_SCALE, assetConfig.collateralFactor),
+                        10n ** assetConfig.decimals,
+                        price,
+                    ) -
+                        calculatePresentValue(assetData.sRate, assetConfig.dust, masterConstants) / 2n,
+                );
             }
 
-            withdrawAmountMax = bigIntMin(
-                maxAmountToReclaim,
-                oldPresentValue.amount
-            );
+            withdrawAmountMax = bigIntMin(maxAmountToReclaim, oldPresentValue.amount);
         }
     } else {
         if (!prices.has(assetId)) {
@@ -261,7 +261,11 @@ export function calculateMaximumWithdrawAmount(
 
         const price = prices.get(assetId) as bigint;
 
-        return getAvailableToBorrow(assetsConfig, assetsData, principals, prices, masterConstants) * (10n ** assetConfig.decimals) / price;
+        return (
+            (getAvailableToBorrow(assetsConfig, assetsData, principals, prices, masterConstants) *
+                10n ** assetConfig.decimals) /
+            price
+        );
     }
 
     return withdrawAmountMax;
@@ -272,14 +276,14 @@ export function getAvailableToBorrow(
     assetsData: ExtendedAssetsData,
     principals: Dictionary<bigint, bigint>,
     prices: Dictionary<bigint, bigint>,
-    masterConstants: MasterConstants
+    masterConstants: MasterConstants,
 ): bigint {
     let borrowLimit = 0n;
     let borrowAmount = 0n;
 
     for (const assetID of principals.keys()) {
         const principal = principals.get(assetID) as bigint;
-        
+
         if (principal == 0n) {
             continue;
         }
@@ -293,13 +297,21 @@ export function getAvailableToBorrow(
         const price = prices.get(assetID) as bigint;
 
         if (principal < 0n) {
-            borrowAmount += mulDiv(calculatePresentValue(assetData.bRate, -principal, masterConstants), price, 10n ** assetConfig.decimals);
+            borrowAmount += mulDiv(
+                calculatePresentValue(assetData.bRate, -principal, masterConstants),
+                price,
+                10n ** assetConfig.decimals,
+            );
         } else if (principal > 0n) {
-            borrowLimit +=
+            borrowLimit += mulDiv(
                 mulDiv(
-                    mulDiv(calculatePresentValue(assetData.sRate, principal, masterConstants), price, 10n ** assetConfig.decimals),
-                    assetConfig.collateralFactor,
-                    masterConstants.ASSET_COEFFICIENT_SCALE);
+                    calculatePresentValue(assetData.sRate, principal, masterConstants),
+                    price,
+                    10n ** assetConfig.decimals,
+                ),
+                assetConfig.collateralFactor,
+                masterConstants.ASSET_COEFFICIENT_SCALE,
+            );
         }
     }
 
@@ -313,21 +325,26 @@ export function getAvailableToBorrow(
  * @param principalValue asset principal value
  * @param masterConstants pool constants
  */
-export function presentValue(sRate: bigint, bRate: bigint, principalValue: bigint, masterConstants: MasterConstants): UserBalance {
+export function presentValue(
+    sRate: bigint,
+    bRate: bigint,
+    principalValue: bigint,
+    masterConstants: MasterConstants,
+): UserBalance {
     if (principalValue > 0) {
         return {
             amount: calculatePresentValue(sRate, principalValue, masterConstants),
-            type: BalanceType.supply
+            type: BalanceType.supply,
         };
     } else if (principalValue < 0) {
         return {
             amount: calculatePresentValue(bRate, -principalValue, masterConstants),
-            type: BalanceType.borrow
+            type: BalanceType.borrow,
         };
     } else {
         return {
             amount: 0n,
-            type: undefined
+            type: undefined,
         };
     }
 }
@@ -337,11 +354,7 @@ export function presentValue(sRate: bigint, bRate: bigint, principalValue: bigin
  * @param parameters
  */
 export function calculateHealthParams(parameters: HealthParamsArgs) {
-    const {
-        principals, prices,
-        assetsData, assetsConfig,
-        poolConfig
-    } = parameters;
+    const { principals, prices, assetsData, assetsConfig, poolConfig } = parameters;
 
     const { ASSET_LIQUIDATION_THRESHOLD_SCALE } = poolConfig.masterConstants;
 
@@ -353,22 +366,22 @@ export function calculateHealthParams(parameters: HealthParamsArgs) {
         if (!principals.has(asset.assetId)) continue;
         const assetPrincipal = principals.get(asset.assetId)!;
 
-        if (!assetsConfig.has(asset.assetId)) throw (`No config for ${asset.name}:${asset.assetId}`);
+        if (!assetsConfig.has(asset.assetId)) throw `No config for ${asset.name}:${asset.assetId}`;
         const assetConfig = assetsConfig.get(asset.assetId)!;
 
-        if (!assetsData.has(asset.assetId)) throw (`No data for asset ${asset.name}:${asset.assetId}`);
+        if (!assetsData.has(asset.assetId)) throw `No data for asset ${asset.name}:${asset.assetId}`;
         const assetData = assetsData.get(asset.assetId)!;
 
-        if (!prices.has(asset.assetId)) throw (`No price for asset ${asset.name}:${asset.assetId}`);
+        if (!prices.has(asset.assetId)) throw `No price for asset ${asset.name}:${asset.assetId}`;
         const assetPrice = prices.get(asset.assetId)! as bigint;
         const assetScale = 10n ** assetConfig.decimals;
 
         const { sRate, bRate } = assetData;
         const assetBalance = presentValue(sRate, bRate, assetPrincipal, poolConfig.masterConstants);
-        const assetWorth = assetBalance.amount * assetPrice / assetScale;
+        const assetWorth = (assetBalance.amount * assetPrice) / assetScale;
         if (assetBalance.type === BalanceType.supply) {
             totalSupply += assetWorth;
-            totalLimit += assetWorth * assetConfig.liquidationThreshold / ASSET_LIQUIDATION_THRESHOLD_SCALE;
+            totalLimit += (assetWorth * assetConfig.liquidationThreshold) / ASSET_LIQUIDATION_THRESHOLD_SCALE;
         } else if (assetBalance.type === BalanceType.borrow && assetConfig.dust < assetBalance.amount) {
             totalDebt += assetWorth;
         }
@@ -383,9 +396,11 @@ export function calculateHealthParams(parameters: HealthParamsArgs) {
     };
 
     return {
-        totalDebt, totalLimit, totalSupply,
+        totalDebt,
+        totalLimit,
+        totalSupply,
         isLiquidatable: _isLiquidable,
-        isBadDebt: _isBadDebt
+        isBadDebt: _isBadDebt,
     };
 }
 
@@ -403,7 +418,7 @@ export function calculateLiquidationData(
     assetsData: ExtendedAssetsData,
     principals: Dictionary<bigint, bigint>,
     prices: Dictionary<bigint, bigint>,
-    poolConfig: PoolConfig
+    poolConfig: PoolConfig,
 ): LiquidationData {
     let collateralValue = 0n;
     let collateralAsset = UNDEFINED_ASSET;
@@ -412,23 +427,22 @@ export function calculateLiquidationData(
     let totalDebt = 0n;
     let totalLimit = 0n;
 
-    const {
-        ASSET_SRATE_SCALE, ASSET_BRATE_SCALE,
-        COLLATERAL_WORTH_THRESHOLD
-    } = poolConfig.masterConstants;
+    const { ASSET_SRATE_SCALE, ASSET_BRATE_SCALE, COLLATERAL_WORTH_THRESHOLD } = poolConfig.masterConstants;
 
     for (const asset of poolConfig.poolAssetsConfig) {
         const principal = principals.get(asset.assetId)!;
         if (!principal) continue;
         const assetConfig = assetsConfig.get(asset.assetId)!;
         const assetData = assetsData.get(asset.assetId)!;
-        const balance = principal > 0 ?
-            (principal * assetData.sRate) / ASSET_SRATE_SCALE :
-            (principal * assetData.bRate) / ASSET_BRATE_SCALE;
+        const balance =
+            principal > 0
+                ? (principal * assetData.sRate) / ASSET_SRATE_SCALE
+                : (principal * assetData.bRate) / ASSET_BRATE_SCALE;
 
         const assetWorth = (bigAbs(balance) * prices.get(asset.assetId)!) / 10n ** assetConfig.decimals;
         if (balance > 0) {
-            totalLimit += (assetWorth * assetConfig.liquidationThreshold) / poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE;
+            totalLimit +=
+                (assetWorth * assetConfig.liquidationThreshold) / poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE;
             // get the greatest collateral
             if (assetWorth > collateralValue) {
                 collateralValue = assetWorth;
@@ -455,8 +469,8 @@ export function calculateLiquidationData(
             (bigIntMax(collateralValue / 3n, bigIntMin(collateralValue, COLLATERAL_WORTH_THRESHOLD)) *
                 loanScale *
                 poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE) /
-            liquidationBonus /
-            loanAssetPrice
+                liquidationBonus /
+                loanAssetPrice,
         );
         values.push((loanValue * loanScale) / loanAssetPrice);
 
@@ -464,9 +478,11 @@ export function calculateLiquidationData(
         const collateralAssetPrice: bigint = prices.get(collateralAsset.assetId)!;
         const collateralDecimal = 10n ** collateralAssetConfig.decimals;
         let minCollateralAmount =
-            (((liquidationAmount * loanAssetPrice * liquidationBonus) / poolConfig.masterConstants.ASSET_LIQUIDATION_BONUS_SCALE) * collateralDecimal) /
-            collateralAssetPrice /
-            loanScale -
+            (((liquidationAmount * loanAssetPrice * liquidationBonus) /
+                poolConfig.masterConstants.ASSET_LIQUIDATION_BONUS_SCALE) *
+                collateralDecimal) /
+                collateralAssetPrice /
+                loanScale -
             10n;
         minCollateralAmount = (minCollateralAmount * 97n) / 100n;
         if (minCollateralAmount > 0n) {
@@ -478,8 +494,12 @@ export function calculateLiquidationData(
                 totalDebt,
                 totalLimit,
                 liquidable: true,
-                liquidationAmount: addReserve(liquidationAmount, loanAssetConfig.liquidationReserveFactor, poolConfig.masterConstants.ASSET_RESERVE_FACTOR_SCALE),
-                minCollateralAmount
+                liquidationAmount: addReserve(
+                    liquidationAmount,
+                    loanAssetConfig.liquidationReserveFactor,
+                    poolConfig.masterConstants.ASSET_RESERVE_FACTOR_SCALE,
+                ),
+                minCollateralAmount,
             };
         }
     }
@@ -491,7 +511,7 @@ export function calculateLiquidationData(
         greatestLoanValue: loanValue,
         totalDebt,
         totalLimit,
-        liquidable: false
+        liquidable: false,
     };
 }
 
@@ -509,31 +529,39 @@ export function predictHealthFactor(args: PredictHealthFactorArgs): number {
 
     const decimals = Number(assetConfig.decimals);
 
-    const currentBalance = assetPrice * Number(currentAmount) / Math.pow(10, decimals);
+    const currentBalance = (assetPrice * Number(currentAmount)) / Math.pow(10, decimals);
     const changeType = args.balanceChangeType;
 
     if (currentAmount != null && currentAmount != 0n) {
         if (changeType == BalanceChangeType.Borrow) {
-            totalBorrow += currentBalance * (1 + Number(assetConfig.originationFee) / Number(args.poolConfig.masterConstants.ASSET_ORIGINATION_FEE_SCALE));
+            totalBorrow +=
+                currentBalance *
+                (1 +
+                    Number(assetConfig.originationFee) /
+                        Number(args.poolConfig.masterConstants.ASSET_ORIGINATION_FEE_SCALE));
         } else if (changeType == BalanceChangeType.Repay) {
             totalBorrow -= currentBalance;
         } else if (changeType == BalanceChangeType.Withdraw) {
-            totalLimit -= currentBalance * Number(assetConfig.liquidationThreshold) / Number(args.poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE);
+            totalLimit -=
+                (currentBalance * Number(assetConfig.liquidationThreshold)) /
+                Number(args.poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE);
         } else if (changeType == BalanceChangeType.Supply) {
-            totalLimit += currentBalance * Number(assetConfig.liquidationThreshold) / Number(args.poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE);
+            totalLimit +=
+                (currentBalance * Number(assetConfig.liquidationThreshold)) /
+                Number(args.poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE);
         }
     }
     if (Number(totalLimit) == 0) {
         return 1;
     }
 
-    return Math.min(Math.max(1 - totalBorrow / totalLimit, 0), 1);  // let's limit a result to zero below and one above
+    return Math.min(Math.max(1 - totalBorrow / totalLimit, 0), 1); // let's limit a result to zero below and one above
 }
 
 /**
- * Predicts how APY will change as a result of one of the actions Borrow, Supply, Withdraw or Repay. 
+ * Predicts how APY will change as a result of one of the actions Borrow, Supply, Withdraw or Repay.
  *
- * Used on the front-end. 
+ * Used on the front-end.
  *
  * @returns Estimated APYs for Supply and Borrow
  */
@@ -565,6 +593,6 @@ export function predictAPY(args: PredictAPYArgs): AssetInterest & AssetApy {
     return {
         ...interest,
         supplyApy: (1 + (Number(interest.supplyInterest) / 1e12) * 24 * 3600) ** 365 - 1,
-        borrowApy: (1 + (Number(interest.borrowInterest) / 1e12) * 24 * 3600) ** 365 - 1
-    }
+        borrowApy: (1 + (Number(interest.borrowInterest) / 1e12) * 24 * 3600) ** 365 - 1,
+    };
 }

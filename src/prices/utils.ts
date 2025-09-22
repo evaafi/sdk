@@ -9,6 +9,16 @@ import { IcpPriceSource } from './sources/Icp';
 import { PriceSource } from './sources/PriceSource';
 import { OraclePricesData, PriceData, PriceSourcesConfig, RawPriceData } from './Types';
 
+export const UPDATE_PRICE_FEEDS_BASE_GAS = 300000n;
+export const UPDATE_PRICE_FEEDS_PER_UPDATE_GAS = 90000n;
+// Current settings in basechain are as follows: 1 unit of gas costs 400 nanotons
+export const GAS_PRICE_FACTOR = 400n;
+
+// TODO: use PythContract for dynamic fee calc
+export function calcPythUpdateFee(numUpdates: number) {
+    return (UPDATE_PRICE_FEEDS_BASE_GAS + UPDATE_PRICE_FEEDS_PER_UPDATE_GAS * BigInt(numUpdates)) * GAS_PRICE_FACTOR;
+}
+
 export function verifyPricesTimestamp() {
     return function (priceData: RawPriceData): boolean {
         const timestamp = Date.now() / 1000;

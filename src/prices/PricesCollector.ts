@@ -1,15 +1,22 @@
-import { Cell, Dictionary } from "@ton/core"
-import { checkNotInDebtAtAll } from "../api/math"
-import { ExtendedEvaaOracle, PoolAssetConfig, PoolAssetsConfig } from "../types/Master"
-import { FetchConfig, proxyFetchRetries } from '../utils/utils'
-import { Oracle } from "./Oracle.interface"
-import { Prices } from "./Prices"
-import { PriceSource } from "./sources"
-import { DefaultPriceSourcesConfig, PriceSourcesConfig, RawPriceData } from "./Types"
-import { collectAndFilterPrices, generatePriceSources, getMedianPrice, packAssetsData, packOraclesData, packPrices, verifyPricesTimestamp } from "./utils"
+import { Cell, Dictionary } from '@ton/core';
+import { checkNotInDebtAtAll } from '../api/math';
+import { ExtendedEvaaOracle, PoolAssetConfig, PoolAssetsConfig } from '../types/Master';
+import { FetchConfig, proxyFetchRetries } from '../utils/utils';
+import { AbstractCollector } from './AbstractCollector';
+import { ClassicPrices } from './ClassicPrices';
+import { PriceSource } from './sources';
+import { DefaultPriceSourcesConfig, PriceSourcesConfig, RawPriceData } from './Types';
+import {
+    collectAndFilterPrices,
+    generatePriceSources,
+    getMedianPrice,
+    packAssetsData,
+    packOraclesData,
+    packPrices,
+    verifyPricesTimestamp,
+} from './utils';
 
-
-export type PricesCollectorConfig = {
+export type ClassicCollectorConfig = {
     poolAssetsConfig: PoolAssetsConfig;
     minimalOracles: number;
     evaaOracles: ExtendedEvaaOracle[];
@@ -17,14 +24,16 @@ export type PricesCollectorConfig = {
     additionalPriceSources?: PriceSource[];
 };
 
-export class PricesCollector implements Oracle {
+export class ClassicCollector extends AbstractCollector {
     #prices: RawPriceData[];
     #poolAssetsConfig: PoolAssetsConfig;
     #sourcesConfig: PriceSourcesConfig;
     #priceSources: PriceSource[];
     #minimalOracles: number;
 
-    constructor(config: PricesCollectorConfig) {
+    constructor(config: ClassicCollectorConfig) {
+        super();
+
         this.#poolAssetsConfig = config.poolAssetsConfig;
         this.#sourcesConfig = config.sourcesConfig ?? DefaultPriceSourcesConfig;
         this.#priceSources = generatePriceSources(this.#sourcesConfig, config.evaaOracles);
@@ -35,29 +44,52 @@ export class PricesCollector implements Oracle {
         this.#prices = [];
     }
 
-    async getPricesForLiquidate(realPrincipals: Dictionary<bigint, bigint>, fetchConfig?: FetchConfig): Promise<Prices>  {
+    async getPricesForLiquidate(
+        realPrincipals: Dictionary<bigint, bigint>,
+        fetchConfig?: FetchConfig,
+    ): Promise<ClassicPrices> {
         const assets = this.#filterEmptyPrincipalsAndAssets(realPrincipals);
         if (assets.includes(undefined)) {
-            throw new Error("User from another pool");
+            throw new Error('User from another pool');
         }
-        return await this.getPrices(assets.map(x => x!), fetchConfig);
+        // remove not TWAP prices
+        const validAssets = assets.map((x) => x!);
+        const assetIds = new Set(validAssets.map((asset) => asset!.assetId));
+        const twapAssets = validAssets.filter((asset) => assetIds.has(asset.assetId - 1n));
+        // .filter((asset): asset is PoolAssetConfig => asset.assetId !== sha256Hash(asset.name));
+
+        console.dir(twapAssets);
+
+        return await this.getPrices(twapAssets, fetchConfig);
     }
 
-    async getPricesForWithdraw(realPrincipals: Dictionary<bigint, bigint>, withdrawAsset: PoolAssetConfig, collateralToDebt = false, fetchConfig?: FetchConfig): Promise<Prices>  {
+    async getPricesForWithdraw(
+        realPrincipals: Dictionary<bigint, bigint>,
+        withdrawAsset: PoolAssetConfig,
+        collateralToDebt = false,
+        fetchConfig?: FetchConfig,
+    ): Promise<ClassicPrices> {
         let assets = this.#filterEmptyPrincipalsAndAssets(realPrincipals);
-        if (checkNotInDebtAtAll(realPrincipals) && (realPrincipals.get(withdrawAsset.assetId) ?? 0n) > 0n && !collateralToDebt) {
-            return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY);
+        if (
+            checkNotInDebtAtAll(realPrincipals) &&
+            (realPrincipals.get(withdrawAsset.assetId) ?? 0n) > 0n &&
+            !collateralToDebt
+        ) {
+            return ClassicPrices.createEmptyTwapPrices();
         }
         if (assets.includes(undefined)) {
-            throw new Error("User from another pool");
+            throw new Error('User from another pool');
         }
         if (!assets.includes(withdrawAsset)) {
             assets.push(withdrawAsset);
         }
         if (collateralToDebt && assets.length == 1) {
-            throw new Error("Cannot debt only one supplied asset");
+            throw new Error('Cannot debt only one supplied asset');
         }
-        return await this.getPrices(assets.map(x => x!), fetchConfig);
+        return await this.getPrices(
+            assets.map((x) => x!),
+            fetchConfig,
+        );
     }
 
     async getPricesForSupplyWithdraw(
@@ -69,19 +101,27 @@ export class PricesCollector implements Oracle {
     ): Promise<Prices> {
         // Используем ту же логику, что и getPricesForWithdraw, но supplyAsset не используется
         let assets = this.#filterEmptyPrincipalsAndAssets(realPrincipals);
-        if (checkNotInDebtAtAll(realPrincipals) && withdrawAsset && (realPrincipals.get(withdrawAsset.assetId) ?? 0n) > 0n && !collateralToDebt) {
+        if (
+            checkNotInDebtAtAll(realPrincipals) &&
+            withdrawAsset &&
+            (realPrincipals.get(withdrawAsset.assetId) ?? 0n) > 0n &&
+            !collateralToDebt
+        ) {
             return new Prices(Dictionary.empty<bigint, bigint>(), Cell.EMPTY);
         }
         if (assets.includes(undefined)) {
-            throw new Error("User from another pool");
+            throw new Error('User from another pool');
         }
         if (withdrawAsset && !assets.includes(withdrawAsset)) {
             assets.push(withdrawAsset);
         }
         if (collateralToDebt && assets.length == 1) {
-            throw new Error("Cannot debt only one supplied asset");
+            throw new Error('Cannot debt only one supplied asset');
         }
-        return await this.getPrices(assets.map(x => x!), fetchConfig);
+        return await this.getPrices(
+            assets.map((x) => x!),
+            fetchConfig,
+        );
     }
 
     async getPrices(assets: PoolAssetsConfig = this.#poolAssetsConfig, fetchConfig?: FetchConfig): Promise<Prices> {
@@ -101,7 +141,7 @@ export class PricesCollector implements Oracle {
     #getPricesByAssetList(assets: PoolAssetsConfig) {
         let pricesFiltered = this.#prices;
         if (pricesFiltered.length < this.#minimalOracles) {
-            throw new Error("Not enough price data");
+            throw new Error('Not enough price data');
         }
         if (pricesFiltered.length > this.#minimalOracles) {
             const sortedByTimestamp = pricesFiltered.slice().sort((a, b) => b.timestamp - a.timestamp);
@@ -112,22 +152,28 @@ export class PricesCollector implements Oracle {
             assetId: asset.assetId,
             medianPrice: getMedianPrice(pricesFiltered, asset.assetId),
         }));
-        const nonEmptymedianData = medianData.filter(x => x.medianPrice != null) as { assetId: bigint, medianPrice: bigint }[];
+        const nonEmptymedianData = medianData.filter((x) => x.medianPrice != null) as {
+            assetId: bigint;
+            medianPrice: bigint;
+        }[];
         const packedMedianData = packAssetsData(nonEmptymedianData);
         const oraclesData = pricesFiltered.map((x) => ({
             oracle: { id: x.oracleId, pubkey: x.pubkey },
             data: { timestamp: x.timestamp, prices: x.dict },
             signature: x.signature,
         }));
-        const packedOracleData = packOraclesData(oraclesData, nonEmptymedianData.map(x => x.assetId));
+        const packedOracleData = packOraclesData(
+            oraclesData,
+            nonEmptymedianData.map((x) => x.assetId),
+        );
         const dict = Dictionary.empty<bigint, bigint>();
         for (const medianDataAsset of nonEmptymedianData) {
             dict.set(medianDataAsset.assetId, medianDataAsset.medianPrice);
         }
         return {
             dict: dict,
-            dataCell: packPrices(packedMedianData, packedOracleData)
-        }
+            dataCell: packPrices(packedMedianData, packedOracleData),
+        };
     }
 
     async #collectPrices(fetchConfig?: FetchConfig): Promise<boolean> {
@@ -164,6 +210,9 @@ export class PricesCollector implements Oracle {
     }
 
     #filterEmptyPrincipalsAndAssets(principals: Dictionary<bigint, bigint>) {
-        return principals.keys().filter(x => principals.get(x)! != 0n).map(x => this.#poolAssetsConfig.find(asset => asset.assetId == x));
+        return principals
+            .keys()
+            .filter((x) => principals.get(x)! != 0n)
+            .map((x) => this.#poolAssetsConfig.find((asset) => asset.assetId == x));
     }
 }

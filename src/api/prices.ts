@@ -40,7 +40,7 @@ export async function getPrices(endpoints: string[] = ["api.stardust-mainnet.iot
         backendEndpoints: DefaultPriceSourcesConfig.backendEndpoints,
     }
 
-    const priceCollector = new PricesCollector(poolConfig, sources);
+    const priceCollector = new ClassicCollector(poolConfig, sources);
     const prices = await priceCollector.getPrices();
 
     return { dict: prices.dict, dataCell: prices.dataCell };

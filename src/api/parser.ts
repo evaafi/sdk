@@ -46,7 +46,7 @@ export function createAssetData(): DictionaryValue<AssetData> {
             buidler.storeUint(src.bRate, 64);
             buidler.storeInt(src.totalSupply, 64);
             buidler.storeInt(src.totalBorrow, 64);
-            buidler.storeUint(src.lastAccural, 32);
+            buidler.storeUint(src.lastAccrual, 32);
             buidler.storeUint(src.balance, 64);
             buidler.storeUint(src.trackingSupplyIndex, 64);
             buidler.storeUint(src.trackingBorrowIndex, 64);
@@ -57,7 +57,7 @@ export function createAssetData(): DictionaryValue<AssetData> {
             const bRate = BigInt(src.loadUintBig(64));
             const totalSupply = BigInt(src.loadIntBig(64));
             const totalBorrow = BigInt(src.loadIntBig(64));
-            const lastAccural = BigInt(src.loadUintBig(32));
+            const lastAccrual = BigInt(src.loadUintBig(32));
             const balance = BigInt(src.loadUintBig(64));
             const trackingSupplyIndex = BigInt(src.loadUintBig(64));
             const trackingBorrowIndex = BigInt(src.loadUintBig(64));
@@ -68,7 +68,7 @@ export function createAssetData(): DictionaryValue<AssetData> {
                 bRate,
                 totalSupply,
                 totalBorrow,
-                lastAccural,
+                lastAccrual,
                 balance,
                 trackingSupplyIndex,
                 trackingBorrowIndex,
