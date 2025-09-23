@@ -1,10 +1,12 @@
+import { HexString } from '@pythnetwork/hermes-client';
 import { Address, Dictionary, Slice } from '@ton/core';
+import { FeedMapItem, parseFeedsMapDict } from '../feeds';
 import { AbstractOracleParser } from './AbstractOracleParser';
 
 export type OracleConfig = {
     pythAddress: Address;
     // FYI: The Pyth max feeds count is 7, but it can add more in the future
-    feedsMap: Dictionary<bigint, Buffer>;
+    feedsMap: Map<HexString, FeedMapItem>;
     allowedRefTokens: Dictionary<bigint, bigint>;
 };
 
@@ -23,7 +25,9 @@ export class PythOracleParser extends AbstractOracleParser {
 
         return {
             pythAddress: oraclesSlice.loadAddress(),
-            feedsMap: feedDataSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.Buffer(64)),
+            feedsMap: parseFeedsMapDict(
+                feedDataSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.Buffer(64)),
+            ),
             allowedRefTokens: feedDataSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.BigUint(256)),
             pricesTtl: oraclesSlice.loadUint(32),
             pythComputeBaseGas: oraclesSlice.loadUintBig(64),

@@ -1,18 +1,17 @@
+import { HexString } from '@pythnetwork/hermes-client';
 import { Cell, Dictionary } from '@ton/core';
 import {
     ASSET_ID,
     DefaultPythPriceSourcesConfig,
-    EVAA_JUSDT_PRICE_FEED_ID,
+    FEED_ID,
+    FeedMapItem,
     FetchConfig,
     JUSDT_MAINNET,
-    packConnectedFeeds,
     PYTH_ORACLE_MAINNET,
-    PYTH_TON_PRICE_FEED_ID,
-    PYTH_TSTON_PRICE_FEED_ID,
-    PYTH_USDT_PRICE_FEED_ID,
     PythCollector,
     TON_MAINNET,
     TSTON_MAINNET,
+    UNDEFINED_ASSET,
     USDT_MAINNET,
 } from '../../src';
 
@@ -24,18 +23,13 @@ describe('PythOracle', () => {
         oracle = new PythCollector({
             poolAssetsConfig: [TON_MAINNET, USDT_MAINNET, TSTON_MAINNET],
             pythOracle: {
-                feedsMap: Dictionary.empty<bigint, Buffer>()
-                    .set(BigInt(PYTH_TON_PRICE_FEED_ID), packConnectedFeeds(ASSET_ID.TON, 0n))
-                    .set(BigInt(PYTH_USDT_PRICE_FEED_ID), packConnectedFeeds(ASSET_ID.USDT, 0n))
-                    .set(
-                        BigInt(PYTH_TSTON_PRICE_FEED_ID),
-                        packConnectedFeeds(ASSET_ID.tsTON, BigInt(PYTH_TON_PRICE_FEED_ID)),
-                    ),
+                feedsMap: new Map<HexString, FeedMapItem>([
+                    [FEED_ID.TON, { assetId: ASSET_ID.TON, feedId: '0x0' }],
+                    [FEED_ID.USDT, { assetId: ASSET_ID.USDT, feedId: '0x0' }],
+                    [FEED_ID.tsTON, { assetId: ASSET_ID.tsTON, feedId: FEED_ID.TON }],
+                ]),
                 pythAddress: PYTH_ORACLE_MAINNET,
-                allowedRefTokens: Dictionary.empty<bigint, bigint>().set(
-                    BigInt(EVAA_JUSDT_PRICE_FEED_ID),
-                    BigInt(ASSET_ID.USDT),
-                ),
+                allowedRefTokens: Dictionary.empty<bigint, bigint>().set(BigInt(ASSET_ID.jUSDT), BigInt(ASSET_ID.USDT)),
             },
             pythConfig: DefaultPythPriceSourcesConfig,
         });
@@ -48,8 +42,8 @@ describe('PythOracle', () => {
 
     describe('Feeds', () => {
         it('should create a required feeds list for basic assets', () => {
-            const evaaIds = [TON_MAINNET.assetId, USDT_MAINNET.assetId];
-            const requiredFeeds = oracle.createRequiredFeedsList(evaaIds);
+            const evaaAssets = [TON_MAINNET, USDT_MAINNET];
+            const requiredFeeds = oracle.createRequiredFeedsList(evaaAssets);
             expect(requiredFeeds).toHaveLength(2);
             expect(requiredFeeds).toEqual(
                 expect.arrayContaining([
@@ -67,23 +61,22 @@ describe('PythOracle', () => {
 
         it('should include referred feeds for assets with references', () => {
             // tsTON has a reference to TON feed
-            const evaaIds = [TSTON_MAINNET.assetId];
-            const requiredFeeds = oracle.createRequiredFeedsList(evaaIds);
+            const evaaAssets = [TSTON_MAINNET];
+            const requiredFeeds = oracle.createRequiredFeedsList(evaaAssets);
             // Should include both tsTON feed and its referred TON feed
             expect(requiredFeeds.length).toBeGreaterThanOrEqual(1);
             expect(requiredFeeds).toEqual(expect.arrayContaining([expect.stringMatching(/^0x[0-9a-f]+$/)]));
         });
 
-        it('should handle duplicate evaaIds without duplicating feeds', () => {
-            const evaaIds = [TON_MAINNET.assetId, TON_MAINNET.assetId, USDT_MAINNET.assetId];
-            const requiredFeeds = oracle.createRequiredFeedsList(evaaIds);
+        it('should handle duplicate assetIds without duplicating feeds', () => {
+            const evaaAssets = [TON_MAINNET, TON_MAINNET, USDT_MAINNET];
+            const requiredFeeds = oracle.createRequiredFeedsList(evaaAssets);
             expect(requiredFeeds).toHaveLength(2); // Should deduplicate
         });
 
-        it('should handle non-existent evaaIds gracefully', () => {
-            const nonExistentId = 999999n;
-            const evaaIds = [TON_MAINNET.assetId, nonExistentId, USDT_MAINNET.assetId];
-            const requiredFeeds = oracle.createRequiredFeedsList(evaaIds);
+        it('should handle non-existent assetIds gracefully', () => {
+            const evaaAssets = [TON_MAINNET, UNDEFINED_ASSET, USDT_MAINNET];
+            const requiredFeeds = oracle.createRequiredFeedsList(evaaAssets);
             expect(requiredFeeds).toHaveLength(2); // Should only include existing feeds
         });
     });
@@ -168,8 +161,8 @@ describe('PythOracle', () => {
 
     describe('Feed List Generation', () => {
         it('should generate feeds including references for referred assets', () => {
-            const evaaIds = [TSTON_MAINNET.assetId]; // tsTON refers to TON
-            const requiredFeeds = oracle.createRequiredFeedsList(evaaIds);
+            const evaaAssets = [TSTON_MAINNET]; // tsTON refers to TON
+            const requiredFeeds = oracle.createRequiredFeedsList(evaaAssets);
 
             // Should include both tsTON feed and its referred TON feed
             expect(requiredFeeds).toContain('0x3d1784128eeab5961ec60648fe497d3901eebd211b7f51e4bb0db9f024977d25'); // tsTON
@@ -178,13 +171,13 @@ describe('PythOracle', () => {
         });
 
         it('should deduplicate feeds for complex scenarios', () => {
-            const evaaIds = [
-                TON_MAINNET.assetId, // Direct TON feed
-                TSTON_MAINNET.assetId, // Refers to TON feed
-                USDT_MAINNET.assetId, // Direct USDT feed
-                JUSDT_MAINNET.assetId, // Refers to USDT feed
+            const evaaAssets = [
+                TON_MAINNET, // Direct TON feed
+                TSTON_MAINNET, // Refers to TON feed
+                USDT_MAINNET, // Direct USDT feed
+                JUSDT_MAINNET, // Refers to USDT feed
             ];
-            const requiredFeeds = oracle.createRequiredFeedsList(evaaIds);
+            const requiredFeeds = oracle.createRequiredFeedsList(evaaAssets);
 
             // Should contain unique feeds: TON, USDT, tsTON
             expect(requiredFeeds).toHaveLength(3);

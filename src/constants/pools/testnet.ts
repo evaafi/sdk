@@ -1,9 +1,10 @@
-import { Address } from '@ton/core';
-import { TESTNET_ALLOWED_REF_TOKENS, TESTNET_FEEDS_MAP } from '../../api/feeds';
-import { DefaultPythPriceSourcesConfig, PricesCollector, PythCollector } from '../../prices';
+import { HexString } from '@pythnetwork/hermes-client';
+import { Address, Dictionary } from '@ton/core';
+import { FEED_ID, FeedMapItem } from '../../api/feeds';
+import { ClassicCollector, DefaultPythPriceSourcesConfig, PythCollector } from '../../oracles';
 import { PoolConfig } from '../../types/Master';
 import { EvaaRewardsConfig } from '../../types/MasterRewards';
-import { EUSDT_TESTNET, JUSDC_TESTNET, TON_TESTNET } from '../assets';
+import { ASSET_ID, EUSDT_TESTNET, JUSDC_TESTNET, TON_TESTNET } from '../assets';
 import {
     EVAA_MASTER_TESTNET_CLASSIC_TOB_AUDITED,
     EVAA_MASTER_TESTNET_PYTH_TOB_AUDITED,
@@ -26,12 +27,20 @@ export const TESTNET_PYTH_POOL_CONFIG_TOB_AUDITED: PoolConfig = {
     masterAddress: EVAA_MASTER_TESTNET_PYTH_TOB_AUDITED,
     masterVersion: TESTNET_PYTH_VERSION_TOB_AUDITED,
     masterConstants: MASTER_CONSTANTS,
-    oracles: new PythCollector({
+    collector: new PythCollector({
         poolAssetsConfig: TESTNET_POOL_ASSETS_CONFIG_TOB_AUDITED,
         pythOracle: {
-            feedsMap: TESTNET_FEEDS_MAP,
+            feedsMap: new Map<HexString, FeedMapItem>([
+                [
+                    FEED_ID.TON,
+                    {
+                        assetId: ASSET_ID.TON,
+                        feedId: '0x0',
+                    },
+                ],
+            ]),
             pythAddress: PYTH_ORACLE_TESTNET,
-            allowedRefTokens: TESTNET_ALLOWED_REF_TOKENS,
+            allowedRefTokens: Dictionary.empty<bigint, bigint>().set(ASSET_ID.jUSDT, ASSET_ID.USDT),
         },
         pythConfig: DefaultPythPriceSourcesConfig,
     }),
@@ -43,7 +52,7 @@ export const TESTNET_CLASSIC_POOL_CONFIG_TOB_AUDITED: PoolConfig = {
     masterAddress: EVAA_MASTER_TESTNET_CLASSIC_TOB_AUDITED,
     masterVersion: TESTNET_CLASSIC_TOB_AUDITED,
     masterConstants: MASTER_CONSTANTS,
-    oracles: new PricesCollector({
+    collector: new ClassicCollector({
         poolAssetsConfig: TESTNET_POOL_ASSETS_CONFIG,
         minimalOracles: 3,
         evaaOracles: ORACLES_TESTNET,

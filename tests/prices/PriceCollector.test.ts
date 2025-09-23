@@ -1,11 +1,11 @@
 import { Cell, Dictionary } from '@ton/core';
 import {
     BackendPriceSource,
+    ClassicCollector,
     DefaultPriceSourcesConfig,
     generatePriceSources,
     MAINNET_POOL_ASSETS_CONFIG,
     Prices,
-    PricesCollector,
     PriceSourcesConfig,
     RawPriceData,
     STTON_MAINNET,
@@ -25,7 +25,7 @@ describe('PriceCollector tests', () => {
     test('test default price sources', async () => {
         expect.assertions(3);
 
-        const collector = new PricesCollector(PRICE_COLLTECTOR_CONFIG);
+        const collector = new ClassicCollector(PRICE_COLLTECTOR_CONFIG);
         let prices: Prices = new Prices(Dictionary.empty(), Cell.EMPTY);
         try {
             prices = await collector.getPrices();
@@ -95,7 +95,7 @@ describe('PriceCollector tests', () => {
             backendEndpoints: [],
             icpEndpoints: DefaultPriceSourcesConfig.icpEndpoints,
         };
-        const collector = new PricesCollector({
+        const collector = new ClassicCollector({
             ...PRICE_COLLTECTOR_CONFIG,
             sourcesConfig: sources,
             additionalPriceSources: [new FakeBackendPriceSource('', ORACLES_MAINNET)],
@@ -117,7 +117,7 @@ describe('PriceCollector tests', () => {
     test('test getPricesForwithdraw withdraw without debt', async () => {
         expect.assertions(2);
 
-        const pc = new PricesCollector(PRICE_COLLTECTOR_CONFIG);
+        const pc = new ClassicCollector(PRICE_COLLTECTOR_CONFIG);
 
         const principals = Dictionary.empty<bigint, bigint>();
         principals.set(TON_MAINNET.assetId, 1n);
@@ -130,7 +130,7 @@ describe('PriceCollector tests', () => {
     test('test getPricesForwithdraw withdraw with 2 supplies', async () => {
         expect.assertions(2);
 
-        const pc = new PricesCollector(PRICE_COLLTECTOR_CONFIG);
+        const pc = new ClassicCollector(PRICE_COLLTECTOR_CONFIG);
 
         const principals = Dictionary.empty<bigint, bigint>();
         principals.set(TON_MAINNET.assetId, 5n);
@@ -144,7 +144,7 @@ describe('PriceCollector tests', () => {
     test('test getPricesForwithdraw withdraw with 2 supplies collateralToDebtMode', async () => {
         expect.assertions(3);
 
-        const pc = new PricesCollector(PRICE_COLLTECTOR_CONFIG);
+        const pc = new ClassicCollector(PRICE_COLLTECTOR_CONFIG);
 
         const principals = Dictionary.empty<bigint, bigint>();
         principals.set(TON_MAINNET.assetId, 5n);
@@ -159,7 +159,7 @@ describe('PriceCollector tests', () => {
     test('test getPricesForwithdraw with 2 supplies and 1 another asset withdraw', async () => {
         expect.assertions(3);
 
-        const pc = new PricesCollector(PRICE_COLLTECTOR_CONFIG);
+        const pc = new ClassicCollector(PRICE_COLLTECTOR_CONFIG);
 
         const principals = Dictionary.empty<bigint, bigint>();
         principals.set(TON_MAINNET.assetId, 5n);
@@ -174,7 +174,7 @@ describe('PriceCollector tests', () => {
     test('test getPricesForLiquidate ', async () => {
         expect.assertions(3);
 
-        const pc = new PricesCollector(PRICE_COLLTECTOR_CONFIG);
+        const pc = new ClassicCollector(PRICE_COLLTECTOR_CONFIG);
 
         const principals = Dictionary.empty<bigint, bigint>();
         principals.set(TON_MAINNET.assetId, 5n);

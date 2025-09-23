@@ -16,7 +16,7 @@ import { parseMasterData } from '../api/parser';
 import { OracleParser } from '../api/parsers/AbstractOracleParser';
 import { ClassicOracleInfo } from '../api/parsers/ClassicOracleParser';
 import { PythOracleInfo } from '../api/parsers/PythOracleParser';
-import { FEES, OPCODES } from '../constants/general';
+import { FEES, OPCODES, VALIDATION } from '../constants/general';
 import { ExtendedAssetsConfig, ExtendedAssetsData, PoolAssetConfig, PoolConfig, UpgradeConfig } from '../types/Master';
 import { getUserJettonWallet } from '../utils/userJettonWallet';
 import {
@@ -35,168 +35,200 @@ import {
 import { EvaaUser } from './UserContract';
 
 // Internal
-export type JettonParams = {
-    queryID: bigint;
-    amount?: bigint;
-    liquidationAmount?: bigint;
-    supplyAmount?: bigint;
-    responseAddress?: Address;
-    userAddress?: Address;
-    liquidatorAddress?: Address;
-    forwardAmount?: bigint;
-    destinationAddress?: Address;
-};
+export interface JettonParams {
+    readonly queryID: bigint;
+    readonly amount?: bigint;
+    readonly liquidationAmount?: bigint;
+    readonly supplyAmount?: bigint;
+    readonly responseAddress?: Address;
+    readonly userAddress?: Address;
+    readonly liquidatorAddress?: Address;
+    readonly forwardAmount?: bigint;
+    readonly destinationAddress?: Address;
+}
+
+type RequireAtLeastOne<T, K extends keyof T> = T & { [P in K]: Required<T>[P] }[K];
+export type ValidJettonParams = RequireAtLeastOne<JettonParams, 'amount' | 'liquidationAmount' | 'supplyAmount'>;
 
 /**
- * Parameters for the Evaa contract
- * @property testnet - true for testnet, false for mainnet
- * @property debug - true to enable debug mode (optional)
+ * Parameters for initializing an Evaa contract instance
+ * @interface EvaaParameters
  */
-export type EvaaParameters = {
-    poolConfig: PoolConfig;
-    debug?: boolean;
-};
+export interface EvaaParameters {
+    /** Pool configuration containing contract addresses and settings */
+    readonly poolConfig: PoolConfig;
+    /** Optional debug mode flag for development purposes */
+    readonly debug?: boolean;
+}
 
 /**
- * Base parameters for supply
- * @property queryID - unique query ID
- * @property includeUserCode - true to include user code for update (needed when user contract code version is outdated)
- * @property amount - amount to supply
- * @property userAddress - user address
- * @property asset
+ * Parameters for supply operations
+ * @interface SupplyParameters
  */
-export type SupplyParameters = {
-    asset: PoolAssetConfig;
-    queryID: bigint;
-    includeUserCode: boolean;
-    amount: bigint;
-    userAddress: Address;
-    responseAddress?: Address;
-    forwardAmount?: bigint;
-    payload: Cell;
-    subaccountId?: number;
-    returnRepayRemainingsFlag?: boolean;
-    customPayloadRecipient?: Address;
-    customPayloadSaturationFlag?: boolean;
-};
+export interface SupplyParameters {
+    /** Asset configuration for the supply operation */
+    readonly asset: PoolAssetConfig;
+    /** Unique identifier for this operation */
+    readonly queryID: bigint;
+    /** Whether to include user contract code update */
+    readonly includeUserCode: boolean;
+    /** Amount to supply (must be positive) */
+    readonly amount: bigint;
+    /** Address of the user performing the supply */
+    readonly userAddress: Address;
+    /** Optional address for operation response */
+    readonly responseAddress?: Address;
+    /** Optional forward amount for transaction fees */
+    readonly forwardAmount?: bigint;
+    /** Operation payload cell */
+    readonly payload: Cell;
+    /** Optional subaccount identifier (0-255) */
+    readonly subaccountId?: number;
+    /** Whether to return repay remainings */
+    readonly returnRepayRemainingsFlag?: boolean;
+    /** Optional custom payload recipient address */
+    readonly customPayloadRecipient?: Address;
+    /** Whether to saturate custom payload */
+    readonly customPayloadSaturationFlag?: boolean;
+}
 
 /**
- * Parameters for the withdraw message
- * @property queryID - unique query ID
- * @property asset - asset config
- * @property amount - amount to withdraw
- * @property userAddress - user address
- * @property includeUserCode - true to include user code for update (needed when user contract code version is outdated)
+ * Parameters for withdraw operations
+ * @interface WithdrawParameters
  */
-export type WithdrawParameters = {
-    queryID: bigint;
-    amount: bigint;
-    userAddress: Address;
-    includeUserCode: boolean;
-    asset: PoolAssetConfig;
-    payload: Cell;
-    subaccountId?: number;
-    forwardAmount?: bigint;
-    amountToTransfer: bigint;
-    customPayloadSaturationFlag: boolean;
-    returnRepayRemainingsFlag: boolean;
-};
+export interface WithdrawParameters {
+    /** Unique identifier for this operation */
+    readonly queryID: bigint;
+    /** Amount to withdraw (must be positive) */
+    readonly amount: bigint;
+    /** Address of the user performing the withdrawal */
+    readonly userAddress: Address;
+    /** Whether to include user contract code update */
+    readonly includeUserCode: boolean;
+    /** Asset configuration for the withdrawal */
+    readonly asset: PoolAssetConfig;
+    /** Operation payload cell */
+    readonly payload: Cell;
+    /** Optional subaccount identifier (0-255) */
+    readonly subaccountId?: number;
+    /** Optional forward amount for transaction fees */
+    readonly forwardAmount?: bigint;
+    /** Actual amount to transfer after calculations */
+    readonly amountToTransfer: bigint;
+    /** Whether to saturate custom payload */
+    readonly customPayloadSaturationFlag: boolean;
+    /** Whether to return repay remainings */
+    readonly returnRepayRemainingsFlag: boolean;
+}
 
 /**
  * Parameters for liquidation inner operations
  * @interface LiquidationInnerParameters
  */
-export type LiquidationInnerParameters = {
+export interface LiquidationInnerParameters {
     /** Liquidation operation payload cell */
-    payload: Cell;
-    subaccountId: number;
-    customPayloadRecipient: Address;
-    customPayloadSaturationFlag: boolean;
-};
+    readonly payload: Cell;
+    /** Subaccount identifier for the operation */
+    readonly subaccountId: number;
+    /** Address to receive custom payload */
+    readonly customPayloadRecipient: Address;
+    /** Whether to saturate the custom payload */
+    readonly customPayloadSaturationFlag: boolean;
+}
 
 /**
- * Base data for liquidation. Can be obtained from the user contract liquidationParameters getter
- * @property loanAsset - loan asset ID
- * @property queryID - unique query ID
- * @property liquidatorAddress - liquidator address, where and collateral will be sent
+ * Base parameters for liquidation operations
+ * @interface LiquidationParameters
+ * @description Can be obtained from the user contract liquidationParameters getter
  */
-export type LiquidationParameters = {
-    loanAsset: bigint;
-    queryID: bigint;
-    liquidatorAddress: Address;
-};
+export interface LiquidationParameters {
+    /** Asset ID of the loan being liquidated */
+    readonly loanAsset: bigint;
+    /** Unique identifier for this operation */
+    readonly queryID: bigint;
+    /** Address where collateral will be sent upon liquidation */
+    readonly liquidatorAddress: Address;
+}
 
 /**
- * @property asset - asset config
- * @property borrowerAddress - borrower address (user address that is being liquidated)
- * @property collateralAsset - collateral asset ID
- * @property minCollateralAmount - minimal amount to receive from the liquidation
- * @property liquidationAmount - amount to liquidate
- * @property includeUserCode - true to include user code for update (needed when user contract code version is outdated)
+ * Parameters for building liquidation operations
+ * @interface LiquidationOperationBuilderParameters
  */
-export type LiquidationOperationBuilderParameters = {
-    asset: PoolAssetConfig;
-    borrowerAddress: Address;
-    collateralAsset: bigint;
-    minCollateralAmount: bigint;
-    liquidationAmount: bigint;
-    includeUserCode: boolean;
-};
+export interface LiquidationOperationBuilderParameters {
+    /** Asset configuration for the liquidation */
+    readonly asset: PoolAssetConfig;
+    /** Address of the borrower being liquidated */
+    readonly borrowerAddress: Address;
+    /** Asset ID of the collateral to be seized */
+    readonly collateralAsset: bigint;
+    /** Minimum collateral amount expected from liquidation */
+    readonly minCollateralAmount: bigint;
+    /** Amount of debt to liquidate */
+    readonly liquidationAmount: bigint;
+    /** Whether to include user contract code update */
+    readonly includeUserCode: boolean;
+}
 
-export type SupplyWithdrawParameters = {
-    queryID: bigint;
-    supplyAmount: bigint;
-    supplyAsset: PoolAssetConfig;
-    withdrawAmount: bigint;
-    withdrawAsset: PoolAssetConfig;
-    withdrawRecipient: Address;
-    includeUserCode: boolean;
-    tonForRepayRemainings?: bigint;
-    payload: Cell;
-    subaccountId?: number;
-    returnRepayRemainingsFlag?: boolean;
-    customPayloadSaturationFlag?: boolean;
-    forwardAmount?: bigint;
-    responseAddress?: Address;
-};
+export interface SupplyWithdrawParameters {
+    readonly queryID: bigint;
+    readonly supplyAmount: bigint;
+    readonly supplyAsset: PoolAssetConfig;
+    readonly withdrawAmount: bigint;
+    readonly withdrawAsset: PoolAssetConfig;
+    readonly withdrawRecipient: Address;
+    readonly includeUserCode: boolean;
+    readonly tonForRepayRemainings?: bigint;
+    readonly payload: Cell;
+    readonly subaccountId?: number;
+    readonly returnRepayRemainingsFlag?: boolean;
+    readonly customPayloadSaturationFlag?: boolean;
+    readonly forwardAmount?: bigint;
+    readonly responseAddress?: Address;
+}
 
 // Base shared configuration for all master types
-export type BaseMasterConfig = {
-    ifActive: number;
-    admin: Address;
-    tokenKeys: Cell | null;
-    supervisor: Address | null;
-};
+export interface BaseMasterConfig {
+    readonly ifActive: number;
+    readonly admin: Address;
+    readonly tokenKeys: Cell | null;
+    readonly supervisor: Address | null;
+}
 
 export type OracleInfo = PythOracleInfo | ClassicOracleInfo;
 
 // Generic master configuration with oracle info
-export type MasterConfig<T extends OracleInfo> = BaseMasterConfig & {
-    oraclesInfo: T;
-};
+export interface MasterConfig<T extends OracleInfo> extends BaseMasterConfig {
+    readonly oraclesInfo: T;
+}
 
 // Base shared data for all master types
-export type BaseMasterData = {
-    meta: string;
-    upgradeConfig: UpgradeConfig;
-    assetsConfig: ExtendedAssetsConfig;
-    assetsData: ExtendedAssetsData;
-    assetsReserves: Dictionary<bigint, bigint>;
-    apy: {
-        supply: Dictionary<bigint, number>;
-        borrow: Dictionary<bigint, number>;
+export interface BaseMasterData {
+    readonly meta: string;
+    readonly upgradeConfig: UpgradeConfig;
+    readonly assetsConfig: ExtendedAssetsConfig;
+    readonly assetsData: ExtendedAssetsData;
+    readonly assetsReserves: Dictionary<bigint, bigint>;
+    readonly apy: {
+        readonly supply: Dictionary<bigint, number>;
+        readonly borrow: Dictionary<bigint, number>;
     };
-};
+}
 
 // Generic master data with config
-export type MasterData<T extends MasterConfig<OracleInfo>> = BaseMasterData & {
-    masterConfig: T;
-};
+export interface MasterData<T extends MasterConfig<OracleInfo>> extends BaseMasterData {
+    readonly masterConfig: T;
+}
 
 /**
- * Abstract EVAA Master base that encapsulates shared logic and structure.
- * Concrete implementations (Classic/Pyth) should override message creation for
- * withdraw/liquidation and supply-withdraw wrapping.
+ * Abstract base class for EVAA Master contracts
+ *
+ * This class provides shared functionality for both Classic and Pyth master implementations,
+ * including message creation, validation, and transaction handling. Concrete implementations
+ * must override oracle-specific methods for withdraw/liquidation operations.
+ *
+ * @template T - Master data type extending MasterData with specific oracle configuration
+ * @abstract
+ * @implements {Contract}
  */
 export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<OracleInfo>>> implements Contract {
     readonly address: Address;
@@ -205,42 +237,89 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
     protected _data?: T;
     protected lastSync = 0;
 
+    /**
+     * Initialize the abstract master contract
+     * @param parameters - Configuration parameters for the Evaa master
+     */
     constructor(parameters: EvaaParameters) {
         this._poolConfig = parameters.poolConfig;
         this.address = this._poolConfig.masterAddress;
         this.debug = parameters?.debug;
     }
 
+    /**
+     * Get the current pool configuration
+     * @returns {PoolConfig} The pool configuration object
+     */
     get poolConfig(): PoolConfig {
         return this._poolConfig;
     }
 
+    /**
+     * Get the synchronized master data
+     * @returns {T | undefined} Master data if available, undefined otherwise
+     */
     get data(): T | undefined {
         return this._data;
     }
 
-    // ---------- Common helpers ----------
-    protected createJettonTransferMessage(parameters: JettonParams, defaultFees: bigint, message: Cell): Cell {
+    // ========== VALIDATION METHODS ==========
+    /**
+     * Validates jetton parameters ensuring at least one amount field is provided
+     * @private
+     * @static
+     * @param parameters - Jetton parameters to validate
+     * @returns {ValidJettonParams} Validated parameters
+     * @throws {Error} When no amount fields are provided
+     */
+    private static validateJettonParams(parameters: JettonParams): ValidJettonParams {
         if (
             parameters.amount == undefined &&
             parameters.liquidationAmount == undefined &&
             parameters.supplyAmount == undefined
         ) {
-            throw new Error('Either amount or liquidationAmount or supplyAmount must be provided');
+            throw new Error(`JettonParams validation failed: ${VALIDATION.ERRORS.MISSING_JETTON_AMOUNT}`);
         }
+        return parameters as ValidJettonParams;
+    }
+
+    /**
+     * Creates a jetton transfer message with the provided parameters
+     * @protected
+     * @param parameters - Jetton transfer parameters
+     * @param defaultFees - Default fee amount for the operation
+     * @param message - Operation message cell to include
+     * @returns {Cell} Complete jetton transfer message cell
+     * @throws {Error} When validation fails or required addresses are missing
+     */
+    protected createJettonTransferMessage(parameters: JettonParams, defaultFees: bigint, message: Cell): Cell {
+        const validParams = AbstractEvaaMaster.validateJettonParams(parameters);
+        const amount = validParams.amount ?? validParams.liquidationAmount ?? validParams.supplyAmount ?? 0n;
+        const responseAddress = validParams.responseAddress ?? validParams.userAddress ?? validParams.liquidatorAddress;
+
+        if (!responseAddress) {
+            throw new Error(`JettonTransfer validation failed: ${VALIDATION.ERRORS.MISSING_RESPONSE_ADDRESS}`);
+        }
+
         return beginCell()
             .storeUint(OPCODES.JETTON_TRANSFER, 32)
-            .storeUint(parameters.queryID, 64)
-            .storeCoins(parameters.amount ?? parameters.liquidationAmount ?? parameters.supplyAmount ?? 0n)
-            .storeAddress(parameters.destinationAddress ?? this.address)
-            .storeAddress(parameters.responseAddress ?? parameters.userAddress ?? parameters.liquidatorAddress)
+            .storeUint(validParams.queryID, 64)
+            .storeCoins(amount)
+            .storeAddress(validParams.destinationAddress ?? this.address)
+            .storeAddress(responseAddress)
             .storeBit(0)
-            .storeCoins(parameters.forwardAmount ?? defaultFees)
+            .storeCoins(validParams.forwardAmount ?? defaultFees)
             .storeBit(1)
             .storeRef(message)
             .endCell();
     }
 
+    /**
+     * Builds general data payload for supply-withdraw operations
+     * @abstract
+     * @param parameters - Supply-withdraw parameters (oracle-specific)
+     * @returns {Cell} General data payload cell
+     */
     abstract buildGeneralDataPayload(parameters: PythSupplyWithdrawParameters | ClassicSupplyWithdrawParameters): Cell;
 
     protected buildSupplyWithdrawOperationPayload(
@@ -262,8 +341,29 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
         return beginCell().storeRef(supplyData).storeRef(withdrawData).storeRef(generalData).endCell();
     }
 
-    // ---------- Public message builders (shared) ----------
+    // ========== MESSAGE BUILDERS ==========
+    /**
+     * Validates supply operation parameters
+     * @private
+     * @static
+     * @param parameters - Supply parameters to validate
+     * @throws {Error} When amount is invalid or subaccount ID is out of range
+     */
+    private static validateSupplyParameters(parameters: SupplyParameters): void {
+        if (parameters.subaccountId !== undefined && !isValidSubaccountId(parameters.subaccountId)) {
+            throw new Error(`Supply validation failed: ${VALIDATION.ERRORS.INVALID_SUBACCOUNT_ID}`);
+        }
+    }
+
+    /**
+     * Creates a supply operation message
+     * @param parameters - Supply operation parameters
+     * @returns {Cell} Complete supply message cell
+     * @throws {Error} When validation fails
+     */
     createSupplyMessage(parameters: SupplyParameters): Cell {
+        AbstractEvaaMaster.validateSupplyParameters(parameters);
+
         const subaccountId = parameters.subaccountId ?? 0;
         const isTon = isTonAsset(parameters.asset);
 
@@ -287,12 +387,26 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
         }
     }
 
-    // Concrete classes must wrap the operation payload correctly for their oracle
+    /**
+     * Creates a supply-withdraw operation message
+     * @abstract
+     * @param parameters - Oracle-specific supply-withdraw parameters
+     * @returns {Cell} Complete supply-withdraw message cell
+     * @remarks Concrete classes must wrap the operation payload correctly for their oracle
+     */
     abstract createSupplyWithdrawMessage(
         parameters: ClassicSupplyWithdrawParameters | PythSupplyWithdrawParameters,
     ): Cell;
 
-    // ---------- Sending operations ----------
+    // ========== TRANSACTION OPERATIONS ==========
+    /**
+     * Sends a supply operation to the master contract
+     * @param provider - Contract provider instance
+     * @param via - Sender instance
+     * @param value - Transaction value in nanoTON
+     * @param parameters - Supply operation parameters
+     * @throws {Error} When validation fails or transaction fails
+     */
     async sendSupply(provider: ContractProvider, via: Sender, value: bigint, parameters: SupplyParameters) {
         const message = this.createSupplyMessage(parameters);
 
@@ -350,7 +464,15 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
         parameters: ClassicLiquidationParameters | PythLiquidationParameters,
     ): Promise<void>;
 
-    // ---------- Read helpers ----------
+    // ========== CONTRACT INTERACTION HELPERS ==========
+    /**
+     * Calculates the user smart contract address for a given user and subaccount
+     * @param userAddress - The user's wallet address
+     * @param lendingCode - The user contract code cell
+     * @param subaccountId - Optional subaccount identifier (default: 0)
+     * @returns {Address} The calculated user contract address
+     * @throws {Error} When subaccount ID is invalid
+     */
     calculateUserSCAddr(userAddress: Address, lendingCode: Cell, subaccountId: number = 0): Address {
         const subaccount = beginCell();
         if (subaccountId !== 0) {
@@ -378,6 +500,12 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
         return new Address(0, stateInit.hash());
     }
 
+    /**
+     * Creates a user contract instance for the given address and subaccount
+     * @param userAddress - The user's wallet address
+     * @param subaccountId - Optional subaccount identifier (default: 0)
+     * @returns {EvaaUser} User contract instance
+     */
     openUserContract(userAddress: Address, subaccountId: number = 0): EvaaUser {
         return EvaaUser.createFromAddress(
             this.calculateUserSCAddr(userAddress, this._poolConfig.lendingCode, subaccountId),
@@ -436,13 +564,13 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
                 oracleParser,
             ) as T;
             if (this._data.upgradeConfig.masterCodeVersion !== this._poolConfig.masterVersion) {
-                throw Error(
-                    `Outdated SDK pool version. It supports only master code version ${this._poolConfig.masterVersion}, but the current master code version is ${this._data.upgradeConfig.masterCodeVersion}`,
+                throw new Error(
+                    `${VALIDATION.ERRORS.OUTDATED_SDK_VERSION}. SDK supports version ${this._poolConfig.masterVersion}, but contract version is ${this._data.upgradeConfig.masterCodeVersion}`,
                 );
             }
             this.lastSync = Math.floor(Date.now() / 1000);
         } else {
-            throw Error('Master contract is not active');
+            throw new Error(VALIDATION.ERRORS.MASTER_CONTRACT_INACTIVE);
         }
     }
 

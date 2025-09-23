@@ -4,6 +4,7 @@ import { Cell } from '@ton/core';
 import { beginCell } from '@ton/ton';
 import { Buffer } from 'buffer';
 
+// TODO: move to PythCollector
 export function composeFeedsCell(feeds: HexString[]): Cell {
     if (feeds.length === 0) {
         return beginCell().storeUint(0, 8).endCell();
@@ -40,7 +41,7 @@ export async function getPrices(endpoints: string[] = ["api.stardust-mainnet.iot
         backendEndpoints: DefaultPriceSourcesConfig.backendEndpoints,
     }
 
-    const priceCollector = new PricesCollector(poolConfig, sources);
+    const priceCollector = new ClassicCollector(poolConfig, sources);
     const prices = await priceCollector.getPrices();
 
     return { dict: prices.dict, dataCell: prices.dataCell };

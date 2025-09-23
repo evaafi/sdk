@@ -3,11 +3,11 @@ import 'dotenv/config';
 import { mnemonicToWalletKey } from '@ton/crypto';
 import { Cell, TonClient, TonClient4, WalletContractV4 } from '@ton/ton';
 import {
+    ClassicCollector,
     EvaaMasterClassic,
     JUSDC_MAINNET,
     JUSDC_TESTNET,
     ORACLES_TESTNET,
-    PricesCollector,
     TESTNET_CLASSIC_POOL_CONFIG_TOB_AUDITED,
     TON_MAINNET,
     TON_TESTNET,
@@ -63,7 +63,7 @@ async function withdrawTON() {
     //     returnRepayRemainingsFlag: false,
     // });
 
-    const priceCollector = new PricesCollector({
+    const priceCollector = new ClassicCollector({
         poolAssetsConfig: [JUSDC_MAINNET, JUSDC_TESTNET, TON_MAINNET],
         minimalOracles: 3,
         evaaOracles: ORACLES_TESTNET,

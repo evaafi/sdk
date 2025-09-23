@@ -16,7 +16,11 @@ async function parsePythMaster() {
     await evaaPyth.getSync();
 
     console.log('evaaPyth');
-    console.dir(evaaPyth.data?.masterConfig.oraclesInfo);
+    for (const assetConfigKey of evaaPyth.data?.assetsConfig.keys() ?? []) {
+        const assetConfig = evaaPyth.data?.assetsConfig.get(assetConfigKey);
+
+        console.log(`${assetConfig?.jwAddress}: ${assetConfig?.borrowCap}`);
+    }
 
     // console.log('assetsConfig');
     // console.dir(evaaPyth.data?.assetsConfig);

@@ -5,3 +5,5 @@ export * from './PythMaster';
 export * from './UserContract';
 
 export * from './JettonWallet';
+
+export * from './PythOracle';

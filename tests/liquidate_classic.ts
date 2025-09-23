@@ -5,16 +5,14 @@ import { Address, beginCell, toNano, TonClient, WalletContractV4 } from '@ton/to
 import {
     calculateHealthParams,
     calculateLiquidationAmounts,
-    EvaaMasterPyth,
+    ClassicCollector,
+    EvaaMasterClassic,
     getUserJettonWallet,
     JettonWallet,
-    JUSDC_MAINNET,
-    JUSDT_MAINNET,
-    MAINNET_POOL_CONFIG,
-    PYTH_ORACLE_MAINNET,
-    STTON_MAINNET,
-    TSTON_MAINNET,
-    USDE_MAINNET,
+    MAINNET_LP_POOL_CONFIG,
+    ORACLES_LP,
+    TON_MAINNET,
+    USDT_MAINNET,
 } from '../src';
 
 const TON_CLIENT = new TonClient({
@@ -40,13 +38,13 @@ async function liquidateJetton() {
         return;
     }
 
-    const EVAA_MAINNET = TON_CLIENT.open(new EvaaMasterPyth({ poolConfig: MAINNET_POOL_CONFIG, debug: true }));
+    const EVAA_MAINNET = TON_CLIENT.open(new EvaaMasterClassic({ poolConfig: MAINNET_LP_POOL_CONFIG, debug: true }));
     const WALLET_SENDER = {
         address: WALLET_CONTRACT.address,
         send: WALLET_CONTRACT.sender(WALLET_KEY_PAIR.secretKey).send,
     };
 
-    const amount = 800_000_000n;
+    // const amount = 800_000_000n;
 
     // const WALLET_KEY_PAIR = await mnemonicToWalletKey(process.env.MAINNET_WALLET_MNEMONIC!.split(' '));
 
@@ -59,7 +57,9 @@ async function liquidateJetton() {
 
     await EVAA_MAINNET.getSync();
 
-    const EVAA_USER_MAINNET = TON_CLIENT.open(EVAA_MAINNET.openUserContract(Address.parse('borroweraddress'), 0));
+    const borrowerAddress = Address.parse('borrowaddress');
+
+    const EVAA_USER_MAINNET = TON_CLIENT.open(EVAA_MAINNET.openUserContract(borrowerAddress, 0));
 
     if (!EVAA_MAINNET.data?.assetsData || !EVAA_MAINNET.data?.assetsConfig) {
         throw new Error('Assets data or config is not available');
@@ -67,9 +67,45 @@ async function liquidateJetton() {
 
     await EVAA_USER_MAINNET.getSyncLite(EVAA_MAINNET.data?.assetsData, EVAA_MAINNET.data?.assetsConfig);
 
-    const pc = await MAINNET_POOL_CONFIG.oracles.getPrices(MAINNET_POOL_CONFIG.poolAssetsConfig);
+    if (!EVAA_USER_MAINNET.liteData?.realPrincipals) {
+        throw new Error('Real principals is not available');
+    }
 
-    console.dir(pc.getAssetPrice(TSTON_MAINNET.assetId));
+    // const pc = await MAINNET_LP_POOL_CONFIG.oracles.getPricesForLiquidate(EVAA_USER_MAINNET.liteData?.realPrincipals);
+
+    const collector = new ClassicCollector({
+        poolAssetsConfig: MAINNET_LP_POOL_CONFIG.poolAssetsConfig,
+        minimalOracles: 3,
+        evaaOracles: ORACLES_LP,
+    });
+
+    const twapAssets = MAINNET_LP_POOL_CONFIG.poolAssetsConfig.map((asset) => ({
+        name: asset.name,
+        assetId: asset.assetId - 1n,
+        jettonMasterAddress: asset.jettonMasterAddress,
+        jettonWalletCode: asset.jettonWalletCode,
+    }));
+
+    const classicPC = await collector.getPrices();
+    const twapPC = await collector.getPrices(twapAssets);
+
+    console.log(`${twapPC.dict.keys()}`);
+
+    for (const asset of MAINNET_LP_POOL_CONFIG.poolAssetsConfig) {
+        const price = twapPC.getAssetPrice(asset.assetId - 1n);
+
+        console.log(`[TWAP PRICE] ${asset.name}: ${price}`);
+    }
+
+    for (const assetId of EVAA_USER_MAINNET.liteData?.realPrincipals.keys()) {
+        console.log(`[LIQ PRICE] ${twapPC.dict.get(assetId - 1n)}`);
+    }
+
+    // const pc = new ClassicCollector({
+    //     poolAssetsConfig: MAINNET_LP_POOL_CONFIG.poolAssetsConfig,
+    //     minimalOracles: 3,
+    //     evaaOracles: ORACLES_MAINNET,
+    // });
 
     // console.log('userLiteData');
     // console.dir(EVAA_USER_MAINNET.liteData?.balances);
@@ -78,12 +114,12 @@ async function liquidateJetton() {
         assetsData: EVAA_MAINNET.data.assetsData,
         assetsConfig: EVAA_MAINNET.data.assetsConfig,
         principals: EVAA_USER_MAINNET.liteData!.principals,
-        prices: pc.dict,
-        poolConfig: MAINNET_POOL_CONFIG,
+        prices: classicPC.dict,
+        poolConfig: MAINNET_LP_POOL_CONFIG,
     });
 
-    const loanAsset = TSTON_MAINNET;
-    const collateralAsset = STTON_MAINNET;
+    const loanAsset = USDT_MAINNET;
+    const collateralAsset = TON_MAINNET;
 
     // const loanAssetCollateralFactor = EVAA_MAINNET.data.assetsConfig.get(loanAsset.assetId)?.collateralFactor;
 
@@ -93,10 +129,10 @@ async function liquidateJetton() {
         health.totalSupply,
         health.totalDebt,
         EVAA_USER_MAINNET.liteData!.principals,
-        pc.dict,
+        classicPC.dict,
         EVAA_MAINNET.data.assetsData,
         EVAA_MAINNET.data.assetsConfig,
-        MAINNET_POOL_CONFIG.masterConstants,
+        MAINNET_LP_POOL_CONFIG.masterConstants,
     );
 
     // console.dir({
@@ -108,7 +144,7 @@ async function liquidateJetton() {
 
     const liqMessage = EVAA_MAINNET.createLiquidationMessage({
         asset: loanAsset,
-        borrowerAddress: Address.parse('borroweraddress'),
+        borrowerAddress: borrowerAddress,
         collateralAsset: collateralAsset.assetId, // fix it to right
         queryID: 0n,
         includeUserCode: true,
@@ -120,25 +156,13 @@ async function liquidateJetton() {
         customPayloadSaturationFlag: false,
         customPayloadRecipient: WALLET_CONTRACT.address,
         subaccountId: 0,
-        pyth: {
-            targetFeeds: [
-                '0x8963217838ab4cf5cadc172203c1f0b763fbaa45f346d8ee50ba994bbcac3026',
-                '0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b',
-                '0x3d1784128eeab5961ec60648fe497d3901eebd211b7f51e4bb0db9f024977d25',
-                '0xcbe184846426619a60f51056d26efecb0537ad3a73b1e965fe695d06a257cb19',
-            ],
-            pythAddress: PYTH_ORACLE_MAINNET,
-            priceData: pc.dataCell,
-            publishGap: 10,
-            maxStaleness: 180,
-            refAssets: [USDE_MAINNET, JUSDT_MAINNET, JUSDC_MAINNET, STTON_MAINNET],
-        },
+        priceData: twapPC.dataCell,
     });
 
     const jettonWallet = TON_CLIENT.open(
         JettonWallet.createFromAddress(getUserJettonWallet(WALLET_CONTRACT.address, loanAsset)),
     );
-    await jettonWallet.sendTransfer(WALLET_SENDER, toNano(2), liqMessage);
+    await jettonWallet.sendTransfer(WALLET_SENDER, toNano(1), liqMessage);
 
     console.log('Liquidation sent');
 }
