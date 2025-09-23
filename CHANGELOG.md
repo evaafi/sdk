@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.9.0 &mdash; 2025-09-DD
+### Added
+ - to be added
+
 ## 0.7.0 &mdash; 2025-08-28
 ### Added
  - ```TONUSDT_STONFI``` new token in LP ```PoolConfig```
@@ -17,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## 0.6.4 &mdash; 2025-06-27
 ### Added
  - New Stable Pool ```MAINNET_STABLE_POOL_CONFIG``` with ```USDT USDe and tsUSDe``` and something else in the future...
+ - ```ALL_MAINNET_POOLS``` Array of pools
 ### Fixed
  - ```calculateHealthParams``` function now ignore dust
  - ```PricesCollector``` prices prune

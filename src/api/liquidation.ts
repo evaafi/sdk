@@ -174,7 +174,7 @@ export function calculateLiquidationAmounts(
 
     const _isBadDebt = isBadDebt(supplyAmount, borrowAmount, liquidationBonus, masterConstants);
     if (!_isBadDebt) {
-        allowedCollateralValue = BigMath.min(allowedCollateralValue, BigMath.max(allowedCollateralValue / 2n, collateralThreshold));
+        allowedCollateralValue = BigMath.min(allowedCollateralValue, BigMath.max(allowedCollateralValue / 3n, collateralThreshold));
     }
 
     const loanValue = toAssetWorth(loanInfo.balance, loanInfo.scale, loanInfo.price);

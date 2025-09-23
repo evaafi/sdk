@@ -1,6 +1,6 @@
 {
     "name": "@evaafi/sdk",
-    "version": "0.7.0",
+    "version": "0.9.0",
     "description": "The EVAA SDK is designed to easily integrate with the EVAA lending protocol on TON blockchain.",
     "main": "dist/index.js",
     "files": [
@@ -19,7 +19,6 @@
     "license": "MIT",
     "homepage": "https://github.com/evaafi/sdk#readme",
     "devDependencies": {
-        "@orbs-network/ton-access": "^2.3.3",
         "@ton/core": "0.56.0",
         "@ton/crypto": "^3.3.0",
         "@tonconnect/sdk": "3.0.5",
@@ -38,7 +37,10 @@
         "crypto-js": ">=4.2.0"
     },
     "dependencies": {
+        "@pythnetwork/hermes-client": "^2.0.0",
+        "@pythnetwork/pyth-ton-js": "^0.1.2",
         "@ton/ton": "14.0.0",
         "dotenv": "16.4.5"
-    }
+    },
+    "packageManager": "yarn@4.9.2+sha512.1fc009bc09d13cfd0e19efa44cbfc2b9cf6ca61482725eb35bbc5e257e093ebf4130db6dfe15d604ff4b79efd8e1e8e99b25fa7d0a6197c9f9826358d4d65c3c"
 }
