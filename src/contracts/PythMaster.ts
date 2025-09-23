@@ -4,6 +4,7 @@ import { PythOracleInfo, PythOracleParser } from '../api/parsers/PythOracleParse
 import { composeFeedsCell, packPythUpdatesData } from '../api/prices';
 import { TON_MAINNET } from '../constants';
 import { FEES, OPCODES } from '../constants/general';
+import { PoolAssetConfig } from '../types/Master';
 import { isTonAsset } from '../utils/utils';
 import {
     AbstractEvaaMaster,
@@ -24,7 +25,7 @@ import {
 export interface PythBaseData {
     readonly priceData: Buffer | Cell;
     readonly targetFeeds: HexString[];
-    readonly requestedRefTokens: bigint[];
+    readonly refAssets: PoolAssetConfig[];
 }
 
 export interface ProxySpecificPythParams {
@@ -218,20 +219,20 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
         }
     }
 
-    buildRefTokensDict(requestedRefTokens: bigint[]): Dictionary<bigint, Buffer> {
+    buildRefTokensDict(refAssets: PoolAssetConfig[]): Dictionary<bigint, Buffer> {
         const refsDict: Dictionary<bigint, Buffer> = Dictionary.empty(
             Dictionary.Keys.BigUint(256),
             Dictionary.Values.Buffer(0),
         );
-        for (const refToken of requestedRefTokens) {
-            refsDict.set(refToken, Buffer.alloc(0));
+        for (const refAsset of refAssets) {
+            refsDict.set(refAsset.assetId, Buffer.alloc(0));
         }
 
         return refsDict;
     }
 
     buildGeneralDataPayload(parameters: PythSupplyWithdrawParameters): Cell {
-        const refTokensDict = this.buildRefTokensDict(parameters.pyth?.requestedRefTokens ?? []);
+        const refTokensDict = this.buildRefTokensDict(parameters.pyth?.refAssets ?? []);
         return beginCell()
             .storeInt(parameters.includeUserCode ? -1 : 0, 2)
             .storeDict(refTokensDict, Dictionary.Keys.BigUint(256), Dictionary.Values.Buffer(0))
@@ -277,7 +278,7 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
         const operationPayloadBuilder = this.buildLiquidationOperationPayloadBuilder(parameters);
         const innerBuilder = this.buildLiquidationInnerBuilder(parameters);
 
-        const refTokensDict = this.buildRefTokensDict(parameters.pyth.requestedRefTokens);
+        const refTokensDict = this.buildRefTokensDict(parameters.pyth.refAssets);
 
         return operationPayloadBuilder.storeDict(refTokensDict).storeRef(innerBuilder).endCell();
     }

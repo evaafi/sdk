@@ -5,7 +5,8 @@ import { AbstractPrices, PriceParameters } from './AbstractPrices';
 
 export interface PythPricesParams extends PriceParameters {
     targetFeeds: HexString[];
-    requestedRefTokens: PoolAssetConfig[];
+    refAssets: PoolAssetConfig[];
+    binaryUpdate: Buffer;
 }
 
 export class PythPrices extends AbstractPrices {
@@ -20,15 +21,20 @@ export class PythPrices extends AbstractPrices {
             minPublishTime: undefined,
             maxPublishTime: undefined,
             targetFeeds: [],
-            requestedRefTokens: [],
+            refAssets: [],
+            binaryUpdate: Buffer.alloc(0),
         });
     }
 
-    requestedRefTokens(): PoolAssetConfig[] {
-        return this.params.requestedRefTokens;
+    refAssets(): PoolAssetConfig[] {
+        return this.params.refAssets;
     }
 
-    composedFeeds(): Cell {
-        return Cell.EMPTY;
+    targetFeeds(): HexString[] {
+        return this.params.targetFeeds;
+    }
+
+    binaryUpdate(): Buffer {
+        return this.params.binaryUpdate;
     }
 }

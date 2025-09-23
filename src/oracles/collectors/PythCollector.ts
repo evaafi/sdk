@@ -3,8 +3,8 @@ import { Dictionary } from '@ton/core';
 import { checkNotInDebtAtAll } from '../../api/math';
 import { OracleConfig } from '../../api/parsers/PythOracleParser';
 import { packPythUpdatesData } from '../../api/prices';
-import { STTON_MAINNET, TON_MAINNET, TSTON_MAINNET, TSUSDE_MAINNET, USDE_MAINNET } from '../../constants';
-import { FeedMapItem, parseFeedsMapDict, PoolAssetConfig } from '../../types/Master';
+import { ASSET_PRICE_SCALE } from '../../constants/general';
+import { FeedMapItem, PoolAssetConfig } from '../../types/Master';
 import { FetchConfig, proxyFetchRetries } from '../../utils/utils';
 import { TTL_ORACLE_DATA_SEC } from '../constants';
 import { PythPrices } from '../prices/PythPrices';
@@ -18,49 +18,26 @@ export type PythCollectorConfig = {
 };
 
 export class PythCollector extends AbstractCollector {
-    #oracleInfo: OracleConfig;
-    #parsedFeedsMap: Map<bigint, FeedMapItem>;
+    #parsedFeedsMap = new Map<HexString, FeedMapItem>();
     #pythConfig: PythPriceSourcesConfig;
     #poolAssetsConfig: PoolAssetConfig[];
+    #allowedRefTokens: Dictionary<bigint, bigint>;
 
-    #pythToEvaaDirect = new Map<bigint, bigint>(); // pythId -> evaaId (native)
-    #pythToEvaaReferred = new Map<bigint, Set<bigint>>(); // pythId -> Set<evaaId>,
-    #evaaToPythDirect = new Map<bigint, bigint>(); // evaaId -> pythId (native)
-    #allowedRefEvaa = new Map<bigint, bigint>(); // evaaId -> baseEvaaId (allowedRefTokens)
+    #assetToFeeds = new Map<bigint, HexString[]>();
 
     constructor(config: PythCollectorConfig) {
         super();
-        this.#oracleInfo = config.pythOracle;
         this.#pythConfig = config.pythConfig;
         this.#poolAssetsConfig = config.poolAssetsConfig;
-        this.#parsedFeedsMap = parseFeedsMapDict(this.#oracleInfo.feedsMap);
 
-        // 1) pythId -> evaaId, evaaId -> pythId
-        for (const [pythId, feedInfo] of this.#parsedFeedsMap.entries()) {
-            this.#pythToEvaaDirect.set(pythId, feedInfo.evaaId);
-            this.#evaaToPythDirect.set(feedInfo.evaaId, pythId);
+        this.#allowedRefTokens = config.pythOracle.allowedRefTokens;
+
+        for (const [feedId, feedMap] of config.pythOracle.feedsMap) {
+            this.#parsedFeedsMap.set(feedId, feedMap);
         }
 
-        // 2) pythId (native) -> Set<evaaId>
-        for (const [pythId, feedInfo] of this.#parsedFeedsMap.entries()) {
-            const ref = feedInfo.referredPythFeed;
-            if (ref && ref !== 0n) {
-                if (!this.#pythToEvaaReferred.has(ref)) this.#pythToEvaaReferred.set(ref, new Set());
-                this.#pythToEvaaReferred.get(ref)!.add(feedInfo.evaaId);
-            }
-        }
-
-        // 3)  evaaId -> baseEvaaId (allowedRefTokens)
-        for (const evaaId of this.#oracleInfo.allowedRefTokens.keys()) {
-            const base = this.#oracleInfo.allowedRefTokens.get(evaaId)!;
-            this.#allowedRefEvaa.set(evaaId, base);
-
-            // If baseEvaaId have pythId. evaaId -> pyth(base)
-            const basePyth = this.#evaaToPythDirect.get(base);
-            if (basePyth) {
-                if (!this.#pythToEvaaReferred.has(basePyth)) this.#pythToEvaaReferred.set(basePyth, new Set());
-                this.#pythToEvaaReferred.get(basePyth)!.add(evaaId);
-            }
+        for (const [feedId, connectedFeed] of this.#parsedFeedsMap) {
+            this.#assetToFeeds.set(connectedFeed.assetId, [feedId, connectedFeed.feedId]);
         }
     }
 
@@ -80,8 +57,8 @@ export class PythCollector extends AbstractCollector {
 
     async getPricesForSupplyWithdraw(
         realPrincipals: Dictionary<bigint, bigint>,
-        supplyAsset: PoolAssetConfig | undefined,
-        withdrawAsset: PoolAssetConfig | undefined,
+        supplyAsset: PoolAssetConfig,
+        withdrawAsset: PoolAssetConfig,
         collateralToDebt: boolean,
         fetchConfig?: FetchConfig,
     ): Promise<PythPrices> {
@@ -90,11 +67,11 @@ export class PythCollector extends AbstractCollector {
             throw new Error('User from another pool');
         }
 
-        if (supplyAsset && !assets.find((a) => a?.assetId === supplyAsset.assetId)) {
+        if (!assets.find((a) => a?.assetId === supplyAsset.assetId)) {
             assets.push(supplyAsset);
         }
 
-        if (withdrawAsset && !assets.find((a) => a?.assetId === withdrawAsset.assetId)) {
+        if (assets.find((a) => a?.assetId === withdrawAsset.assetId)) {
             assets.push(withdrawAsset);
         }
         if (collateralToDebt && assets.length == 1) {
@@ -117,9 +94,39 @@ export class PythCollector extends AbstractCollector {
         if (assets.length === 0) {
             return PythPrices.createEmptyPrices();
         }
+        const requestedFeeds = new Set<HexString>();
+        const requestedRefAssets = new Set<PoolAssetConfig>();
 
-        const requiredFeeds = this.createRequiredFeedsList(assets);
-        const pythUpdates = await this.#fetchPythUpdatesWithRetry(requiredFeeds, fetchConfig);
+        for (const asset of assets) {
+            if (this.#allowedRefTokens.has(asset.assetId)) {
+                const refTokenId = this.#allowedRefTokens.get(asset.assetId)!;
+
+                if (this.#assetToFeeds.has(refTokenId)) {
+                    const [feedId, refFeedId] = this.#assetToFeeds.get(refTokenId)!;
+                    requestedFeeds.add(feedId);
+
+                    if (refFeedId !== '0x0') {
+                        requestedFeeds.add(refFeedId);
+                    }
+                }
+
+                requestedRefAssets.add(asset);
+            }
+
+            if (this.#assetToFeeds.has(asset.assetId)) {
+                const [feedId, refFeedId] = this.#assetToFeeds.get(asset.assetId)!;
+                requestedFeeds.add(feedId);
+
+                if (refFeedId !== '0x0') {
+                    requestedFeeds.add(refFeedId);
+                }
+            }
+        }
+
+        const targetFeeds = Array.from(requestedFeeds);
+        const refAssets = Array.from(requestedRefAssets);
+
+        const pythUpdates = await this.#fetchPythUpdatesWithRetry(targetFeeds, fetchConfig);
 
         // Calculate min and max publish times for validation
         if (pythUpdates.parsed && pythUpdates.parsed.length > 0) {
@@ -150,50 +157,62 @@ export class PythCollector extends AbstractCollector {
             const requestedAssetIds = new Set(assets.map((a) => a.assetId));
 
             for (const u of pythPriceUpdates) {
-                const pythId = BigInt('0x' + u.id);
+                const feedId = `0x${u.id}`;
 
                 const price = (BigInt(u.price.price) * BigInt(10 ** 9)) / BigInt(10 ** (u.price.expo * -1));
 
-                // Set price for direct mapping if the evaaId is requested
-                const directEvaa = this.#pythToEvaaDirect.get(pythId);
-                if (directEvaa && requestedAssetIds.has(directEvaa)) {
-                    pricesDict.set(directEvaa, price);
+                // Find the feed mapping for this feedId and always set the price for the mapped asset
+                const feedMapItem = this.#parsedFeedsMap.get(feedId);
+                if (feedMapItem) {
+                    pricesDict.set(feedMapItem.assetId, price);
                 }
 
-                // Set price for referred assets only if they are requested
-                const referredSet = this.#pythToEvaaReferred.get(pythId);
-                if (referredSet && referredSet.size) {
-                    for (const evaaId of referredSet) {
-                        if (requestedAssetIds.has(evaaId)) {
-                            pricesDict.set(evaaId, price);
+                // Handle reference tokens - check if any asset uses this feed as a reference
+                for (const asset of assets) {
+                    if (this.#allowedRefTokens.has(asset.assetId)) {
+                        const refTokenId = this.#allowedRefTokens.get(asset.assetId)!;
+                        const refFeeds = this.#assetToFeeds.get(refTokenId);
+
+                        if (refFeeds && (refFeeds[0] === feedId || refFeeds[1] === feedId)) {
+                            if (requestedAssetIds.has(asset.assetId)) {
+                                // For allowedRefTokens, both asset and reference token should have the same price
+                                // Set the same price for both the asset and its reference token
+                                pricesDict.set(asset.assetId, price);
+                                pricesDict.set(refTokenId, price);
+                            }
                         }
                     }
                 }
             }
 
-            // TODO: fix it
+            // Apply dynamic scaling for liquid staking tokens based on feedsMap configuration
+            // For each asset that has a feedId (not '0x0'), apply scaling: asset_price = asset_rate * base_price / ASSET_PRICE_SCALE
+            for (const [feedId, feedMapItem] of this.#parsedFeedsMap) {
+                if (feedMapItem.feedId !== '0x0') {
+                    const assetPrice = pricesDict.get(feedMapItem.assetId);
+                    const baseFeedMapItem = this.#parsedFeedsMap.get(feedMapItem.feedId);
+                    const basePrice = baseFeedMapItem ? pricesDict.get(baseFeedMapItem.assetId) : undefined;
 
-            if (pricesDict.get(TSTON_MAINNET.assetId) && pricesDict.get(TON_MAINNET.assetId)) {
-                pricesDict.set(
-                    TSTON_MAINNET.assetId,
-                    (pricesDict.get(TSTON_MAINNET.assetId)! * pricesDict.get(TON_MAINNET.assetId)!) / BigInt(10 ** 9),
-                );
+                    if (assetPrice && basePrice) {
+                        const scaledPrice = (assetPrice * basePrice) / ASSET_PRICE_SCALE;
+                        pricesDict.set(feedMapItem.assetId, scaledPrice);
+                    }
+                }
             }
 
-            // TODO: fix it
-            if (pricesDict.get(STTON_MAINNET.assetId) && pricesDict.get(TON_MAINNET.assetId)) {
-                pricesDict.set(
-                    STTON_MAINNET.assetId,
-                    (pricesDict.get(STTON_MAINNET.assetId)! * pricesDict.get(TON_MAINNET.assetId)!) / BigInt(10 ** 9),
-                );
-            }
+            // Apply scaling for reference tokens (allowedRefTokens)
+            // For assets that reference other tokens, they should have the SAME price as their reference token
+            // This is different from feedsMap scaling where we multiply rates
+            for (const asset of assets) {
+                if (this.#allowedRefTokens.has(asset.assetId)) {
+                    const refTokenId = this.#allowedRefTokens.get(asset.assetId)!;
+                    const refTokenPrice = pricesDict.get(refTokenId);
 
-            // TODO: fix it
-            if (pricesDict.get(TSUSDE_MAINNET.assetId) && pricesDict.get(USDE_MAINNET.assetId)) {
-                pricesDict.set(
-                    TSUSDE_MAINNET.assetId,
-                    (pricesDict.get(TSUSDE_MAINNET.assetId)! * pricesDict.get(USDE_MAINNET.assetId)!) / BigInt(10 ** 9),
-                );
+                    if (refTokenPrice && requestedAssetIds.has(asset.assetId)) {
+                        // For allowedRefTokens, the asset price should equal the reference token price
+                        pricesDict.set(asset.assetId, refTokenPrice);
+                    }
+                }
             }
 
             // Check that all requested assets have prices
@@ -207,26 +226,14 @@ export class PythCollector extends AbstractCollector {
 
             const dataCell = packPythUpdatesData(pythUpdates.binary);
 
-            // Filter assets to only include reference tokens
-            const refTokens = assets.filter((asset) => {
-                const assetId = asset.assetId;
-                // Check if asset is a referred token (uses referredPythFeed)
-                const feedInfo = Array.from(this.#parsedFeedsMap.values()).find((f) => f.evaaId === assetId);
-                const isReferredToken = feedInfo && feedInfo.referredPythFeed && feedInfo.referredPythFeed !== 0n;
-
-                // Check if asset is an allowed reference token
-                const isAllowedRefToken = this.#allowedRefEvaa.has(assetId);
-
-                return isReferredToken || isAllowedRefToken;
-            });
-
             return new PythPrices({
                 dict: pricesDict,
                 dataCell,
                 minPublishTime,
                 maxPublishTime,
-                requestedRefTokens: refTokens,
-                targetFeeds: requiredFeeds,
+                refAssets,
+                targetFeeds,
+                binaryUpdate: pythUpdates.binary,
             });
         }
         return PythPrices.createEmptyPrices();
@@ -255,6 +262,7 @@ export class PythCollector extends AbstractCollector {
         if (collateralToDebt && assets.length == 1) {
             throw new Error('Cannot debt only one supplied asset');
         }
+
         return await this.getPrices(
             assets.map((x) => x!),
             fetchConfig,
@@ -286,29 +294,60 @@ export class PythCollector extends AbstractCollector {
         return proxyFetchRetries(this.#getPythFeedsUpdates(requiredFeeds), fetchConfig);
     }
 
-    public createRequiredFeedsList(assets: PoolAssetConfig[]): HexString[] {
-        const requiredFeeds = new Set<bigint>();
+    /**
+     * Creates a list of required feed IDs for the given assets
+     * @param assets - Array of pool asset configurations
+     * @returns Array of unique feed IDs required for the assets
+     */
+    createRequiredFeedsList(assets: PoolAssetConfig[]): HexString[] {
+        const requestedFeeds = new Set<HexString>();
 
         for (const asset of assets) {
-            let pythId = this.#evaaToPythDirect.get(asset.assetId);
+            const addFeedsForAsset = (assetId: bigint) => {
+                if (this.#assetToFeeds.has(assetId)) {
+                    const [feedId, refFeedId] = this.#assetToFeeds.get(assetId)!;
+                    requestedFeeds.add(feedId);
 
-            // If evaaId no have native feed — try by allowedRefTokens (evAA->baseEvAA->pyth)
-            if (!pythId) {
-                const baseEvaa = this.#allowedRefEvaa.get(asset.assetId);
-                if (baseEvaa) pythId = this.#evaaToPythDirect.get(baseEvaa) ?? null!;
-            }
-
-            if (pythId) {
-                requiredFeeds.add(pythId);
-                const feedInfo = this.#parsedFeedsMap.get(pythId);
-                if (feedInfo?.referredPythFeed && feedInfo.referredPythFeed !== 0n) {
-                    requiredFeeds.add(feedInfo.referredPythFeed);
+                    if (refFeedId !== '0x0') {
+                        requestedFeeds.add(refFeedId);
+                    }
                 }
+            };
+
+            if (this.#allowedRefTokens.has(asset.assetId)) {
+                const refTokenId = this.#allowedRefTokens.get(asset.assetId)!;
+                addFeedsForAsset(refTokenId);
             }
+
+            addFeedsForAsset(asset.assetId);
         }
 
-        return Array.from(requiredFeeds).map((id) => '0x' + id.toString(16));
+        return Array.from(requestedFeeds);
     }
+
+    // public createRequiredFeedsList(assets: PoolAssetConfig[]): HexString[] {
+    //     const requiredFeeds = new Set<bigint>();
+
+    //     for (const asset of assets) {
+    //         let pythId = this.#evaaToPythDirect.get(asset.assetId);
+
+    //         // If assetId no have native feed — try by allowedRefTokens (evAA->baseEvAA->pyth)
+    //         if (!pythId) {
+    //             const baseEvaa = this.#allowedRefEvaa.get(asset.assetId);
+    //             if (baseEvaa) pythId = this.#evaaToPythDirect.get(baseEvaa) ?? null!;
+    //         }
+
+    //         if (pythId) {
+    //             requiredFeeds.add(pythId);
+    //             const feedInfo = this.#parsedFeedsMap.get(pythId);
+    //             if (feedInfo?.feedId && feedInfo.feedId !== 0n) {
+    //                 requiredFeeds.add(feedInfo.feedId);
+    //             }
+    //         }
+    //     }
+
+    //     return Array.from(requiredFeeds).map((id) => '0x' + id.toString(16));
+    // }
 
     #filterEmptyPrincipalsAndAssets(principals: Dictionary<bigint, bigint>) {
         return principals

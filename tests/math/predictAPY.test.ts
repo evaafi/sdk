@@ -1,5 +1,16 @@
-import { AssetConfig, AssetData, BalanceChangeType, calculatePresentValue, Evaa, EvaaUser, ExtendedAssetData, MAINNET_POOL_CONFIG, MASTER_CONSTANTS, MasterConfig, MasterConstants, mulFactor, predictAPY, Prices, PricesCollector, RawPriceData, TON_MAINNET, UserDataActive, verifyPricesSign, verifyRawPriceDataSign } from "../../src";
-import { Dictionary, OpenedContract, TonClient } from "@ton/ton";
+import { Dictionary, OpenedContract, TonClient } from '@ton/ton';
+import {
+    AssetConfig,
+    BalanceChangeType,
+    calculatePresentValue,
+    Evaa,
+    ExtendedAssetData,
+    MAINNET_POOL_CONFIG,
+    MasterConstants,
+    mulFactor,
+    predictAPY,
+    TON_MAINNET,
+} from '../../src';
 
 import dotenv from 'dotenv';
 
@@ -18,9 +29,8 @@ describe('parseUserData test', () => {
         clientMainNet = new TonClient({
             endpoint: 'https://toncenter.com/api/v2/jsonRPC',
             apiKey: process.env.RPC_API_KEY_MAINNET,
-            
         });
-        evaaMainNet = clientMainNet.open(new Evaa({poolConfig: MAINNET_POOL_CONFIG}));
+        evaaMainNet = clientMainNet.open(new Evaa({ poolConfig: MAINNET_POOL_CONFIG }));
         await evaaMainNet.getSync();
         assetsData = evaaMainNet.data?.assetsData!;
         assetsConfig = evaaMainNet.data?.assetsConfig!;
@@ -30,16 +40,15 @@ describe('parseUserData test', () => {
         tonConfig = assetsConfig.get(TON_MAINNET.assetId)!;
         totalSupply = calculatePresentValue(tonData.sRate, tonData.totalSupply, masterConstants);
         totalBorrow = calculatePresentValue(tonData.bRate, tonData.totalBorrow, masterConstants);
-        
     });
 
-    test('test full supplyborrow', () => {        
+    test('test full supplyborrow', () => {
         const predicted = predictAPY({
             amount: totalSupply - totalBorrow,
             balanceChangeType: BalanceChangeType.Borrow,
             assetData: tonData,
             assetConfig: tonConfig,
-            masterConstants: masterConstants
+            masterConstants: masterConstants,
         });
         const borrowInterest =
             tonConfig.baseBorrowRate +
@@ -47,30 +56,30 @@ describe('parseUserData test', () => {
             mulFactor(
                 masterConstants.FACTOR_SCALE,
                 tonConfig.borrowRateSlopeHigh,
-                masterConstants.FACTOR_SCALE - tonConfig.targetUtilization
+                masterConstants.FACTOR_SCALE - tonConfig.targetUtilization,
             );
         expect(predicted.borrowInterest).toEqual(borrowInterest);
     });
 
-    test('test empty borrow', () => {        
+    test('test empty borrow', () => {
         const predicted = predictAPY({
             amount: totalBorrow,
             balanceChangeType: BalanceChangeType.Repay,
             assetData: tonData,
             assetConfig: tonConfig,
-            masterConstants: masterConstants
+            masterConstants: masterConstants,
         });
 
         expect(predicted.borrowInterest).toEqual(tonConfig.baseBorrowRate);
     });
 
-    test('test 0 value', () => {        
+    test('test 0 value', () => {
         const predicted = predictAPY({
             amount: 0n,
             balanceChangeType: BalanceChangeType.Repay,
             assetData: tonData,
             assetConfig: tonConfig,
-            masterConstants: masterConstants
+            masterConstants: masterConstants,
         });
         expect(predicted.borrowInterest).toEqual(tonData.borrowInterest);
     });

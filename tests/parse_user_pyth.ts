@@ -1,5 +1,5 @@
 import { mnemonicToWalletKey } from '@ton/crypto';
-import { TonClient, WalletContractV4 } from '@ton/ton';
+import { Address, TonClient, WalletContractV4 } from '@ton/ton';
 import { EvaaMasterPyth, MAINNET_POOL_CONFIG } from '../src';
 
 import 'dotenv/config';
@@ -23,7 +23,11 @@ async function parseUser() {
 
     await EVAA_MAINNET.getSync();
 
-    const EVAA_USER_MAINNET = TON_CLIENT.open(EVAA_MAINNET.openUserContract(WALLET_CONTRACT.address));
+    // const EVAA_USER_MAINNET = TON_CLIENT.open(EVAA_MAINNET.openUserContract(WALLET_CONTRACT.address));
+
+    const EVAA_USER_MAINNET = TON_CLIENT.open(
+        EVAA_MAINNET.openUserContract(Address.parse('UQBkBzVfIMP2r1xzxAAFSkTicCpZ5P1xOSZIHeHFaHExocDR')),
+    );
 
     if (!EVAA_MAINNET.data?.assetsData || !EVAA_MAINNET.data?.assetsConfig) {
         throw new Error('Assets data or config is not available');
