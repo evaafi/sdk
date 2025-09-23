@@ -10,7 +10,6 @@ describe('sha256BigInt', () => {
             'jUSDC',
             'stTON',
             'tsTON',
-            'uTON',
             'tgBTC',
             'TONUSDT_DEDUST',
             'TON_STORM',
