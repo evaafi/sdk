@@ -6,8 +6,13 @@ export enum ClassicPricesMode {
     TWAP = 'twap',
 }
 
+export const ClassicPricesOffset = {
+    [ClassicPricesMode.SPOT]: 1n,
+    [ClassicPricesMode.TWAP]: 0n,
+};
+
 export interface ClassicPricesParams extends PriceParameters {
-    readonly mode: ClassicPricesMode;
+    readonly mode?: ClassicPricesMode;
 }
 
 export class ClassicPrices extends AbstractPrices {
@@ -16,16 +21,28 @@ export class ClassicPrices extends AbstractPrices {
     }
 
     static createEmptyTwapPrices(): ClassicPrices {
-        return this.createEmptyPrices({ mode: ClassicPricesMode.TWAP });
+        return new ClassicPrices({
+            mode: ClassicPricesMode.TWAP,
+            dict: Dictionary.empty<bigint, bigint>(),
+            dataCell: Cell.EMPTY,
+            minPublishTime: undefined,
+            maxPublishTime: undefined,
+        });
     }
 
     static createEmptySpotPrices(): ClassicPrices {
-        return this.createEmptyPrices({ mode: ClassicPricesMode.SPOT });
+        return new ClassicPrices({
+            mode: ClassicPricesMode.SPOT,
+            dict: Dictionary.empty<bigint, bigint>(),
+            dataCell: Cell.EMPTY,
+            minPublishTime: undefined,
+            maxPublishTime: undefined,
+        });
     }
 
-    static createEmptyPrices(params: { mode: ClassicPricesMode }): ClassicPrices {
+    static createEmptyPrices(): ClassicPrices {
         return new ClassicPrices({
-            mode: params.mode,
+            mode: undefined,
             dict: Dictionary.empty<bigint, bigint>(),
             dataCell: Cell.EMPTY,
             minPublishTime: undefined,

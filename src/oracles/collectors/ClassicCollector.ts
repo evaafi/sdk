@@ -2,7 +2,7 @@ import { Dictionary } from '@ton/core';
 import { checkNotInDebtAtAll } from '../../api/math';
 import { ExtendedEvaaOracle, PoolAssetConfig } from '../../types/Master';
 import { FetchConfig, proxyFetchRetries } from '../../utils/utils';
-import { ClassicPrices, ClassicPricesMode } from '../prices/ClassicPrices';
+import { ClassicPrices, ClassicPricesMode, ClassicPricesOffset } from '../prices/ClassicPrices';
 import { PriceSource } from '../sources';
 import { DefaultPriceSourcesConfig, PriceSourcesConfig, RawPriceData } from '../Types';
 import {
@@ -125,7 +125,7 @@ export class ClassicCollector extends AbstractCollector {
         fetchConfig?: FetchConfig,
     ): Promise<ClassicPrices> {
         if (assets.length == 0) {
-            return ClassicPrices.createEmptyTwapPrices();
+            return ClassicPrices.createEmptyPrices();
         }
 
         await this.#collectPricesWithValidation(fetchConfig);
@@ -135,7 +135,6 @@ export class ClassicCollector extends AbstractCollector {
         }
         const prices = this.#getPricesByAssetList(assets);
         return new ClassicPrices({
-            mode: ClassicPricesMode.TWAP,
             dict: prices.dict,
             dataCell: prices.dataCell,
             minPublishTime: undefined,
@@ -224,14 +223,14 @@ export class ClassicCollector extends AbstractCollector {
     #convertToTwapAssets(assets: PoolAssetConfig[]): PoolAssetConfig[] {
         return assets.map((asset) => ({
             ...asset,
-            assetId: asset.assetId - (asset.assetId % 2n),
+            assetId: asset.assetId - ClassicPricesOffset[ClassicPricesMode.TWAP],
         }));
     }
 
     #convertToSpotAssets(assets: PoolAssetConfig[]): PoolAssetConfig[] {
         return assets.map((asset) => ({
             ...asset,
-            assetId: asset.assetId - (asset.assetId % 2n) + 1n,
+            assetId: asset.assetId - ClassicPricesOffset[ClassicPricesMode.SPOT],
         }));
     }
 
