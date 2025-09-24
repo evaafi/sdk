@@ -71,7 +71,7 @@ export class PythCollector extends AbstractCollector {
             assets.push(supplyAsset);
         }
 
-        if (assets.find((a) => a?.assetId === withdrawAsset.assetId)) {
+        if (!assets.find((a) => a?.assetId === withdrawAsset.assetId)) {
             assets.push(withdrawAsset);
         }
         if (collateralToDebt && assets.length == 1) {
