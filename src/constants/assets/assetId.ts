@@ -10,7 +10,6 @@ export const ASSET_ID = {
     tgBTC: sha256Hash('tgBTC'),
     USDe: sha256Hash('USDe'),
     tsUSDe: sha256Hash('tsUSDe'),
-    PT_tsUSDe_01Sep2025: sha256Hash('PT_tsUSDe_01Sep2025'),
 
     // LP
     TONUSDT_DEDUST: sha256Hash('TONUSDT_DEDUST'),
@@ -23,6 +22,10 @@ export const ASSET_ID = {
     DOGS: sha256Hash('DOGS'),
     CATI: sha256Hash('CATI'),
     STON: sha256Hash('STON'),
+
+    // STABLE
+    PT_tsUSDe_01Sep2025: sha256Hash('PT_tsUSDe_01Sep2025'),
+    PT_tsUSDe_18Dec2025: sha256Hash('PT_tsUSDe_18Dec2025'),
 
     // Testnet assets, faucet t.me/evaabuidl
     EUSDT: sha256Hash('EUSDT'),

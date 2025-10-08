@@ -7,6 +7,7 @@ import {
     JUSDT_MAINNET,
     NOT_MAINNET,
     PT_tsUSDe_01Sep2025_MAINNET,
+    PT_tsUSDe_18Dec2025_MAINNET,
     STON_MAINNET,
     STTON_MAINNET,
     TON_STORM_MAINNET,
@@ -176,6 +177,17 @@ describe('Address calculation tests', () => {
         );
         expect(walletAddr.toString({ urlSafe: true, bounceable: true })).toEqual(
             'EQAVE7OjEyNaMSE2nEF76jD7vExX8V6TK379S9Rj640hXmRc',
+        );
+    });
+
+
+    test('test pt tsusde 18dec2025 address', () => {
+        const walletAddr = getUserJettonWallet(
+            Address.parseFriendly('UQDzsDO8TJbDjqBo7GTamaGQdFulguY__QLket5BYIcg8dCJ').address,
+            PT_tsUSDe_18Dec2025_MAINNET,
+        );
+        expect(walletAddr.toString({ urlSafe: true, bounceable: true })).toEqual(
+            'EQBxpjVDZAo881Zt-QzqHWApQ2uyXzEcEzPHdEChKx-w_cOH',
         );
     });
 
