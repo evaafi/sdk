@@ -27,6 +27,7 @@ export const EVAA_PYTH_TOB_VERSION = 0;
 
 export const EVAA_USDT_REWARDS_MASTER_MAINNET = Address.parse('EQD22Fhylp1tX-xoVX81aMTSJNPV8j9klwApTLgjGmofISVD');
 export const EVAA_TON_REWARDS_MASTER_MAINNET = Address.parse('EQDM_gdrntBg4fy5Rg9DgDF0AUu3FYoqxHEOsHNIC4_DTDuC');
+export const EVAA_EVAA_REWARDS_MASTER_MAINNET = Address.parse('EQBLjRyn69hqC9WAVjqjSjF0nnxxWBW-Atx_3T7dCF-tBdnM');
 
 export const ORACLES_MAINNET: ExtendedEvaaOracle[] = [
     {
