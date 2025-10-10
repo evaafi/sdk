@@ -1,6 +1,9 @@
 import { sha256Hash } from '../../utils/sha256BigInt';
 
 export const ASSET_ID = {
+    EVAA: sha256Hash('EVAA'),
+
+    // Main
     TON: sha256Hash('TON'),
     USDT: sha256Hash('USDT'),
     jUSDT: sha256Hash('jUSDT'),

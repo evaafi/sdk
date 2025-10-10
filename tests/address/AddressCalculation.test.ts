@@ -2,6 +2,7 @@ import { Address } from '@ton/core';
 import {
     CATI_MAINNET,
     DOGS_MAINNET,
+    EVAA_MAINNET,
     getUserJettonWallet,
     JUSDC_MAINNET,
     JUSDT_MAINNET,
@@ -208,6 +209,16 @@ describe('Address calculation tests', () => {
         );
         expect(walletAddr.toString({ urlSafe: true, bounceable: true })).toEqual(
             'EQC9dOa1rbYxFMDRBSeuI4W8HYakGJmlf0VzDN9CMe25pev3',
+        );
+    });
+
+    test('test EVAA address', () => {
+        const walletAddr = getUserJettonWallet(
+            Address.parseFriendly('UQCcb-wwS8T8YiMAAZfm9M-ONUMPtfmXHTFfh85_AyHBx83u').address,
+            EVAA_MAINNET,
+        );
+        expect(walletAddr.toString({ urlSafe: true, bounceable: true })).toEqual(
+            'EQB777JWz9MwgocLSQmbaNnK0ATKYvdblmZCyj1B0x9KNEcZ',
         );
     });
 });
