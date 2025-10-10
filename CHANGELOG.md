@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.9.2 &mdash; 2025-10-10
+### Added
+ - added new asset `EVAA`
+ - added EVAA Rewards `MAINNET_MASTER_EVAA_REWARD_CONFIG` 
+
 ## 0.9.1-a &mdash; 2025-10-08
 ### Added
  - added new asset in Stable Pool FIVA `PT_tsUSDe_18Dec2025`
