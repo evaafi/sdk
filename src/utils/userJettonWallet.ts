@@ -1,6 +1,7 @@
 import { Address, beginCell, Cell, storeStateInit } from '@ton/core';
 import { PoolAssetConfig } from '../types/Master';
 import { UNDEFINED_ASSET } from '../constants/assets';
+import { calculateCloseAddress } from './fivaUtils';
 
 function getUserJettonData(ownerAddress: Address, assetName: string, jettonWalletCode: Cell, jettonMasterAddress: Address) {
   switch (assetName) {
@@ -15,6 +16,7 @@ function getUserJettonData(ownerAddress: Address, assetName: string, jettonWalle
               .storeAddress(jettonMasterAddress)
               .endCell();
       case 'PT_tsUSDe_01Sep2025':
+      case 'PT_tsUSDe_18Dec2025':
         return beginCell()
               .storeCoins(0)
               .storeAddress(ownerAddress)
@@ -67,7 +69,7 @@ export function getUserJettonWallet(ownerAddress: Address, poolAssetConfig: Pool
 
   const jettonData = getUserJettonData(ownerAddress, assetName, jettonWalletCode, poolAssetConfig.jettonMasterAddress);
 
-  const stateInit = beginCell()
+  let stateInit = beginCell()
     .store(
       storeStateInit({
         code: jettonWalletCode,
@@ -75,6 +77,21 @@ export function getUserJettonWallet(ownerAddress: Address, poolAssetConfig: Pool
       })
     )
     .endCell();
+
+    
+   if (poolAssetConfig.name === 'PT_tsUSDe_18Dec2025') {
+     stateInit = beginCell()
+      .storeUint(1, 1)   // fixed_prefix_length
+      .storeUint(8, 5)   // rewrite_bits
+      .storeUint(0, 1)   // special (Maybe=0)
+      .storeMaybeRef(jettonWalletCode)  // code (Maybe)
+      .storeMaybeRef(jettonData)               // data (Maybe)
+      .storeUint(0, 1)   // libraries empty
+      .endCell();
+
+      const addr = new Address(0, stateInit.hash());
+      return calculateCloseAddress(addr, poolAssetConfig.jettonMasterAddress);
+    }
 
   return new Address(0, stateInit.hash());
 }
