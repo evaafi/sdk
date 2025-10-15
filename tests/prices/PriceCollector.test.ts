@@ -2,10 +2,12 @@ import { Cell, Dictionary } from '@ton/core';
 import {
     BackendPriceSource,
     ClassicCollector,
+    ClassicPrices,
+    ClassicPricesMode,
+    ClassicPricesOffset,
     DefaultPriceSourcesConfig,
     generatePriceSources,
     MAINNET_POOL_ASSETS_CONFIG,
-    Prices,
     PriceSourcesConfig,
     RawPriceData,
     STTON_MAINNET,
@@ -26,7 +28,7 @@ describe('PriceCollector tests', () => {
         expect.assertions(3);
 
         const collector = new ClassicCollector(PRICE_COLLTECTOR_CONFIG);
-        let prices: Prices = new Prices(Dictionary.empty(), Cell.EMPTY);
+        let prices: ClassicPrices = ClassicPrices.createEmptyTwapPrices();
         try {
             prices = await collector.getPrices();
             expect(true).toEqual(true);
@@ -101,7 +103,7 @@ describe('PriceCollector tests', () => {
             additionalPriceSources: [new FakeBackendPriceSource('', ORACLES_MAINNET)],
         });
 
-        let prices: Prices = new Prices(Dictionary.empty(), Cell.EMPTY);
+        let prices: ClassicPrices = ClassicPrices.createEmptyTwapPrices();
         try {
             prices = await collector.getPrices();
             expect(true).toEqual(true);
@@ -180,9 +182,12 @@ describe('PriceCollector tests', () => {
         principals.set(TON_MAINNET.assetId, 5n);
         principals.set(USDT_MAINNET.assetId, -5n);
 
-        const prices = await pc.getPricesForLiquidate(principals, DefaultFetchConfig);
+        const prices = await pc.getPricesForLiquidate(principals, DefaultFetchConfig); // liquidator uses spot prices
         expect(prices.dict.values().length).toEqual(2);
         expect(prices.dataCell.hash()).not.toEqual(Cell.EMPTY.hash());
-        expect(prices.dict.keys()).toEqual([TON_MAINNET.assetId, USDT_MAINNET.assetId]);
+        expect(prices.dict.keys()).toEqual([
+            TON_MAINNET.assetId - ClassicPricesOffset[ClassicPricesMode.SPOT],
+            USDT_MAINNET.assetId - ClassicPricesOffset[ClassicPricesMode.SPOT],
+        ]);
     });
 });
