@@ -12,22 +12,23 @@ export class BackendPriceSource extends PriceSource {
     }
 
     async loadOracleData(fetchConfig: FetchConfig = DefaultFetchConfig): Promise<OutputData[]> {
-        const fetchPromise = fetch(`https://${this._endpoint}/api/prices`, {
-            headers: { accept: 'application/json' },
-            signal: AbortSignal.timeout(fetchConfig.timeout),
-        }).then(async (response) => {
-            const resp = await response.json();
-            const data = resp as Record<string, string>;
-            let outputData: OutputData[] = [];
+        return await proxyFetchRetries(async () => {
+            const response = await fetch(`https://${this._endpoint}/api/prices`, {
+                headers: { accept: 'application/json' },
+                signal: AbortSignal.timeout(fetchConfig.timeout),
+            });
+            if (!response.ok) {
+                const body = await response.text().catch(() => '');
+                throw new Error(`HTTP error! status: ${response.status}${body ? `, body: ${body}` : ''}`);
+            }
+            const data = (await response.json()) as Record<string, string>;
 
+            let outputData: OutputData[] = [];
             for (const nft of this._nfts) {
                 outputData.push({ oracleId: nft.id, data: data[nft.address] });
             }
-
             return outputData;
-        });
-
-        return await proxyFetchRetries(fetchPromise, fetchConfig);
+        }, fetchConfig);
     }
 
     parsePrices(outputData: OutputData): RawPriceData {
