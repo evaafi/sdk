@@ -15,7 +15,7 @@ export const EVAA_ALTS_MAINNET_VERSION = 3;
 
 /* STABLE POOL */
 export const EVAA_STABLE_MAINNET = Address.parse('EQCdIdXf1kA_2Hd9mbGzSFDEPA-Px-et8qTWHEXgRGo0K3zd');
-export const STABLE_VERSION = 1;
+export const STABLE_VERSION = 2;
 
 /* EVAA V8 Trail of Bits Audited Pool */
 export const EVAA_TOB_MAINNET = Address.parse('EQDrSGBBunrWNmIdHgdaA7Weu4yUr8Ckw3C9wNWobq7osn3H');
