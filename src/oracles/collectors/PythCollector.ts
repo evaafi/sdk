@@ -1,4 +1,4 @@
-import { HermesClient, HexString, PriceUpdate } from '@pythnetwork/hermes-client';
+import { HexString, PriceUpdate } from '@pythnetwork/hermes-client';
 import { Dictionary } from '@ton/core';
 import { checkNotInDebtAtAll } from '../../api/math';
 import { OracleConfig } from '../../api/parsers/PythOracleParser';
@@ -275,15 +275,29 @@ export class PythCollector extends AbstractCollector {
      * @returns binary - buffer of feeds update, parsed - json feeds data
      */
     async #getPythFeedsUpdates(feedIds: HexString[]): Promise<PythFeedUpdateType> {
-        const latestPriceUpdates: PriceUpdate = await Promise.any(
-            this.#pythConfig.pythEndpoints.map((x) =>
-                new HermesClient(x).getLatestPriceUpdates(feedIds, { encoding: 'hex' }),
-            ),
+        const pythUpdateResponse = await Promise.any(
+            this.#pythConfig.pythEndpoints.map((x) => {
+                const endpoint = new URL(`./v2/updates/price/latest?encoding=hex`, `${x}${x.endsWith('/') ? '' : '/'}`);
+
+                for (const feedId of feedIds) {
+                    endpoint.searchParams.append('ids[]', feedId);
+                }
+
+                return fetch(endpoint.toString());
+            }),
         );
+        if (!pythUpdateResponse.ok) {
+            const text = await pythUpdateResponse.text();
+            throw new Error(`Failed to fetch Pyth updates: ${text}`);
+        }
 
+        const latestPriceUpdates = (await pythUpdateResponse.json()) as PriceUpdate;
         const parsed = latestPriceUpdates['parsed'];
-        const binary = Buffer.from(latestPriceUpdates.binary.data[0], 'hex');
-
+        const binaryHex = latestPriceUpdates?.binary?.data?.[0];
+        if (!binaryHex) {
+            throw new Error('Pyth update missing binary data');
+        }
+        const binary = Buffer.from(binaryHex, 'hex');
         return { binary, parsed };
     }
 
@@ -291,7 +305,7 @@ export class PythCollector extends AbstractCollector {
         requiredFeeds: HexString[],
         fetchConfig?: FetchConfig,
     ): Promise<PythFeedUpdateType> {
-        return proxyFetchRetries(this.#getPythFeedsUpdates(requiredFeeds), fetchConfig);
+        return proxyFetchRetries(() => this.#getPythFeedsUpdates(requiredFeeds), fetchConfig);
     }
 
     /**

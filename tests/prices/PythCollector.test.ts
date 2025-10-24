@@ -104,7 +104,7 @@ describe('PythOracle', () => {
             principals.set(TON_MAINNET.assetId, 5n);
             principals.set(USDT_MAINNET.assetId, 5n);
 
-            const prices = await oracle.getPricesForSupplyWithdraw(principals, undefined, TSTON_MAINNET, true, {
+            const prices = await oracle.getPricesForSupplyWithdraw(principals, TON_MAINNET, TSTON_MAINNET, true, {
                 retries: 1,
                 timeout: 1000,
             });
@@ -118,7 +118,7 @@ describe('PythOracle', () => {
             const assets = [JUSDT_MAINNET];
             const prices = await oracle.getPrices(assets, fetchConfig);
 
-            expect(prices.dict.size).toBe(assets.length);
+            expect(prices.dict.size).toBe(assets.length + 1); // +1 for USDT feed
             expect(prices.dataCell.hash()).not.toEqual(Cell.EMPTY.hash());
         });
     });
@@ -205,8 +205,8 @@ describe('PythOracle', () => {
             await expect(
                 oracle.getPricesForSupplyWithdraw(
                     principals,
-                    undefined,
-                    undefined,
+                    TON_MAINNET,
+                    TON_MAINNET,
                     true, // collateralToDebt = true
                     fetchConfig,
                 ),
@@ -222,7 +222,7 @@ describe('PythOracle', () => {
 
             const prices = await oracle.getPricesForSupplyWithdraw(
                 principals,
-                undefined, // Supply asset
+                TON_MAINNET, // Supply asset
                 TSTON_MAINNET, // Withdraw asset (will be added to required assets)
                 true,
                 fetchConfig,

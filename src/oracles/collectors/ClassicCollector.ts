@@ -184,7 +184,7 @@ export class ClassicCollector extends AbstractCollector {
         for (const priceSource of this.#priceSources) {
             try {
                 this.#prices = await proxyFetchRetries(
-                    collectAndFilterPrices(priceSource, this.#minimalOracles, fetchConfig),
+                    () => collectAndFilterPrices(priceSource, this.#minimalOracles, fetchConfig),
                     fetchConfig,
                 );
                 return true;

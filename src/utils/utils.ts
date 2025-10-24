@@ -23,7 +23,7 @@ export const DefaultFetchConfig: FetchConfig = {
     timeout: 1000,
 };
 
-export async function proxyFetchRetries<T>(fetch: Promise<T>, config: FetchConfig = DefaultFetchConfig) {
+export async function proxyFetchRetries<T>(factory: () => Promise<T>, config: FetchConfig = DefaultFetchConfig) {
     let lastError: Error | null = null;
     for (let attempt = 0; attempt <= config.retries; attempt++) {
         try {
@@ -31,7 +31,9 @@ export async function proxyFetchRetries<T>(fetch: Promise<T>, config: FetchConfi
                 setTimeout(() => reject(new Error('Request timeout')), config.timeout);
             });
 
-            return await Promise.race([fetch, timeoutPromise]);
+            // Create a fresh promise per attempt
+            const result = await Promise.race([factory(), timeoutPromise]);
+            return result;
         } catch (error) {
             lastError = error instanceof Error ? error : new Error(String(error));
 
