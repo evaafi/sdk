@@ -55,6 +55,13 @@ export function packPrices(assetsDataCell: Cell, oraclesDataCell: Cell): Cell {
     return pricesCell;
 }
 
+export function unpackPrices(pricesCell: Cell): { assetsDataCell: Cell; oraclesDataCell: Cell } {
+    let slice = pricesCell.beginParse();
+    let assetsDataCell = slice.loadRef();
+    let oraclesDataCell = slice.loadRef();
+    return { assetsDataCell, oraclesDataCell };
+}
+
 export function createOracleDataProof(
     oracle: EvaaOracle,
     data: OraclePricesData,
@@ -82,6 +89,26 @@ export function packOraclesData(
         (acc: Cell | null, val) => beginCell().storeSlice(val).storeMaybeRef(acc).endCell(),
         null,
     )!;
+}
+
+export function unpackOraclesData(
+    oraclesDataCell: Cell,
+): { oracleId: number; merkleProof: Cell; signature: Buffer }[] | undefined {
+    if (Cell.EMPTY.hash() == oraclesDataCell.hash()) return [];
+
+    const result: { oracleId: number; merkleProof: Cell; signature: Buffer }[] = [];
+    let oracleCell: Cell | null = oraclesDataCell;
+
+    while (oracleCell != Cell.EMPTY && oracleCell !== null) {
+        const slice = oracleCell.beginParse();
+        const oracleId = slice.loadUint(32);
+        const merkleProof = slice.loadRef();
+        const signature = slice.loadBuffer(64);
+        result.push({ oracleId, merkleProof, signature });
+        oracleCell = slice.loadMaybeRef();
+    }
+
+    return result;
 }
 
 export function sumDicts(result: Dictionary<bigint, bigint>, addendum: Dictionary<bigint, bigint>) {
