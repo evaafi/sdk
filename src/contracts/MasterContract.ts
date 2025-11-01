@@ -216,7 +216,7 @@ export class Evaa implements Contract {
             .storeInt(subaccountId, 16)
             .storeInt(parameters.returnRepayRemainingsFlag ? -1 : 0, 2)
             .storeAddress(parameters.customPayloadRecipient)
-            .storeUint(parameters.customPayloadSaturationFlag ? -1 : 0, 2)
+            .storeInt(parameters.customPayloadSaturationFlag ? -1 : 0, 2)
             .endCell();
 
         if (!isTon) {
@@ -297,7 +297,7 @@ export class Evaa implements Contract {
         if ((subaccountId != 0) || parameters.customPayloadRecipient || parameters.customPayloadSaturationFlag) {
             innerCell.storeInt(subaccountId, 16);
             innerCell.storeAddress(parameters.customPayloadRecipient);
-            innerCell.storeUint(parameters.customPayloadSaturationFlag ? -1 : 0, 2);
+            innerCell.storeInt(parameters.customPayloadSaturationFlag ? -1 : 0, 2);
         }
 
         const operationPayload = beginCell()
