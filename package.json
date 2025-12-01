@@ -20,7 +20,7 @@
   "homepage": "https://github.com/evaafi/sdk#readme",
   "devDependencies": {
     "@orbs-network/ton-access": "^2.3.3",
-    "@ton/core": "0.56.0",
+    "@ton/core": "^0.62.0",
     "@ton/crypto": "3.3.0",
     "@tonconnect/sdk": "3.0.5",
     "@types/jest": "^29.5.12",
@@ -33,12 +33,12 @@
     "typescript": "5.3.3"
   },
   "peerDependencies": {
-    "@ton/core": ">=0.56.0",
+    "@ton/core": ">=0.62.0",
     "@tonconnect/sdk": ">=3.0.0",
     "crypto-js": ">=4.2.0"
   },
   "dependencies": {
-    "@ton/ton": "14.0.0",
+    "@ton/ton": "16.0.0",
     "@pythnetwork/hermes-client": "^2.0.0",
     "@pythnetwork/pyth-ton-js": "^0.1.2",
     "dotenv": "16.4.5"
