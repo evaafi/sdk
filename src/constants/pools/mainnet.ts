@@ -91,17 +91,17 @@ export const MAINNET_POOL_CONFIG: PoolConfig = {
         poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,
         pythOracle: {
             feedsMap: new Map<HexString, FeedMapItem>([
-                [FEED_ID.TON, { assetId: ASSET_ID.TON, feedId: '0x0' }],
-                [FEED_ID.USDT, { assetId: ASSET_ID.USDT, feedId: '0x0' }],
+                [FEED_ID.TON, { assetId: ASSET_ID.TON, feedId: "0x0" }],
+                [FEED_ID.USDT, { assetId: ASSET_ID.USDT, feedId: "0x0" }],
                 [FEED_ID.tsTON, { assetId: ASSET_ID.tsTON, feedId: FEED_ID.TON }],
-                [FEED_ID.tsUSDe, { assetId: ASSET_ID.tsUSDe, feedId: FEED_ID.USDT }],
+                [FEED_ID.stTON, { assetId: ASSET_ID.stTON, feedId: FEED_ID.TON }],
+                [FEED_ID.USDe, { assetId: ASSET_ID.USDe, feedId: "0x0" }],
+                [FEED_ID.tsUSDe, { assetId: ASSET_ID.tsUSDe, feedId: FEED_ID.USDe }],
             ]),
             pythAddress: PYTH_ORACLE_MAINNET,
             allowedRefTokens: Dictionary.empty<bigint, bigint>()
                 .set(ASSET_ID.jUSDT, ASSET_ID.USDT)
                 .set(ASSET_ID.jUSDC, ASSET_ID.USDT)
-                .set(ASSET_ID.USDe, ASSET_ID.USDT)
-                .set(ASSET_ID.stTON, ASSET_ID.tsTON),
         },
     }),
     poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,

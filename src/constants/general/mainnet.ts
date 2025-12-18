@@ -52,7 +52,7 @@ export const ORACLES_MAINNET: ExtendedEvaaOracle[] = [
     },
 ];
 
-export const PYTH_ORACLE_MAINNET: Address = Address.parse('EQBU6k8HH6yX4Jf3d18swWbnYr31D3PJI7PgjXT-flsKHqql');
+export const PYTH_ORACLE_MAINNET: Address = Address.parse('EQA5NPyjfZztDm8jcTBwTAU9NGsgJEkw19z61yecX0TlseSB');
 
 export const ORACLES_LP: ExtendedEvaaOracle[] = ORACLES_MAINNET;
 export const ORACLES_ALTS: ExtendedEvaaOracle[] = ORACLES_MAINNET;
