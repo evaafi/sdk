@@ -62,10 +62,10 @@ export interface EvaaParameters {
 }
 
 /**
- * Parameters for supply operations
- * @interface SupplyParameters
+ * Base parameters for supply operations
+ * @type SupplyBaseParameters
  */
-export interface SupplyParameters {
+export type SupplyBaseParameters =  {
     /** Asset configuration for the supply operation */
     readonly asset: PoolAssetConfig;
     /** Unique identifier for this operation */
@@ -82,15 +82,29 @@ export interface SupplyParameters {
     readonly forwardAmount?: bigint;
     /** Operation payload cell */
     readonly payload: Cell;
-    /** Optional subaccount identifier (0-255) */
-    readonly subaccountId?: number;
-    /** Whether to return repay remainings */
-    readonly returnRepayRemainingsFlag?: boolean;
-    /** Optional custom payload recipient address */
-    readonly customPayloadRecipient?: Address;
-    /** Whether to saturate custom payload */
-    readonly customPayloadSaturationFlag?: boolean;
 }
+
+/**
+ * Extended parameters for supply operations
+ * @type SupplyExtendParameters
+ */
+export type SupplyExtendParameters = SupplyBaseParameters & {
+	/** Optional subaccount identifier (0-255) */
+	readonly subaccountId: number;
+	/** Whether to return repay remainings */
+	readonly returnRepayRemainingsFlag: boolean;
+	/** Optional custom payload recipient address */
+	readonly customPayloadRecipient: Address;
+	/** Whether to saturate custom payload */
+	readonly customPayloadSaturationFlag: boolean;
+};
+
+
+/**
+ * Parameters for supply operations
+ * @type SupplyParameters
+ */
+export type SupplyParameters = SupplyBaseParameters | SupplyExtendParameters;
 
 /**
  * Parameters for withdraw operations
@@ -343,16 +357,29 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
 
     // ========== MESSAGE BUILDERS ==========
     /**
-     * Validates supply operation parameters
+     * Validates supply extend operation parameters
      * @private
-     * @static
-     * @param parameters - Supply parameters to validate
+     * @param parameters - Extend supply parameters to validate
      * @throws {Error} When amount is invalid or subaccount ID is out of range
      */
-    private static validateSupplyParameters(parameters: SupplyParameters): void {
-        if (parameters.subaccountId !== undefined && !isValidSubaccountId(parameters.subaccountId)) {
-            throw new Error(`Supply validation failed: ${VALIDATION.ERRORS.INVALID_SUBACCOUNT_ID}`);
+    private isValidSupplyExtendParameters(parameters: SupplyExtendParameters) {
+        if (
+            "subaccountId" in parameters &&
+            "returnRepayRemainingsFlag" in parameters &&
+            "customPayloadRecipient" in parameters &&
+            "customPayloadSaturationFlag" in parameters
+        ) {
+            if (parameters.subaccountId !== undefined && !isValidSubaccountId(parameters.subaccountId)) {
+                throw new Error(
+                    `Extend supply validation failed: ${VALIDATION.ERRORS.INVALID_SUBACCOUNT_ID}`,
+                );
+            }
+            return true
         }
+
+        throw new Error(
+            `Extend supply validation failed: ${VALIDATION.ERRORS.INVALID_EXTEND_SUPPLY_PARAMETERS}`
+        )
     }
 
     /**
@@ -361,24 +388,32 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
      * @returns {Cell} Complete supply message cell
      * @throws {Error} When validation fails
      */
-    createSupplyMessage(parameters: SupplyParameters): Cell {
-        AbstractEvaaMaster.validateSupplyParameters(parameters);
+    createSupplyMessage(parameters: SupplyBaseParameters): Cell
+    createSupplyMessage(parameters: SupplyExtendParameters): Cell {
 
-        const subaccountId = parameters.subaccountId ?? 0;
         const isTon = isTonAsset(parameters.asset);
 
-        const operationPayload = beginCell()
-            .storeUint(OPCODES.SUPPLY_MASTER, 32)
-            .storeBuilder(isTon ? beginCell().storeUint(parameters.queryID, 64) : beginCell())
-            .storeInt(parameters.includeUserCode ? -1 : 0, 2)
-            .storeBuilder(isTon ? beginCell().storeUint(parameters.amount, 64) : beginCell())
-            .storeAddress(parameters.userAddress)
-            .storeRef(parameters.payload)
-            .storeInt(subaccountId, 16)
-            .storeInt(parameters.returnRepayRemainingsFlag ? -1 : 0, 2)
-            .storeAddress(parameters.customPayloadRecipient)
-            .storeInt(parameters.customPayloadSaturationFlag ? -1 : 0, 2)
-            .endCell();
+        let operationPayloadBuilder = beginCell()
+        .storeUint(OPCODES.SUPPLY_MASTER, 32)
+        .storeBuilder(isTon ? beginCell().storeUint(parameters.queryID, 64) : beginCell())
+        .storeInt(parameters.includeUserCode ? -1 : 0, 2)
+        .storeBuilder(isTon ? beginCell().storeUint(parameters.amount, 64) : beginCell())
+        .storeAddress(parameters.userAddress)
+        .storeRef(parameters.payload)
+        
+        
+        if (this.isValidSupplyExtendParameters(parameters)) {
+            operationPayloadBuilder = operationPayloadBuilder
+                .storeInt(parameters.subaccountId ?? 0, 16)
+                .storeInt(parameters.returnRepayRemainingsFlag ? -1 : 0, 2)
+                .storeAddress(parameters.customPayloadRecipient)
+                .storeInt(
+                    parameters.customPayloadSaturationFlag ? -1 : 0,
+                    2,
+                );
+        }
+
+        const operationPayload = operationPayloadBuilder.endCell();
 
         if (!isTon) {
             return this.createJettonTransferMessage(parameters, FEES.SUPPLY, operationPayload);
