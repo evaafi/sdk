@@ -75,7 +75,7 @@ export const FEES = {
     SUPPLY: toNano('0.25'),
 
     // Supply & Withdraw
-    SUPPLY_WITHDRAW: toNano('0.45'),
+    SUPPLY_WITHDRAW: toNano('0.48'),
 
     // Liquidation
     LIQUIDATION: toNano('0.8'),
