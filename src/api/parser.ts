@@ -211,6 +211,37 @@ export function parseMasterData(masterDataBOC: string, poolAssetsConfig: PoolAss
     };
 }
 
+export type BorrowPosition = {
+    principal: BigInt;
+    originationFeeTaken: BigInt;
+    amountBorrowedWithoutFee: BigInt;
+    lastBorrowMCBlockSeqno: BigInt;
+}
+
+export type UserPrincipal = BigInt|BorrowPosition;
+
+export const createUserPrincipal = (): DictionaryValue<bigint> => {
+    return {
+        serialize: (src: any, buidler: any) => {
+            buidler.storeInt(src.value, 64);
+        },
+        parse: (src: Slice) => {
+            const principal = BigInt(src.loadInt(64));
+            if (src.remainingBits == 0) {
+                return principal;
+            } else if (src.remainingBits == 192) {
+                const originationFeeTaken = BigInt(src.loadInt(64));
+                const amountBorrowedWithoutFee = BigInt(src.loadInt(64));
+                const lastBorrowMCBlockSeqno = BigInt(src.loadUint(64));
+                return principal;
+            } else {
+                throw new Error('Invalid user principals slice');
+            }
+        },
+    };
+}
+
+
 export function parseUserLiteData(
     userDataBOC: string,
     assetsData: ExtendedAssetsData,
@@ -226,7 +257,7 @@ export function parseUserLiteData(
     const codeVersion = userSlice.loadCoins();
     const masterAddress = userSlice.loadAddress();
     const userAddress = userSlice.loadAddress();
-    const realPrincipals = userSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.BigInt(64));
+    const realPrincipals = userSlice.loadDict(Dictionary.Keys.BigUint(256), createUserPrincipal());
     const principalsDict = Dictionary.empty(Dictionary.Keys.BigUint(256), Dictionary.Values.BigInt(64));
     const userState = userSlice.loadInt(64);
 

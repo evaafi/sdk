@@ -109,10 +109,10 @@
   resolved "https://registry.npmjs.org/@sinclair/typebox/-/typebox-0.27.8.tgz"
   integrity sha512-+Fj43pSMwJs4KRrH/938Uf+uAELIgVBmQzg/q1YG10djyfA3TnrU8N8XzqCh/okZdszqBQTZf96idMfE5lnwTA==
 
-"@ton/core@0.56.0":
-  version "0.56.0"
-  resolved "https://registry.npmjs.org/@ton/core/-/core-0.56.0.tgz"
-  integrity sha512-G2Q+0o1WALPuRu5PRAzV7xc30uZSBlEG4WYLLH/E8PXEfxw+bZPnWo8OUqRhAGBbG4QKWWdj/Co6/YLmHhD8SQ==
+"@ton/core@0.62.0":
+  version "0.62.0"
+  resolved "https://registry.yarnpkg.com/@ton/core/-/core-0.62.0.tgz#0582b668c134ec565ed3dfeb9f898ad5a3ccdcee"
+  integrity sha512-GCYlzzx11rSESKkiHvNy9tL8zWth+ZtUbvV29WH478FvBp8xTw24AyoigwXWNV+OLCAcnwlGhZpTpxjD3wzCwA==
   dependencies:
     symbol.inspect "1.0.1"
 
@@ -132,10 +132,10 @@
     jssha "3.2.0"
     tweetnacl "1.0.3"
 
-"@ton/ton@14.0.0":
-  version "14.0.0"
-  resolved "https://registry.npmjs.org/@ton/ton/-/ton-14.0.0.tgz"
-  integrity sha512-xb2CY6U0AlHUKc7DV7xK/K4Gqn6YoR253yUrM2E7L5WegVFsDF0CQRUIfpYACCuj1oUywQc5J2oMolYNu/uGkA==
+"@ton/ton@16.0.0":
+  version "16.0.0"
+  resolved "https://registry.yarnpkg.com/@ton/ton/-/ton-16.0.0.tgz#2af311dac82e2eb30a704068e6633c3c409cc4f6"
+  integrity sha512-Y5xtPtn0x6iNIEFqOaX8GjPFvDDyCG4YOnJ7WUnP9YQ4MYxANm7gOZZifMcxQcQ5KazxiIWqqyctp4PPVhOgPA==
   dependencies:
     axios "^1.6.7"
     dataloader "^2.0.0"
@@ -732,12 +732,12 @@ supports-color@^7.1.0:
 
 symbol.inspect@1.0.1:
   version "1.0.1"
-  resolved "https://registry.npmjs.org/symbol.inspect/-/symbol.inspect-1.0.1.tgz"
+  resolved "https://registry.yarnpkg.com/symbol.inspect/-/symbol.inspect-1.0.1.tgz#e13125b8038c4996eb0dfa1567332ad4dcd0763f"
   integrity sha512-YQSL4duoHmLhsTD1Pw8RW6TZ5MaTX5rXJnqacJottr2P2LZBF/Yvrc3ku4NUpMOm8aM0KOCqM+UAkMA5HWQCzQ==
 
 teslabot@^1.3.0:
   version "1.5.0"
-  resolved "https://registry.npmjs.org/teslabot/-/teslabot-1.5.0.tgz"
+  resolved "https://registry.yarnpkg.com/teslabot/-/teslabot-1.5.0.tgz#70f544516699ca5f696d8ae94f3d12cd495d5cd6"
   integrity sha512-e2MmELhCgrgZEGo7PQu/6bmYG36IDH+YrBI1iGm6jovXkeDIGa3pZ2WSqRjzkuw2vt1EqfkZoV5GpXgqL8QJVg==
 
 to-regex-range@^5.0.1:
