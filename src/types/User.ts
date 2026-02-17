@@ -1,4 +1,4 @@
-import { Address, Cell, Dictionary } from '@ton/core';
+import { Address, Cell, Dictionary, ExternalAddress } from '@ton/core';
 import {
     AssetConfig,
     AssetData,
@@ -43,8 +43,8 @@ export type LiquidationData = LiquidableData | NonLiquidableData;
 export type UserLiteData = {
     type: 'active';
     codeVersion: number;
-    masterAddress: Address;
-    ownerAddress: Address;
+    masterAddress: Address | ExternalAddress | null;
+    ownerAddress: Address | ExternalAddress | null;
     principals: Dictionary<bigint, bigint>;
     realPrincipals: Dictionary<bigint, bigint>; // principals before applying dusts
     state: number;
