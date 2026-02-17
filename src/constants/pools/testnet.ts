@@ -1,10 +1,19 @@
-import { HexString } from '@pythnetwork/hermes-client';
+import type { HexString } from '@pythnetwork/hermes-client';
+import type { PoolConfig } from '../../types/Master';
+import type { EvaaRewardsConfig } from '../../types/MasterRewards';
 import { Address, Dictionary } from '@ton/core';
-import { FEED_ID, FeedMapItem } from '../../api/feeds';
+import { FEED_ID, type FeedMapItem } from '../../api/feeds';
 import { ClassicCollector, DefaultPythPriceSourcesConfig, PythCollector } from '../../oracles';
-import { PoolConfig } from '../../types/Master';
-import { EvaaRewardsConfig } from '../../types/MasterRewards';
-import { ASSET_ID, EUSDT_TESTNET, JUSDC_TESTNET, TON_TESTNET } from '../assets';
+import {
+    ASSET_ID,
+    EUSDT_TESTNET,
+    JUSDC_TESTNET,
+    TON_MAINNET,
+    TON_TESTNET,
+    TSTON_MAINNET,
+    USDE_MAINNET,
+    USDT_MAINNET,
+} from '../assets';
 import {
     EVAA_MASTER_TESTNET_CLASSIC_TOB_AUDITED,
     EVAA_MASTER_TESTNET_PYTH_TOB_AUDITED,
@@ -59,6 +68,19 @@ export const TESTNET_CLASSIC_POOL_CONFIG_TOB_AUDITED: PoolConfig = {
     }),
     lendingCode: LENDING_CODE,
     poolAssetsConfig: TESTNET_POOL_ASSETS_CONFIG,
+};
+
+export const TESTNET_CLASSIC_HE_POOL_CONFIG: PoolConfig = {
+    masterAddress: Address.parse('EQBykKj3k97Mx_EEGwzmnqFLteFRAt0BIg-ig96ifNkdV3Wn'),
+    masterVersion: 0,
+    masterConstants: MASTER_CONSTANTS,
+    collector: new ClassicCollector({
+        poolAssetsConfig: [TON_MAINNET, TSTON_MAINNET, USDT_MAINNET, USDE_MAINNET],
+        minimalOracles: 1,
+        evaaOracles: ORACLES_TESTNET,
+    }),
+    lendingCode: LENDING_CODE,
+    poolAssetsConfig: [TON_MAINNET, TSTON_MAINNET, USDT_MAINNET, USDE_MAINNET],
 };
 
 export const TESTNET_MASTER_REWARD_CONFIG: EvaaRewardsConfig = {

@@ -66,8 +66,8 @@ export type AssetConfig = {
     baseTrackingBorrowSpeed: bigint;
     borrowCap: number | bigint;
     heCategory: number;
-    heCollateralFactor: number;
-    heLiquidationThreshold: number;
+    heCollateralFactor: bigint;
+    heLiquidationThreshold: bigint;
 };
 
 export type AssetData = {

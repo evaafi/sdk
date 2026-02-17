@@ -1,6 +1,5 @@
-import { Dictionary } from '@ton/core';
-import { UNDEFINED_ASSET } from '../constants/assets';
-import {
+import type { Dictionary } from '@ton/core';
+import type {
     AgregatedBalances,
     AssetApy,
     AssetConfig,
@@ -12,14 +11,15 @@ import {
     MasterConstants,
     PoolConfig,
 } from '../types/Master';
+import { UNDEFINED_ASSET } from '../constants/assets';
 import {
     BalanceChangeType,
     BalanceType,
-    HealthParamsArgs,
-    LiquidationData,
-    PredictAPYArgs,
-    PredictHealthFactorArgs,
-    UserBalance,
+    type HealthParamsArgs,
+    type LiquidationData,
+    type PredictAPYArgs,
+    type PredictHealthFactorArgs,
+    type UserBalance,
 } from '../types/User';
 import { addReserve, isBadDebt } from './liquidation';
 
@@ -177,6 +177,111 @@ export function checkNotInDebtAtAll(principals: Dictionary<bigint, bigint>): boo
     return principals.values().every((x) => x >= 0n);
 }
 
+/**
+ * Determines the active High Efficiency (e-mode) category for a user based on their debt positions.
+ * Returns the heCategory if all borrowed assets belong to the same e-mode group (heCategory > 0).
+ * Returns -1 if:
+ * - User has debts in multiple e-mode groups
+ * - User has debt in an asset with heCategory = 0
+ * - User has no debt
+ *
+ * @param principals user principals dictionary
+ * @param assetsConfig assets config dictionary
+ * @returns heCategory number if e-mode is active, -1 otherwise
+ */
+export function determineHeCategory(
+    principals: Dictionary<bigint, bigint>,
+    assetsConfig: ExtendedAssetsConfig,
+): number {
+    let heCategory = -1;
+
+    for (const [assetId, principal] of principals) {
+        if (principal >= 0n) {
+            continue;
+        }
+
+        const assetConfig = assetsConfig.get(assetId);
+        if (!assetConfig) {
+            return -1;
+        }
+
+        const assetHeCategory = assetConfig.heCategory;
+        if (assetHeCategory <= 0) {
+            return -1;
+        }
+
+        if (heCategory === -1) {
+            heCategory = assetHeCategory;
+        } else if (heCategory !== assetHeCategory) {
+            return -1;
+        }
+    }
+
+    return heCategory;
+}
+
+/**
+ * Calculates borrow limit with e-mode support.
+ * For supply assets matching the active heCategory, uses heCollateralFactor/heLiquidationThreshold.
+ * For other assets, uses normal collateralFactor/liquidationThreshold.
+ *
+ * @param principals user principals dictionary
+ * @param prices asset prices dictionary
+ * @param assetsConfig assets config dictionary
+ * @param assetsData assets data dictionary
+ * @param masterConstants pool constants
+ * @param useCollateralFactor if true, uses collateralFactor; if false, uses liquidationThreshold
+ * @returns { limit, heCategory } - borrow limit and active heCategory
+ */
+export function calculateBorrowLimitWithEMode(
+    principals: Dictionary<bigint, bigint>,
+    prices: Dictionary<bigint, bigint>,
+    assetsConfig: ExtendedAssetsConfig,
+    assetsData: ExtendedAssetsData,
+    masterConstants: MasterConstants,
+    useCollateralFactor: boolean = true,
+): { limit: bigint; heCategory: number } {
+    const heCategory = determineHeCategory(principals, assetsConfig);
+    let limit = 0n;
+
+    for (const [assetId, principal] of principals) {
+        if (principal <= 0n) {
+            continue;
+        }
+
+        if (!prices.has(assetId)) {
+            return { limit: 0n, heCategory: -1 };
+        }
+
+        const assetConfig = assetsConfig.get(assetId);
+        const assetData = assetsData.get(assetId);
+        if (!assetConfig || !assetData) {
+            continue;
+        }
+
+        const price = prices.get(assetId)!;
+        const assetScale = 10n ** assetConfig.decimals;
+        const presentValueAmount = calculatePresentValue(assetData.sRate, principal, masterConstants);
+
+        let factor: bigint;
+        if (useCollateralFactor) {
+            factor =
+                heCategory > 0 && assetConfig.heCategory === heCategory
+                    ? BigInt(assetConfig.heCollateralFactor)
+                    : assetConfig.collateralFactor;
+        } else {
+            factor =
+                heCategory > 0 && assetConfig.heCategory === heCategory
+                    ? BigInt(assetConfig.heLiquidationThreshold)
+                    : assetConfig.liquidationThreshold;
+        }
+
+        limit += mulDiv(mulDiv(presentValueAmount, price, assetScale), factor, masterConstants.ASSET_COEFFICIENT_SCALE);
+    }
+
+    return { limit, heCategory };
+}
+
 export function getAgregatedBalances(
     assetsData: ExtendedAssetsData,
     assetsConfig: ExtendedAssetsConfig,
@@ -210,6 +315,10 @@ export function getAgregatedBalances(
     return { totalSupply: user_total_supply, totalBorrow: user_total_borrow };
 }
 
+/**
+ * Calculates maximum withdraw amount with e-mode support.
+ * Uses heCollateralFactor for assets matching the active e-mode category.
+ */
 export function calculateMaximumWithdrawAmount(
     assetsConfig: ExtendedAssetsConfig,
     assetsData: ExtendedAssetsData,
@@ -233,18 +342,29 @@ export function calculateMaximumWithdrawAmount(
                 return 0n;
             }
 
-            const borrowable = getAvailableToBorrow(assetsConfig, assetsData, principals, prices, masterConstants);
+            const { availableToBorrow: borrowable, heCategory } = getAvailableToBorrowWithEMode(
+                assetsConfig,
+                assetsData,
+                principals,
+                prices,
+                masterConstants,
+            );
             const price = prices.get(assetId) as bigint;
+
+            let collateralFactor = assetConfig.collateralFactor;
+            if (heCategory > 0 && assetConfig.heCategory === heCategory) {
+                collateralFactor = BigInt(assetConfig.heCollateralFactor);
+            }
 
             let maxAmountToReclaim = 0n;
 
-            if (assetConfig.collateralFactor == 0n) {
+            if (collateralFactor == 0n) {
                 maxAmountToReclaim = oldPresentValue.amount;
             } else if (price > 0) {
                 maxAmountToReclaim = bigIntMax(
                     0n,
                     mulDiv(
-                        mulDiv(borrowable, masterConstants.ASSET_COEFFICIENT_SCALE, assetConfig.collateralFactor),
+                        mulDiv(borrowable, masterConstants.ASSET_COEFFICIENT_SCALE, collateralFactor),
                         10n ** assetConfig.decimals,
                         price,
                     ) -
@@ -271,6 +391,55 @@ export function calculateMaximumWithdrawAmount(
     return withdrawAmountMax;
 }
 
+/**
+ * Calculates available amount to borrow with e-mode support.
+ * Uses heCollateralFactor for assets matching the active e-mode category.
+ *
+ * @returns { availableToBorrow, heCategory } - available amount and active heCategory
+ */
+export function getAvailableToBorrowWithEMode(
+    assetsConfig: ExtendedAssetsConfig,
+    assetsData: ExtendedAssetsData,
+    principals: Dictionary<bigint, bigint>,
+    prices: Dictionary<bigint, bigint>,
+    masterConstants: MasterConstants,
+): { availableToBorrow: bigint; heCategory: number } {
+    const { limit: borrowLimit, heCategory } = calculateBorrowLimitWithEMode(
+        principals,
+        prices,
+        assetsConfig,
+        assetsData,
+        masterConstants,
+        true,
+    );
+
+    let borrowAmount = 0n;
+    for (const [assetId, principal] of principals) {
+        if (principal >= 0n) {
+            continue;
+        }
+
+        if (!prices.has(assetId)) {
+            return { availableToBorrow: 0n, heCategory: -1 };
+        }
+
+        const assetConfig = assetsConfig.get(assetId);
+        const assetData = assetsData.get(assetId);
+        if (!assetConfig || !assetData) {
+            continue;
+        }
+
+        const price = prices.get(assetId)!;
+        borrowAmount += mulDivC(
+            calculatePresentValue(assetData.bRate, -principal, masterConstants),
+            price,
+            10n ** assetConfig.decimals,
+        );
+    }
+
+    return { availableToBorrow: borrowLimit - borrowAmount, heCategory };
+}
+
 export function getAvailableToBorrow(
     assetsConfig: ExtendedAssetsConfig,
     assetsData: ExtendedAssetsData,
@@ -278,44 +447,14 @@ export function getAvailableToBorrow(
     prices: Dictionary<bigint, bigint>,
     masterConstants: MasterConstants,
 ): bigint {
-    let borrowLimit = 0n;
-    let borrowAmount = 0n;
-
-    for (const assetID of principals.keys()) {
-        const principal = principals.get(assetID) as bigint;
-
-        if (principal == 0n) {
-            continue;
-        }
-
-        if (!prices.has(assetID)) {
-            return 0n;
-        }
-
-        const assetConfig = assetsConfig.get(assetID) as AssetConfig;
-        const assetData = assetsData.get(assetID) as ExtendedAssetData;
-        const price = prices.get(assetID) as bigint;
-
-        if (principal < 0n) {
-            borrowAmount += mulDiv(
-                calculatePresentValue(assetData.bRate, -principal, masterConstants),
-                price,
-                10n ** assetConfig.decimals,
-            );
-        } else if (principal > 0n) {
-            borrowLimit += mulDiv(
-                mulDiv(
-                    calculatePresentValue(assetData.sRate, principal, masterConstants),
-                    price,
-                    10n ** assetConfig.decimals,
-                ),
-                assetConfig.collateralFactor,
-                masterConstants.ASSET_COEFFICIENT_SCALE,
-            );
-        }
-    }
-
-    return borrowLimit - borrowAmount;
+    const { availableToBorrow } = getAvailableToBorrowWithEMode(
+        assetsConfig,
+        assetsData,
+        principals,
+        prices,
+        masterConstants,
+    );
+    return availableToBorrow;
 }
 
 /**
@@ -350,13 +489,16 @@ export function presentValue(
 }
 
 /**
- * Calculates health parameters of the specified user account based on its parameters
+ * Calculates health parameters of the specified user account based on its parameters.
+ * Supports e-mode: uses heLiquidationThreshold for assets matching the active e-mode category.
  * @param parameters
  */
 export function calculateHealthParams(parameters: HealthParamsArgs) {
     const { principals, prices, assetsData, assetsConfig, poolConfig } = parameters;
 
     const { ASSET_LIQUIDATION_THRESHOLD_SCALE } = poolConfig.masterConstants;
+
+    const heCategory = determineHeCategory(principals, assetsConfig);
 
     let totalSupply = 0n;
     let totalDebt = 0n;
@@ -381,7 +523,11 @@ export function calculateHealthParams(parameters: HealthParamsArgs) {
         const assetWorth = (assetBalance.amount * assetPrice) / assetScale;
         if (assetBalance.type === BalanceType.supply) {
             totalSupply += assetWorth;
-            totalLimit += (assetWorth * assetConfig.liquidationThreshold) / ASSET_LIQUIDATION_THRESHOLD_SCALE;
+            const liquidationThreshold =
+                heCategory > 0 && assetConfig.heCategory === heCategory
+                    ? BigInt(assetConfig.heLiquidationThreshold)
+                    : assetConfig.liquidationThreshold;
+            totalLimit += (assetWorth * liquidationThreshold) / ASSET_LIQUIDATION_THRESHOLD_SCALE;
         } else if (assetBalance.type === BalanceType.borrow && assetConfig.dust < assetBalance.amount) {
             totalDebt += assetWorth;
         }
@@ -399,13 +545,15 @@ export function calculateHealthParams(parameters: HealthParamsArgs) {
         totalDebt,
         totalLimit,
         totalSupply,
+        heCategory,
         isLiquidatable: _isLiquidable,
         isBadDebt: _isBadDebt,
     };
 }
 
 /**
- * Calculates liquidation data for greatest loan and collateral assets
+ * Calculates liquidation data for greatest loan and collateral assets.
+ * Supports e-mode: uses heLiquidationThreshold for assets matching the active e-mode category.
  * @param assetsConfig assets config dictionary
  * @param assetsData assets data dictionary
  * @param principals principals dictionary
@@ -428,6 +576,7 @@ export function calculateLiquidationData(
     let totalLimit = 0n;
 
     const { ASSET_SRATE_SCALE, ASSET_BRATE_SCALE, COLLATERAL_WORTH_THRESHOLD } = poolConfig.masterConstants;
+    const heCategory = determineHeCategory(principals, assetsConfig);
 
     for (const asset of poolConfig.poolAssetsConfig) {
         const principal = principals.get(asset.assetId)!;
@@ -441,16 +590,17 @@ export function calculateLiquidationData(
 
         const assetWorth = (bigAbs(balance) * prices.get(asset.assetId)!) / 10n ** assetConfig.decimals;
         if (balance > 0) {
-            totalLimit +=
-                (assetWorth * assetConfig.liquidationThreshold) / poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE;
-            // get the greatest collateral
+            const liquidationThreshold =
+                heCategory > 0 && assetConfig.heCategory === heCategory
+                    ? BigInt(assetConfig.heLiquidationThreshold)
+                    : assetConfig.liquidationThreshold;
+            totalLimit += (assetWorth * liquidationThreshold) / poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE;
             if (assetWorth > collateralValue) {
                 collateralValue = assetWorth;
                 collateralAsset = asset;
             }
         } else if (balance < 0) {
             totalDebt += assetWorth;
-            // get the greatest loan
             if (assetWorth > loanValue) {
                 loanValue = assetWorth;
                 loanAsset = asset;
@@ -515,6 +665,10 @@ export function calculateLiquidationData(
     };
 }
 
+/**
+ * Predicts health factor after a balance change.
+ * Supports e-mode: uses heLiquidationThreshold for assets matching the active e-mode category.
+ */
 export function predictHealthFactor(args: PredictHealthFactorArgs): number {
     const healthParams = calculateHealthParams(args);
     const assetId = args.asset.assetId;
@@ -529,8 +683,14 @@ export function predictHealthFactor(args: PredictHealthFactorArgs): number {
 
     const decimals = Number(assetConfig.decimals);
 
-    const currentBalance = (assetPrice * Number(currentAmount)) / Math.pow(10, decimals);
+    const currentBalance = (assetPrice * Number(currentAmount)) / 10 ** decimals;
     const changeType = args.balanceChangeType;
+
+    const heCategory = healthParams.heCategory;
+    const liquidationThreshold =
+        heCategory > 0 && assetConfig.heCategory === heCategory
+            ? assetConfig.heLiquidationThreshold
+            : Number(assetConfig.liquidationThreshold);
 
     if (currentAmount != null && currentAmount != 0n) {
         if (changeType == BalanceChangeType.Borrow) {
@@ -543,11 +703,11 @@ export function predictHealthFactor(args: PredictHealthFactorArgs): number {
             totalBorrow -= currentBalance;
         } else if (changeType == BalanceChangeType.Withdraw) {
             totalLimit -=
-                (currentBalance * Number(assetConfig.liquidationThreshold)) /
+                (currentBalance * Number(liquidationThreshold)) /
                 Number(args.poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE);
         } else if (changeType == BalanceChangeType.Supply) {
             totalLimit +=
-                (currentBalance * Number(assetConfig.liquidationThreshold)) /
+                (currentBalance * Number(liquidationThreshold)) /
                 Number(args.poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE);
         }
     }
@@ -555,7 +715,7 @@ export function predictHealthFactor(args: PredictHealthFactorArgs): number {
         return 1;
     }
 
-    return Math.min(Math.max(1 - totalBorrow / totalLimit, 0), 1); // let's limit a result to zero below and one above
+    return Math.min(Math.max(1 - totalBorrow / totalLimit, 0), 1);
 }
 
 /**

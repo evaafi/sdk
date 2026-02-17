@@ -130,8 +130,8 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
             const baseTrackingBorrowSpeed = ref.loadUintBig(64);
             const borrowCap = ref.loadInt(64);
             const heCategory = ref.loadUint(8);
-            const heCollateralFactor = ref.loadUint(16);
-            const heLiquidationThreshold = ref.loadUint(16);
+            const heCollateralFactor = ref.loadUintBig(16);
+            const heLiquidationThreshold = ref.loadUintBig(16);
 
             return {
                 jwAddress,
@@ -242,8 +242,8 @@ export function parseUserLiteData(
     const userSlice = Cell.fromBase64(userDataBOC).beginParse();
 
     const codeVersion = userSlice.loadCoins();
-    const masterAddress = userSlice.loadAddress();
-    const userAddress = userSlice.loadAddress();
+    const masterAddress = userSlice.loadAddressAny();
+    const userAddress = userSlice.loadAddressAny();
     const realPrincipals = userSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.BigInt(64));
     const principalsDict = Dictionary.empty(Dictionary.Keys.BigUint(256), Dictionary.Values.BigInt(64));
     const userState = userSlice.loadInt(64);
@@ -256,18 +256,26 @@ export function parseUserLiteData(
     let backupCell1: Cell | null = null;
     let backupCell2: Cell | null = null;
     const bitsLeft = userSlice.remainingBits;
-    if (bitsLeft > 32) {
+    const refsLeft = userSlice.remainingRefs;
+    if (bitsLeft === 0 && refsLeft === 0) {
+        // Init format: no extra data after state
+    } else if (bitsLeft >= 64 + 64 + 32 && refsLeft >= 1) {
+        // Old format with tracking indexes
         trackingSupplyIndex = userSlice.loadUintBig(64);
         trackingBorrowIndex = userSlice.loadUintBig(64);
         dutchAuctionStart = userSlice.loadUint(32);
         backupCell = loadMyRef(userSlice);
-    } else {
+    } else if (bitsLeft >= 3 && refsLeft >= 1) {
+        // New format with rewards dict + maybe_refs
         rewards = userSlice.loadDict(Dictionary.Keys.BigUint(256), createUserRewards());
-        backupCell1 = userSlice.loadMaybeRef();
-        backupCell2 = userSlice.loadMaybeRef();
+        if (userSlice.remainingBits >= 2) {
+            backupCell1 = userSlice.loadMaybeRef();
+            backupCell2 = userSlice.loadMaybeRef();
+        }
     }
 
-    userSlice.endParse();
+    // Skip remaining data if any (for forward compatibility)
+    // userSlice.endParse();
     const userBalances = Dictionary.empty<bigint, UserBalance>();
 
     for (const [_, asset] of Object.entries(poolAssetsConfig)) {
