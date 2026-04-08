@@ -29,6 +29,8 @@ import {
     EVAA_ALTS_MAINNET,
     EVAA_ALTS_MAINNET_VERSION,
     EVAA_EVAA_REWARDS_MASTER_MAINNET,
+    EVAA_LP_COPY_MAINNET,
+    EVAA_LP_COPY_MAINNET_VERSION,
     EVAA_LP_MAINNET,
     EVAA_LP_MAINNET_VERSION,
     EVAA_MASTER_MAINNET,
@@ -124,6 +126,19 @@ export const MAINNET_STABLE_POOL_CONFIG: PoolConfig = {
 export const MAINNET_LP_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_LP_MAINNET,
     masterVersion: EVAA_LP_MAINNET_VERSION,
+    masterConstants: MASTER_CONSTANTS,
+    collector: new ClassicCollector({
+        poolAssetsConfig: MAINNET_LP_POOL_ASSETS_CONFIG,
+        minimalOracles: 3,
+        evaaOracles: ORACLES_LP,
+    }),
+    poolAssetsConfig: MAINNET_LP_POOL_ASSETS_CONFIG,
+    lendingCode: LENDING_CODE,
+};
+
+export const MAINNET_LP_POOL_COPY_CONFIG: PoolConfig = {
+    masterAddress: EVAA_LP_COPY_MAINNET,
+    masterVersion: EVAA_LP_COPY_MAINNET_VERSION,
     masterConstants: MASTER_CONSTANTS,
     collector: new ClassicCollector({
         poolAssetsConfig: MAINNET_LP_POOL_ASSETS_CONFIG,
