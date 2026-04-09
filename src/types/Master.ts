@@ -23,11 +23,18 @@ export type PoolAssetConfig = {
     jettonWalletCode: Cell;
 };
 
+export type PoolAssetHEConfig = {
+    title: string;
+    assets: PoolAssetConfig[];
+    heCategory: number;
+};
+
 export type PoolConfig = {
     masterAddress: Address;
     masterVersion: number;
     masterConstants: MasterConstants;
     poolAssetsConfig: PoolAssetConfig[];
+    poolAssetsHEConfig: PoolAssetHEConfig[];
     lendingCode: Cell;
     collector: AbstractCollector;
 };
@@ -66,8 +73,8 @@ export type AssetConfig = {
     baseTrackingBorrowSpeed: bigint;
     borrowCap: number | bigint;
     heCategory: number;
-    heCollateralFactor: number;
-    heLiquidationThreshold: number;
+    heCollateralFactor: bigint;
+    heLiquidationThreshold: bigint;
 };
 
 export type AssetData = {

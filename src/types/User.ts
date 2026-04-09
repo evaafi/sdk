@@ -1,4 +1,4 @@
-import { Address, Cell, Dictionary } from '@ton/core';
+import { Address, Cell, Dictionary, ExternalAddress } from '@ton/core';
 import {
     AssetConfig,
     AssetData,
@@ -43,8 +43,8 @@ export type LiquidationData = LiquidableData | NonLiquidableData;
 export type UserLiteData = {
     type: 'active';
     codeVersion: number;
-    masterAddress: Address;
-    ownerAddress: Address;
+    masterAddress: Address | ExternalAddress | null;
+    ownerAddress: Address | ExternalAddress | null;
     principals: Dictionary<bigint, bigint>;
     realPrincipals: Dictionary<bigint, bigint>; // principals before applying dusts
     state: number;
@@ -62,15 +62,19 @@ export type UserLiteData = {
 export type UserDataActive = UserLiteData & {
     withdrawalLimits: Dictionary<bigint, bigint>;
     borrowLimits: Dictionary<bigint, bigint>;
+    borrowLimitsWithEmode: Dictionary<bigint, bigint>;
     repayLimits?: Dictionary<bigint, bigint>;
     supplyBalance: bigint;
     borrowBalance: bigint;
     availableToBorrow: bigint;
+    availableToBorrowWithEmode: bigint;
     limitUsedPercent: number;
     limitUsed: bigint;
     healthFactor: number;
     liquidationData: LiquidationData;
     havePrincipalWithoutPrice: boolean;
+    predictedHeCategory: number;
+    activeHeCategory: number;
 };
 
 export type UserDataInactive = {

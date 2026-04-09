@@ -30,6 +30,10 @@ export const ASSET_ID = {
     PT_tsUSDe_01Sep2025: sha256Hash('PT_tsUSDe_01Sep2025'),
     PT_tsUSDe_18Dec2025: sha256Hash('PT_tsUSDe_18Dec2025'),
 
+    // Mainnet test assets
+    TUSDT: sha256Hash('TUSDT'),
+    TUSDe: sha256Hash('TUSDe'),
+
     // Testnet assets, faucet t.me/evaabuidl
     EUSDT: sha256Hash('EUSDT'),
     EUSDC: sha256Hash('EUSDC'),
