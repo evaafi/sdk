@@ -664,11 +664,35 @@ export function calculateHealthParams(parameters: HealthParamsArgs) {
     const { principals, prices, assetsData, assetsConfig, poolConfig } = parameters;
 
     const { ASSET_LIQUIDATION_THRESHOLD_SCALE } = poolConfig.masterConstants;
-    const activeHeCategory = determineHeCategory(assetsConfig, principals, poolConfig);
+    let activeHeCategory = determineHeCategory(assetsConfig, principals, poolConfig);
 
     let totalSupply = 0n;
     let totalDebt = 0n;
     let totalLimit = 0n;
+
+    // Check if borrow actually exceeds standard limit before applying HE mode
+    if (activeHeCategory > 0) {
+        let standardBorrowLimit = 0n;
+        let totalBorrow = 0n;
+        for (const asset of poolConfig.poolAssetsConfig) {
+            if (!principals.has(asset.assetId)) continue;
+            const assetPrincipal = principals.get(asset.assetId)!;
+            const assetConfig = assetsConfig.get(asset.assetId)!;
+            const assetData = assetsData.get(asset.assetId)!;
+            if (!prices.has(asset.assetId)) continue;
+            const assetPrice = prices.get(asset.assetId)!;
+            const assetBalance = presentValue(assetData.sRate, assetData.bRate, assetPrincipal, poolConfig.masterConstants);
+            const assetWorth = (assetBalance.amount * assetPrice) / 10n ** assetConfig.decimals;
+            if (assetBalance.type === BalanceType.supply) {
+                standardBorrowLimit += (assetWorth * assetConfig.collateralFactor) / poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE;
+            } else if (assetBalance.type === BalanceType.borrow && assetConfig.dust < assetBalance.amount) {
+                totalBorrow += assetWorth;
+            }
+        }
+        if (totalBorrow <= standardBorrowLimit) {
+            activeHeCategory = -1;
+        }
+    }
 
     for (const asset of poolConfig.poolAssetsConfig) {
         if (!principals.has(asset.assetId)) continue;
