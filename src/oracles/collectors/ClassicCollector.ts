@@ -1,7 +1,7 @@
 import { Dictionary } from '@ton/core';
 import { checkNotInDebtAtAll } from '../../api/math';
 import { ExtendedEvaaOracle, PoolAssetConfig } from '../../types/Master';
-import { FetchConfig, proxyFetchRetries } from '../../utils/utils';
+import { FetchConfig } from '../../utils/utils';
 import { ClassicPrices, ClassicPricesMode, ClassicPricesOffset } from '../prices/ClassicPrices';
 import { PriceSource } from '../sources';
 import { DefaultPriceSourcesConfig, PriceSourcesConfig, RawPriceData } from '../Types';
@@ -181,20 +181,16 @@ export class ClassicCollector extends AbstractCollector {
     }
 
     async #collectPrices(fetchConfig?: FetchConfig): Promise<boolean> {
-        for (const priceSource of this.#priceSources) {
-            try {
-                this.#prices = await proxyFetchRetries(
-                    () => collectAndFilterPrices(priceSource, this.#minimalOracles, fetchConfig),
-                    fetchConfig,
-                );
-                return true;
-            } catch (error) {
-                // Try next source
-                continue;
-            }
+        try {
+            this.#prices = await Promise.any(
+                this.#priceSources.map((source) =>
+                    collectAndFilterPrices(source, this.#minimalOracles, fetchConfig),
+                ),
+            );
+            return true;
+        } catch {
+            return false;
         }
-
-        return false;
     }
 
     async #collectPricesWithValidation(fetchConfig?: FetchConfig): Promise<void> {

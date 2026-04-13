@@ -180,6 +180,32 @@ export function checkNotInDebtAtAll(principals: Dictionary<bigint, bigint>): boo
     return principals.values().every((x) => x >= 0n);
 }
 
+export function exceedsStandardBorrowLimit(
+    principals: Dictionary<bigint, bigint>,
+    assetsConfig: ExtendedAssetsConfig,
+    assetsData: ExtendedAssetsData,
+    prices: Dictionary<bigint, bigint>,
+    masterConstants: MasterConstants,
+): boolean {
+    let standardBorrowLimit = 0n;
+    let totalBorrow = 0n;
+    for (const [assetId, principal] of principals) {
+        if (principal === 0n) continue;
+        const assetConfig = assetsConfig.get(assetId);
+        const assetData = assetsData.get(assetId);
+        if (!assetConfig || !assetData || !prices.has(assetId)) continue;
+        const price = prices.get(assetId)!;
+        const assetBalance = presentValue(assetData.sRate, assetData.bRate, principal, masterConstants);
+        const assetWorth = (assetBalance.amount * price) / 10n ** assetConfig.decimals;
+        if (assetBalance.type === BalanceType.supply) {
+            standardBorrowLimit += (assetWorth * assetConfig.collateralFactor) / masterConstants.ASSET_COEFFICIENT_SCALE;
+        } else if (assetBalance.type === BalanceType.borrow && assetConfig.dust < assetBalance.amount) {
+            totalBorrow += assetWorth;
+        }
+    }
+    return totalBorrow > standardBorrowLimit;
+}
+
 export function determineHeCategory(
     assetsConfig: ExtendedAssetsConfig,
     principals: Dictionary<bigint, bigint>,
@@ -231,8 +257,13 @@ export function calculateRepayToExitEMode(
     repayAmounts: Dictionary<bigint, bigint>;
     enoughPriceData: boolean;
 } {
-    const activeHeCategory = determineHeCategory(assetsConfig, principals, poolConfig);
     const repayAmounts = Dictionary.empty<bigint, bigint>();
+
+    const heCategoryRaw = determineHeCategory(assetsConfig, principals, poolConfig);
+    const activeHeCategory =
+        heCategoryRaw > 0 && exceedsStandardBorrowLimit(principals, assetsConfig, assetsData, prices, poolConfig.masterConstants)
+            ? heCategoryRaw
+            : -1;
 
     if (activeHeCategory <= 0) {
         return { activeHeCategory: -1, requiredRepayInUsd: 0n, repayAmounts, enoughPriceData: true };
@@ -400,7 +431,10 @@ export function getAvailableToBorrowWithEMode(
         return borrowLimit - borrowAmount;
     };
 
-    const activeHeCategory = determineHeCategory(assetsConfig, principals, poolConfig);
+    let activeHeCategory = determineHeCategory(assetsConfig, principals, poolConfig);
+    if (activeHeCategory > 0 && !exceedsStandardBorrowLimit(principals, assetsConfig, assetsData, prices, masterConstants)) {
+        activeHeCategory = -1;
+    }
     if (activeHeCategory > 0) {
         return {
             availableToBorrow: calculateForHeCategory(activeHeCategory),
@@ -670,28 +704,8 @@ export function calculateHealthParams(parameters: HealthParamsArgs) {
     let totalDebt = 0n;
     let totalLimit = 0n;
 
-    // Check if borrow actually exceeds standard limit before applying HE mode
-    if (activeHeCategory > 0) {
-        let standardBorrowLimit = 0n;
-        let totalBorrow = 0n;
-        for (const asset of poolConfig.poolAssetsConfig) {
-            if (!principals.has(asset.assetId)) continue;
-            const assetPrincipal = principals.get(asset.assetId)!;
-            const assetConfig = assetsConfig.get(asset.assetId)!;
-            const assetData = assetsData.get(asset.assetId)!;
-            if (!prices.has(asset.assetId)) continue;
-            const assetPrice = prices.get(asset.assetId)!;
-            const assetBalance = presentValue(assetData.sRate, assetData.bRate, assetPrincipal, poolConfig.masterConstants);
-            const assetWorth = (assetBalance.amount * assetPrice) / 10n ** assetConfig.decimals;
-            if (assetBalance.type === BalanceType.supply) {
-                standardBorrowLimit += (assetWorth * assetConfig.collateralFactor) / poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE;
-            } else if (assetBalance.type === BalanceType.borrow && assetConfig.dust < assetBalance.amount) {
-                totalBorrow += assetWorth;
-            }
-        }
-        if (totalBorrow <= standardBorrowLimit) {
-            activeHeCategory = -1;
-        }
+    if (activeHeCategory > 0 && !exceedsStandardBorrowLimit(principals, assetsConfig, assetsData, prices, poolConfig.masterConstants)) {
+        activeHeCategory = -1;
     }
 
     for (const asset of poolConfig.poolAssetsConfig) {
@@ -765,7 +779,10 @@ export function calculateLiquidationData(
     let totalDebt = 0n;
     let totalLimit = 0n;
 
-    const activeHeCategory = determineHeCategory(assetsConfig, principals, poolConfig);
+    let activeHeCategory = determineHeCategory(assetsConfig, principals, poolConfig);
+    if (activeHeCategory > 0 && !exceedsStandardBorrowLimit(principals, assetsConfig, assetsData, prices, poolConfig.masterConstants)) {
+        activeHeCategory = -1;
+    }
 
     const { ASSET_SRATE_SCALE, ASSET_BRATE_SCALE, COLLATERAL_WORTH_THRESHOLD } = poolConfig.masterConstants;
 

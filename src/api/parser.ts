@@ -20,6 +20,7 @@ import {
     calculateMaximumWithdrawAmount,
     calculatePresentValue,
     determineHeCategory,
+    exceedsStandardBorrowLimit,
     getAssetLiquidityMinusReserves,
     getAvailableToBorrow,
     getAvailableToBorrowWithEMode,
@@ -399,7 +400,10 @@ export function parseUserData(
             masterConstants,
             poolConfig,
         );
-    const activeHeCategory = determineHeCategory(assetsConfig, userLiteData.realPrincipals, poolConfig);
+    let activeHeCategory = determineHeCategory(assetsConfig, userLiteData.realPrincipals, poolConfig);
+    if (activeHeCategory > 0 && !exceedsStandardBorrowLimit(userLiteData.realPrincipals, assetsConfig, assetsData, prices, masterConstants)) {
+        activeHeCategory = -1;
+    }
 
     for (const [_, asset] of Object.entries(poolAssetsConfig)) {
         const balance = userLiteData.balances.get(asset.assetId) as UserBalance;
