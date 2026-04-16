@@ -9,6 +9,10 @@ export const MAINNET_VERSION = 10;
 export const EVAA_LP_MAINNET = Address.parse('EQBIlZX2URWkXCSg3QF2MJZU-wC5XkBoLww-hdWk2G37Jc6N');
 export const EVAA_LP_MAINNET_VERSION = 6;
 
+/* LP POOL COPY */
+export const EVAA_LP_COPY_MAINNET = Address.parse('EQA8H9nNHly7yJ32UmUDzH97Je2l8bAI6P74yKIIwPwKKXrz');
+export const EVAA_LP_COPY_MAINNET_VERSION = 0;
+
 /* ALTS POOL */
 export const EVAA_ALTS_MAINNET = Address.parse('EQANURVS3fhBO9bivig34iyJQi97FhMbpivo1aUEAS2GYSu-');
 export const EVAA_ALTS_MAINNET_VERSION = 4;

@@ -19,8 +19,11 @@ import {
     calculateLiquidationData,
     calculateMaximumWithdrawAmount,
     calculatePresentValue,
+    determineHeCategory,
+    exceedsStandardBorrowLimit,
     getAssetLiquidityMinusReserves,
     getAvailableToBorrow,
+    getAvailableToBorrowWithEMode,
     presentValue,
 } from './math';
 import { OracleParser } from './parsers/AbstractOracleParser';
@@ -130,8 +133,8 @@ export function createAssetConfig(): DictionaryValue<AssetConfig> {
             const baseTrackingBorrowSpeed = ref.loadUintBig(64);
             const borrowCap = ref.loadInt(64);
             const heCategory = ref.loadUint(8);
-            const heCollateralFactor = ref.loadUint(16);
-            const heLiquidationThreshold = ref.loadUint(16);
+            const heCollateralFactor = ref.loadUintBig(16);
+            const heLiquidationThreshold = ref.loadUintBig(16);
 
             return {
                 jwAddress,
@@ -242,8 +245,8 @@ export function parseUserLiteData(
     const userSlice = Cell.fromBase64(userDataBOC).beginParse();
 
     const codeVersion = userSlice.loadCoins();
-    const masterAddress = userSlice.loadAddress();
-    const userAddress = userSlice.loadAddress();
+    const masterAddress = userSlice.loadAddressAny();
+    const userAddress = userSlice.loadAddressAny();
     const realPrincipals = userSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.BigInt(64));
     const principalsDict = Dictionary.empty(Dictionary.Keys.BigUint(256), Dictionary.Values.BigInt(64));
     const userState = userSlice.loadInt(64);
@@ -256,18 +259,26 @@ export function parseUserLiteData(
     let backupCell1: Cell | null = null;
     let backupCell2: Cell | null = null;
     const bitsLeft = userSlice.remainingBits;
-    if (bitsLeft > 32) {
+    const refsLeft = userSlice.remainingRefs;
+    if (bitsLeft === 0 && refsLeft === 0) {
+        // Init format: no extra data after state
+    } else if (bitsLeft >= 64 + 64 + 32 && refsLeft >= 1) {
+        // Old format with tracking indexes
         trackingSupplyIndex = userSlice.loadUintBig(64);
         trackingBorrowIndex = userSlice.loadUintBig(64);
         dutchAuctionStart = userSlice.loadUint(32);
         backupCell = loadMyRef(userSlice);
-    } else {
+    } else if (bitsLeft >= 3 && refsLeft >= 1) {
+        // New format with rewards dict + maybe_refs
         rewards = userSlice.loadDict(Dictionary.Keys.BigUint(256), createUserRewards());
-        backupCell1 = userSlice.loadMaybeRef();
-        backupCell2 = userSlice.loadMaybeRef();
+        if (userSlice.remainingBits >= 2) {
+            backupCell1 = userSlice.loadMaybeRef();
+            backupCell2 = userSlice.loadMaybeRef();
+        }
     }
 
-    userSlice.endParse();
+    // Skip remaining data if any (for forward compatibility)
+    // userSlice.endParse();
     const userBalances = Dictionary.empty<bigint, UserBalance>();
 
     for (const [_, asset] of Object.entries(poolAssetsConfig)) {
@@ -327,6 +338,7 @@ export function parseUserData(
 
     const withdrawalLimits = Dictionary.empty<bigint, bigint>();
     const borrowLimits = Dictionary.empty<bigint, bigint>();
+    const borrowLimitsWithEmode = Dictionary.empty<bigint, bigint>();
 
     let supplyBalance = 0n;
     let borrowBalance = 0n;
@@ -379,6 +391,19 @@ export function parseUserData(
         prices,
         masterConstants,
     );
+    const { availableToBorrow: availableToBorrowWithEmode, heCategory: predictedHeCategory } =
+        getAvailableToBorrowWithEMode(
+            assetsConfig,
+            assetsData,
+            userLiteData.realPrincipals,
+            prices,
+            masterConstants,
+            poolConfig,
+        );
+    let activeHeCategory = determineHeCategory(assetsConfig, userLiteData.realPrincipals, poolConfig);
+    if (activeHeCategory > 0 && !exceedsStandardBorrowLimit(userLiteData.realPrincipals, assetsConfig, assetsData, prices, masterConstants)) {
+        activeHeCategory = -1;
+    }
 
     for (const [_, asset] of Object.entries(poolAssetsConfig)) {
         const balance = userLiteData.balances.get(asset.assetId) as UserBalance;
@@ -396,7 +421,7 @@ export function parseUserData(
                         assetsData,
                         userLiteData.realPrincipals,
                         prices,
-                        masterConstants,
+                        poolConfig,
                         asset.assetId,
                     ),
                     assetData.balance,
@@ -406,6 +431,7 @@ export function parseUserData(
 
         if (!prices.has(asset.assetId)) {
             borrowLimits.set(asset.assetId, 0n);
+            borrowLimitsWithEmode.set(asset.assetId, 0n);
             continue;
         }
 
@@ -419,13 +445,27 @@ export function parseUserData(
                 ),
             ),
         );
+
+        borrowLimitsWithEmode.set(
+            asset.assetId,
+            bigIntMax(
+                0n,
+                bigIntMin(
+                    (availableToBorrowWithEmode * 10n ** assetConfig.decimals) / prices.get(asset.assetId)!,
+                    assetLiquidityMinusReserves,
+                ),
+            ),
+        );
     }
 
-    const limitUsed = borrowBalance + availableToBorrow;
+    const limitUsed = borrowBalance + availableToBorrowWithEmode;
     const limitUsedPercent =
         limitUsed === 0n
             ? 0
-            : Number(BigInt(1e9) - (availableToBorrow * BigInt(1e9)) / (borrowBalance + availableToBorrow)) / 1e7;
+            : Number(
+                  BigInt(1e9) -
+                      (availableToBorrowWithEmode * BigInt(1e9)) / (borrowBalance + availableToBorrowWithEmode),
+              ) / 1e7;
 
     let healthFactor = 1;
     let liquidationData;
@@ -441,17 +481,22 @@ export function parseUserData(
             healthFactor = 1 - Number(liquidationData.totalDebt) / Number(liquidationData.totalLimit);
         }
     }
+
     return {
         ...userLiteData,
         withdrawalLimits: withdrawalLimits,
         borrowLimits: borrowLimits,
+        borrowLimitsWithEmode: borrowLimitsWithEmode,
         supplyBalance: supplyBalance,
         borrowBalance: borrowBalance,
         availableToBorrow: availableToBorrow,
+        availableToBorrowWithEmode: availableToBorrowWithEmode,
+        predictedHeCategory: predictedHeCategory,
         limitUsedPercent: limitUsedPercent,
         limitUsed: limitUsed,
         liquidationData: liquidationData,
         healthFactor: healthFactor,
         havePrincipalWithoutPrice: havePrincipalWithoutPrice,
+        activeHeCategory: activeHeCategory,
     };
 }

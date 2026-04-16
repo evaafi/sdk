@@ -1,6 +1,5 @@
 import { Dictionary } from '@ton/core';
-import { UNDEFINED_ASSET } from '../constants/assets';
-import {
+import type {
     AgregatedBalances,
     AssetApy,
     AssetConfig,
@@ -12,14 +11,18 @@ import {
     MasterConstants,
     PoolConfig,
 } from '../types/Master';
+import { UNDEFINED_ASSET } from '../constants/assets';
 import {
     BalanceChangeType,
     BalanceType,
-    HealthParamsArgs,
-    LiquidationData,
-    PredictAPYArgs,
-    PredictHealthFactorArgs,
-    UserBalance,
+    UserData,
+    UserDataActive,
+    UserLiteData,
+    type HealthParamsArgs,
+    type LiquidationData,
+    type PredictAPYArgs,
+    type PredictHealthFactorArgs,
+    type UserBalance,
 } from '../types/User';
 import { addReserve, isBadDebt } from './liquidation';
 
@@ -177,6 +180,309 @@ export function checkNotInDebtAtAll(principals: Dictionary<bigint, bigint>): boo
     return principals.values().every((x) => x >= 0n);
 }
 
+export function exceedsStandardBorrowLimit(
+    principals: Dictionary<bigint, bigint>,
+    assetsConfig: ExtendedAssetsConfig,
+    assetsData: ExtendedAssetsData,
+    prices: Dictionary<bigint, bigint>,
+    masterConstants: MasterConstants,
+): boolean {
+    let standardBorrowLimit = 0n;
+    let totalBorrow = 0n;
+    for (const [assetId, principal] of principals) {
+        if (principal === 0n) continue;
+        const assetConfig = assetsConfig.get(assetId);
+        const assetData = assetsData.get(assetId);
+        if (!assetConfig || !assetData || !prices.has(assetId)) continue;
+        const price = prices.get(assetId)!;
+        const assetBalance = presentValue(assetData.sRate, assetData.bRate, principal, masterConstants);
+        const assetWorth = (assetBalance.amount * price) / 10n ** assetConfig.decimals;
+        if (assetBalance.type === BalanceType.supply) {
+            standardBorrowLimit += (assetWorth * assetConfig.collateralFactor) / masterConstants.ASSET_COEFFICIENT_SCALE;
+        } else if (assetBalance.type === BalanceType.borrow && assetConfig.dust < assetBalance.amount) {
+            totalBorrow += assetWorth;
+        }
+    }
+    return totalBorrow > standardBorrowLimit;
+}
+
+export function determineHeCategory(
+    assetsConfig: ExtendedAssetsConfig,
+    principals: Dictionary<bigint, bigint>,
+    poolConfig?: PoolConfig,
+): number {
+    const heCategoryByAssetId = new Map<bigint, number>();
+    if (poolConfig) {
+        for (const heConfig of poolConfig.poolAssetsHEConfig) {
+            for (const asset of heConfig.assets) {
+                heCategoryByAssetId.set(asset.assetId, heConfig.heCategory);
+            }
+        }
+    }
+
+    let heCategory = -1;
+
+    for (const [assetID, principal] of principals) {
+        if (principal >= 0n) {
+            continue;
+        }
+
+        const heCategoryForAsset = heCategoryByAssetId.get(assetID) ?? assetsConfig.get(assetID)?.heCategory ?? 0;
+        if (heCategoryForAsset <= 0) {
+            return -1;
+        }
+
+        if (heCategory === -1) {
+            heCategory = heCategoryForAsset;
+            continue;
+        }
+
+        if (heCategory !== heCategoryForAsset) {
+            return -1;
+        }
+    }
+
+    return heCategory > 0 ? heCategory : -1;
+}
+
+export function calculateRepayToExitEMode(
+    assetsConfig: ExtendedAssetsConfig,
+    assetsData: ExtendedAssetsData,
+    principals: Dictionary<bigint, bigint>,
+    prices: Dictionary<bigint, bigint>,
+    poolConfig: PoolConfig,
+): {
+    activeHeCategory: number;
+    requiredRepayInUsd: bigint;
+    repayAmounts: Dictionary<bigint, bigint>;
+    enoughPriceData: boolean;
+} {
+    const repayAmounts = Dictionary.empty<bigint, bigint>();
+
+    const heCategoryRaw = determineHeCategory(assetsConfig, principals, poolConfig);
+    const activeHeCategory =
+        heCategoryRaw > 0 && exceedsStandardBorrowLimit(principals, assetsConfig, assetsData, prices, poolConfig.masterConstants)
+            ? heCategoryRaw
+            : -1;
+
+    if (activeHeCategory <= 0) {
+        return { activeHeCategory: -1, requiredRepayInUsd: 0n, repayAmounts, enoughPriceData: true };
+    }
+
+    const availableToBorrowStandard = getAvailableToBorrow(
+        assetsConfig,
+        assetsData,
+        principals,
+        prices,
+        poolConfig.masterConstants,
+    );
+    const requiredRepayInUsd = bigIntMax(0n, -availableToBorrowStandard);
+
+    if (requiredRepayInUsd === 0n) {
+        return {
+            activeHeCategory,
+            requiredRepayInUsd,
+            repayAmounts,
+            enoughPriceData: true,
+        };
+    }
+
+    let totalDebtWorth = 0n;
+    const debtEntries: Array<{
+        assetID: bigint;
+        debtAmount: bigint;
+        debtWorth: bigint;
+        decimals: bigint;
+        price: bigint;
+    }> = [];
+
+    for (const [assetID, principal] of principals) {
+        if (principal >= 0n) {
+            continue;
+        }
+
+        if (!prices.has(assetID)) {
+            return {
+                activeHeCategory,
+                requiredRepayInUsd,
+                repayAmounts: Dictionary.empty<bigint, bigint>(),
+                enoughPriceData: false,
+            };
+        }
+
+        const assetConfig = assetsConfig.get(assetID);
+        const assetData = assetsData.get(assetID);
+        if (!assetData || !assetConfig) {
+            continue;
+        }
+
+        const price = prices.get(assetID)!;
+        const debtAmount = calculatePresentValue(assetData.bRate, -principal, poolConfig.masterConstants);
+        const debtWorth = mulDiv(debtAmount, price, 10n ** assetConfig.decimals);
+
+        totalDebtWorth += debtWorth;
+        debtEntries.push({ assetID, debtAmount, debtWorth, decimals: assetConfig.decimals, price });
+    }
+
+    if (totalDebtWorth === 0n) {
+        return {
+            activeHeCategory,
+            requiredRepayInUsd,
+            repayAmounts,
+            enoughPriceData: true,
+        };
+    }
+
+    let distributedRepayWorth = 0n;
+    debtEntries.forEach((entry, index) => {
+        const repayWorth =
+            index === debtEntries.length - 1
+                ? requiredRepayInUsd - distributedRepayWorth
+                : mulDiv(requiredRepayInUsd, entry.debtWorth, totalDebtWorth);
+
+        distributedRepayWorth += repayWorth;
+
+        const repayAmount = bigIntMin(entry.debtAmount, mulDivC(repayWorth, 10n ** entry.decimals, entry.price));
+        if (repayAmount > 0n) {
+            repayAmounts.set(entry.assetID, repayAmount);
+        }
+    });
+
+    if (distributedRepayWorth < requiredRepayInUsd && debtEntries.length > 0) {
+        const lastEntry = debtEntries[debtEntries.length - 1];
+        const currentRepayAmount = repayAmounts.get(lastEntry.assetID) ?? 0n;
+        if (currentRepayAmount < lastEntry.debtAmount) {
+            repayAmounts.set(lastEntry.assetID, bigIntMin(lastEntry.debtAmount, currentRepayAmount + 1n));
+        }
+    }
+
+    return {
+        activeHeCategory,
+        requiredRepayInUsd,
+        repayAmounts,
+        enoughPriceData: true,
+    };
+}
+
+export function getAvailableToBorrowWithEMode(
+    assetsConfig: ExtendedAssetsConfig,
+    assetsData: ExtendedAssetsData,
+    principals: Dictionary<bigint, bigint>,
+    prices: Dictionary<bigint, bigint>,
+    masterConstants: MasterConstants,
+    poolConfig?: PoolConfig,
+): { availableToBorrow: bigint; heCategory: number } {
+    const heCategoryByAssetId = new Map<bigint, number>();
+    if (poolConfig) {
+        for (const heConfig of poolConfig.poolAssetsHEConfig) {
+            for (const asset of heConfig.assets) {
+                heCategoryByAssetId.set(asset.assetId, heConfig.heCategory);
+            }
+        }
+    }
+
+    const calculateForHeCategory = (heCategory: number): bigint => {
+        let borrowLimit = 0n;
+        let borrowAmount = 0n;
+
+        for (const assetID of principals.keys()) {
+            const principal = principals.get(assetID) as bigint;
+
+            if (principal == 0n) {
+                continue;
+            }
+
+            if (!prices.has(assetID)) {
+                return 0n;
+            }
+
+            const assetConfig = assetsConfig.get(assetID) as AssetConfig;
+            const assetData = assetsData.get(assetID) as ExtendedAssetData;
+            const price = prices.get(assetID) as bigint;
+
+            if (principal < 0n) {
+                borrowAmount += mulDivC(
+                    calculatePresentValue(assetData.bRate, -principal, masterConstants),
+                    price,
+                    10n ** assetConfig.decimals,
+                );
+            } else {
+                const suppliedAssetInDollars = mulDiv(
+                    calculatePresentValue(assetData.sRate, principal, masterConstants),
+                    price,
+                    10n ** assetConfig.decimals,
+                );
+
+                const heCategoryForAsset = heCategoryByAssetId.get(assetID) ?? assetConfig.heCategory;
+
+                const collateralFactor =
+                    heCategory > 0 && heCategoryForAsset === heCategory
+                        ? assetConfig.heCollateralFactor
+                        : assetConfig.collateralFactor;
+
+                borrowLimit += mulDiv(
+                    suppliedAssetInDollars,
+                    collateralFactor,
+                    masterConstants.ASSET_COEFFICIENT_SCALE,
+                );
+            }
+        }
+
+        return borrowLimit - borrowAmount;
+    };
+
+    const activeHeCategory = determineHeCategory(assetsConfig, principals, poolConfig);
+    if (activeHeCategory > 0) {
+        return {
+            availableToBorrow: calculateForHeCategory(activeHeCategory),
+            heCategory: activeHeCategory,
+        };
+    }
+
+    const availableToBorrowWithoutEmode = calculateForHeCategory(0);
+    if (!checkNotInDebtAtAll(principals)) {
+        return {
+            availableToBorrow: availableToBorrowWithoutEmode,
+            heCategory: 0,
+        };
+    }
+
+    const availableHeCategories = new Set<number>();
+    if (poolConfig && poolConfig.poolAssetsHEConfig.length > 0) {
+        for (const heConfig of poolConfig.poolAssetsHEConfig) {
+            const hasSupplyInCategory = heConfig.assets.some((asset) => (principals.get(asset.assetId) ?? 0n) > 0n);
+            if (hasSupplyInCategory && heConfig.heCategory > 0) {
+                availableHeCategories.add(heConfig.heCategory);
+            }
+        }
+    } else {
+        for (const [assetID, principal] of principals) {
+            if (principal <= 0n) {
+                continue;
+            }
+            const heCategory = (assetsConfig.get(assetID) as AssetConfig).heCategory;
+            if (heCategory > 0) {
+                availableHeCategories.add(heCategory);
+            }
+        }
+    }
+
+    let bestHeCategory = 0;
+    let bestAvailableToBorrow = availableToBorrowWithoutEmode;
+    for (const heCategory of availableHeCategories) {
+        const availableToBorrow = calculateForHeCategory(heCategory);
+        if (availableToBorrow > bestAvailableToBorrow) {
+            bestAvailableToBorrow = availableToBorrow;
+            bestHeCategory = heCategory;
+        }
+    }
+
+    return {
+        availableToBorrow: bestAvailableToBorrow,
+        heCategory: bestHeCategory,
+    };
+}
+
 export function getAgregatedBalances(
     assetsData: ExtendedAssetsData,
     assetsConfig: ExtendedAssetsConfig,
@@ -215,7 +521,7 @@ export function calculateMaximumWithdrawAmount(
     assetsData: ExtendedAssetsData,
     principals: Dictionary<bigint, bigint>,
     prices: Dictionary<bigint, bigint>,
-    masterConstants: MasterConstants,
+    poolConfig: PoolConfig,
     assetId: bigint,
 ): bigint {
     let withdrawAmountMax = 0n;
@@ -225,7 +531,12 @@ export function calculateMaximumWithdrawAmount(
     const oldPrincipal = principals.get(assetId) as bigint;
 
     if (oldPrincipal > assetConfig.dust) {
-        const oldPresentValue = presentValue(assetData.sRate, assetData.bRate, oldPrincipal, masterConstants);
+        const oldPresentValue = presentValue(
+            assetData.sRate,
+            assetData.bRate,
+            oldPrincipal,
+            poolConfig.masterConstants,
+        );
         if (checkNotInDebtAtAll(principals)) {
             withdrawAmountMax = oldPresentValue.amount;
         } else {
@@ -233,7 +544,13 @@ export function calculateMaximumWithdrawAmount(
                 return 0n;
             }
 
-            const borrowable = getAvailableToBorrow(assetsConfig, assetsData, principals, prices, masterConstants);
+            const borrowable = getAvailableToBorrow(
+                assetsConfig,
+                assetsData,
+                principals,
+                prices,
+                poolConfig.masterConstants,
+            );
             const price = prices.get(assetId) as bigint;
 
             let maxAmountToReclaim = 0n;
@@ -241,14 +558,28 @@ export function calculateMaximumWithdrawAmount(
             if (assetConfig.collateralFactor == 0n) {
                 maxAmountToReclaim = oldPresentValue.amount;
             } else if (price > 0) {
+                const { availableToBorrow: borrowable, heCategory } = getAvailableToBorrowWithEMode(
+                    assetsConfig,
+                    assetsData,
+                    principals,
+                    prices,
+                    poolConfig.masterConstants,
+                    poolConfig,
+                );
+
+                const collateralFactor =
+                    heCategory > 0 && assetConfig.heCategory === heCategory
+                        ? assetConfig.heCollateralFactor
+                        : assetConfig.collateralFactor;
+
                 maxAmountToReclaim = bigIntMax(
                     0n,
                     mulDiv(
-                        mulDiv(borrowable, masterConstants.ASSET_COEFFICIENT_SCALE, assetConfig.collateralFactor),
+                        mulDiv(borrowable, poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE, collateralFactor),
                         10n ** assetConfig.decimals,
                         price,
                     ) -
-                        calculatePresentValue(assetData.sRate, assetConfig.dust, masterConstants) / 2n,
+                        calculatePresentValue(assetData.sRate, assetConfig.dust, poolConfig.masterConstants) / 2n,
                 );
             }
 
@@ -262,7 +593,14 @@ export function calculateMaximumWithdrawAmount(
         const price = prices.get(assetId) as bigint;
 
         return (
-            (getAvailableToBorrow(assetsConfig, assetsData, principals, prices, masterConstants) *
+            (getAvailableToBorrowWithEMode(
+                assetsConfig,
+                assetsData,
+                principals,
+                prices,
+                poolConfig.masterConstants,
+                poolConfig,
+            ).availableToBorrow *
                 10n ** assetConfig.decimals) /
             price
         );
@@ -357,10 +695,15 @@ export function calculateHealthParams(parameters: HealthParamsArgs) {
     const { principals, prices, assetsData, assetsConfig, poolConfig } = parameters;
 
     const { ASSET_LIQUIDATION_THRESHOLD_SCALE } = poolConfig.masterConstants;
+    let activeHeCategory = determineHeCategory(assetsConfig, principals, poolConfig);
 
     let totalSupply = 0n;
     let totalDebt = 0n;
     let totalLimit = 0n;
+
+    if (activeHeCategory > 0 && !exceedsStandardBorrowLimit(principals, assetsConfig, assetsData, prices, poolConfig.masterConstants)) {
+        activeHeCategory = -1;
+    }
 
     for (const asset of poolConfig.poolAssetsConfig) {
         if (!principals.has(asset.assetId)) continue;
@@ -380,8 +723,13 @@ export function calculateHealthParams(parameters: HealthParamsArgs) {
         const assetBalance = presentValue(sRate, bRate, assetPrincipal, poolConfig.masterConstants);
         const assetWorth = (assetBalance.amount * assetPrice) / assetScale;
         if (assetBalance.type === BalanceType.supply) {
+            const liquidationThreshold =
+                activeHeCategory > 0 && assetConfig.heCategory === activeHeCategory
+                    ? assetConfig.heLiquidationThreshold
+                    : assetConfig.liquidationThreshold;
+
             totalSupply += assetWorth;
-            totalLimit += (assetWorth * assetConfig.liquidationThreshold) / ASSET_LIQUIDATION_THRESHOLD_SCALE;
+            totalLimit += (assetWorth * liquidationThreshold) / ASSET_LIQUIDATION_THRESHOLD_SCALE;
         } else if (assetBalance.type === BalanceType.borrow && assetConfig.dust < assetBalance.amount) {
             totalDebt += assetWorth;
         }
@@ -399,6 +747,7 @@ export function calculateHealthParams(parameters: HealthParamsArgs) {
         totalDebt,
         totalLimit,
         totalSupply,
+        activeHeCategory,
         isLiquidatable: _isLiquidable,
         isBadDebt: _isBadDebt,
     };
@@ -427,6 +776,11 @@ export function calculateLiquidationData(
     let totalDebt = 0n;
     let totalLimit = 0n;
 
+    let activeHeCategory = determineHeCategory(assetsConfig, principals, poolConfig);
+    if (activeHeCategory > 0 && !exceedsStandardBorrowLimit(principals, assetsConfig, assetsData, prices, poolConfig.masterConstants)) {
+        activeHeCategory = -1;
+    }
+
     const { ASSET_SRATE_SCALE, ASSET_BRATE_SCALE, COLLATERAL_WORTH_THRESHOLD } = poolConfig.masterConstants;
 
     for (const asset of poolConfig.poolAssetsConfig) {
@@ -441,8 +795,12 @@ export function calculateLiquidationData(
 
         const assetWorth = (bigAbs(balance) * prices.get(asset.assetId)!) / 10n ** assetConfig.decimals;
         if (balance > 0) {
-            totalLimit +=
-                (assetWorth * assetConfig.liquidationThreshold) / poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE;
+            const liquidationThreshold =
+                activeHeCategory > 0 && assetConfig.heCategory === activeHeCategory
+                    ? assetConfig.heLiquidationThreshold
+                    : assetConfig.liquidationThreshold;
+
+            totalLimit += (assetWorth * liquidationThreshold) / poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE;
             // get the greatest collateral
             if (assetWorth > collateralValue) {
                 collateralValue = assetWorth;
@@ -516,46 +874,152 @@ export function calculateLiquidationData(
 }
 
 export function predictHealthFactor(args: PredictHealthFactorArgs): number {
-    const healthParams = calculateHealthParams(args);
+    const { principals, prices, assetsData, assetsConfig, poolConfig } = args;
     const assetId = args.asset.assetId;
-
-    const assetConfig = args.assetsConfig.get(assetId)!;
-    const assetPrice = Number(args.prices.get(assetId)!);
-
-    let totalLimit = Number(healthParams.totalLimit);
-    let totalBorrow = Number(healthParams.totalDebt);
-
+    const changeType = args.balanceChangeType;
     const currentAmount = args.amount;
 
-    const decimals = Number(assetConfig.decimals);
-
-    const currentBalance = (assetPrice * Number(currentAmount)) / Math.pow(10, decimals);
-    const changeType = args.balanceChangeType;
-
-    if (currentAmount != null && currentAmount != 0n) {
-        if (changeType == BalanceChangeType.Borrow) {
-            totalBorrow +=
-                currentBalance *
-                (1 +
-                    Number(assetConfig.originationFee) /
-                        Number(args.poolConfig.masterConstants.ASSET_ORIGINATION_FEE_SCALE));
-        } else if (changeType == BalanceChangeType.Repay) {
-            totalBorrow -= currentBalance;
-        } else if (changeType == BalanceChangeType.Withdraw) {
-            totalLimit -=
-                (currentBalance * Number(assetConfig.liquidationThreshold)) /
-                Number(args.poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE);
-        } else if (changeType == BalanceChangeType.Supply) {
-            totalLimit +=
-                (currentBalance * Number(assetConfig.liquidationThreshold)) /
-                Number(args.poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE);
+    const heCategoryByAssetId = new Map<bigint, number>();
+    for (const heConfig of poolConfig.poolAssetsHEConfig) {
+        for (const asset of heConfig.assets) {
+            heCategoryByAssetId.set(asset.assetId, heConfig.heCategory);
         }
     }
-    if (Number(totalLimit) == 0) {
-        return 1;
+
+    const projectedBalances = new Map<bigint, bigint>();
+
+    for (const asset of poolConfig.poolAssetsConfig) {
+        if (!principals.has(asset.assetId)) {
+            continue;
+        }
+
+        const assetPrincipal = principals.get(asset.assetId)!;
+        const assetConfig = assetsConfig.get(asset.assetId)!;
+        const assetData = assetsData.get(asset.assetId)!;
+        const balance = presentValue(assetData.sRate, assetData.bRate, assetPrincipal, poolConfig.masterConstants);
+
+        if (balance.type === BalanceType.supply) {
+            projectedBalances.set(asset.assetId, balance.amount);
+        } else if (balance.type === BalanceType.borrow) {
+            projectedBalances.set(asset.assetId, -balance.amount);
+        }
     }
 
-    return Math.min(Math.max(1 - totalBorrow / totalLimit, 0), 1); // let's limit a result to zero below and one above
+    if (currentAmount != null && currentAmount != 0n) {
+        const currentSignedBalance = projectedBalances.get(assetId) ?? 0n;
+        const actionAssetConfig = assetsConfig.get(assetId)!;
+        let newSignedBalance = currentSignedBalance;
+
+        if (changeType == BalanceChangeType.Borrow) {
+            const borrowWithFee =
+                currentAmount +
+                mulDivC(
+                    currentAmount,
+                    actionAssetConfig.originationFee,
+                    poolConfig.masterConstants.ASSET_ORIGINATION_FEE_SCALE,
+                );
+            newSignedBalance -= borrowWithFee;
+        } else if (changeType == BalanceChangeType.Repay) {
+            newSignedBalance += currentAmount;
+        } else if (changeType == BalanceChangeType.Withdraw) {
+            newSignedBalance -= currentAmount;
+        } else if (changeType == BalanceChangeType.Supply) {
+            newSignedBalance += currentAmount;
+        }
+
+        projectedBalances.set(assetId, newSignedBalance);
+    }
+
+    const getHeCategoryForAsset = (assetID: bigint, assetConfig: AssetConfig): number => {
+        return heCategoryByAssetId.get(assetID) ?? assetConfig.heCategory;
+    };
+
+    let projectedActiveHeCategory = -1;
+    for (const asset of poolConfig.poolAssetsConfig) {
+        const signedBalance = projectedBalances.get(asset.assetId) ?? 0n;
+        if (signedBalance >= 0n) {
+            continue;
+        }
+
+        const assetConfig = assetsConfig.get(asset.assetId)!;
+        const heCategory = getHeCategoryForAsset(asset.assetId, assetConfig);
+        if (heCategory <= 0) {
+            projectedActiveHeCategory = -1;
+            break;
+        }
+
+        if (projectedActiveHeCategory === -1) {
+            projectedActiveHeCategory = heCategory;
+            continue;
+        }
+
+        if (projectedActiveHeCategory !== heCategory) {
+            projectedActiveHeCategory = -1;
+            break;
+        }
+    }
+
+    const calculateProjectedHealthFactor = (heCategoryForCalculation: number): number => {
+        let totalLimit = 0n;
+        let totalBorrow = 0n;
+
+        for (const asset of poolConfig.poolAssetsConfig) {
+            const signedBalance = projectedBalances.get(asset.assetId) ?? 0n;
+            if (signedBalance === 0n) {
+                continue;
+            }
+
+            const assetConfig = assetsConfig.get(asset.assetId)!;
+            const price = prices.get(asset.assetId)!;
+            const assetWorth = (bigAbs(signedBalance) * price) / 10n ** assetConfig.decimals;
+
+            if (signedBalance > 0n) {
+                const heCategory = getHeCategoryForAsset(asset.assetId, assetConfig);
+                const liquidationThreshold =
+                    heCategoryForCalculation > 0 && heCategory === heCategoryForCalculation
+                        ? assetConfig.heLiquidationThreshold
+                        : assetConfig.liquidationThreshold;
+                totalLimit +=
+                    (assetWorth * liquidationThreshold) / poolConfig.masterConstants.ASSET_LIQUIDATION_THRESHOLD_SCALE;
+                continue;
+            }
+
+            const borrowAmount = -signedBalance;
+            if (borrowAmount > assetConfig.dust) {
+                totalBorrow += assetWorth;
+            }
+        }
+
+        if (totalLimit === 0n) {
+            return 1;
+        }
+
+        return Math.min(Math.max(1 - Number(totalBorrow) / Number(totalLimit), 0), 1);
+    };
+
+    if (projectedActiveHeCategory > 0) {
+        let standardBorrowLimit = 0n;
+        let projectedTotalBorrow = 0n;
+        for (const asset of poolConfig.poolAssetsConfig) {
+            const signedBalance = projectedBalances.get(asset.assetId) ?? 0n;
+            if (signedBalance === 0n) continue;
+            const assetConfig = assetsConfig.get(asset.assetId)!;
+            const price = prices.get(asset.assetId)!;
+            const assetWorth = (bigAbs(signedBalance) * price) / 10n ** assetConfig.decimals;
+            if (signedBalance > 0n) {
+                standardBorrowLimit +=
+                    (assetWorth * assetConfig.collateralFactor) /
+                    poolConfig.masterConstants.ASSET_COEFFICIENT_SCALE;
+            } else if (-signedBalance > assetConfig.dust) {
+                projectedTotalBorrow += assetWorth;
+            }
+        }
+
+        if (projectedTotalBorrow > standardBorrowLimit) {
+            return calculateProjectedHealthFactor(projectedActiveHeCategory);
+        }
+    }
+    return calculateProjectedHealthFactor(-1);
 }
 
 /**

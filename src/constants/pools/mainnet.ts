@@ -1,7 +1,7 @@
 import { HexString } from '@pythnetwork/hermes-client';
 import { Address, Dictionary } from '@ton/core';
 import { FEED_ID, FeedMapItem } from '../../api/feeds';
-import { ClassicCollector, DefaultPythPriceSourcesConfig, PythCollector } from '../../oracles';
+import { ClassicCollector, DefaultPythPriceSourcesConfig, FakeCollector, PythCollector } from '../../oracles';
 import { PoolConfig } from '../../types/Master';
 import { EvaaRewardsConfig } from '../../types/MasterRewards';
 import {
@@ -24,11 +24,15 @@ import {
     USDE_MAINNET,
     USDT_MAINNET,
     USDT_STORM_MAINNET,
+    TUSDE_MAINNET,
+    TUSDT_MAINNET,
 } from '../assets';
 import {
     EVAA_ALTS_MAINNET,
     EVAA_ALTS_MAINNET_VERSION,
     EVAA_EVAA_REWARDS_MASTER_MAINNET,
+    EVAA_LP_COPY_MAINNET,
+    EVAA_LP_COPY_MAINNET_VERSION,
     EVAA_LP_MAINNET,
     EVAA_LP_MAINNET_VERSION,
     EVAA_MASTER_MAINNET,
@@ -105,6 +109,7 @@ export const MAINNET_POOL_CONFIG: PoolConfig = {
         },
     }),
     poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,
+    poolAssetsHEConfig: [],
     lendingCode: LENDING_CODE,
 };
 
@@ -118,6 +123,7 @@ export const MAINNET_STABLE_POOL_CONFIG: PoolConfig = {
         evaaOracles: ORACLES_MAINNET,
     }),
     poolAssetsConfig: MAINNET_STABLE_POOL_ASSETS_CONFIG,
+    poolAssetsHEConfig: [],
     lendingCode: LENDING_CODE,
 };
 
@@ -131,6 +137,24 @@ export const MAINNET_LP_POOL_CONFIG: PoolConfig = {
         evaaOracles: ORACLES_LP,
     }),
     poolAssetsConfig: MAINNET_LP_POOL_ASSETS_CONFIG,
+    poolAssetsHEConfig: [],
+    lendingCode: LENDING_CODE,
+};
+
+export const MAINNET_LP_POOL_COPY_CONFIG: PoolConfig = {
+    masterAddress: EVAA_LP_COPY_MAINNET,
+    masterVersion: EVAA_LP_COPY_MAINNET_VERSION,
+    masterConstants: MASTER_CONSTANTS,
+    collector: new ClassicCollector({
+        poolAssetsConfig: MAINNET_LP_POOL_ASSETS_CONFIG,
+        minimalOracles: 3,
+        evaaOracles: ORACLES_LP,
+    }),
+    poolAssetsConfig: MAINNET_LP_POOL_ASSETS_CONFIG,
+    poolAssetsHEConfig: [
+        { title: 'ton', assets: [TON_MAINNET, TON_STORM_MAINNET], heCategory: 1 },
+        { title: 'stable', assets: [USDT_MAINNET, USDT_STORM_MAINNET], heCategory: 2 },
+    ],
     lendingCode: LENDING_CODE,
 };
 
@@ -144,6 +168,7 @@ export const MAINNET_ALTS_POOL_CONFIG: PoolConfig = {
         evaaOracles: ORACLES_ALTS,
     }),
     poolAssetsConfig: MAINNET_ALTS_POOL_ASSETS_CONFIG,
+    poolAssetsHEConfig: [],
     lendingCode: LENDING_CODE,
 };
 
@@ -166,6 +191,7 @@ export const MAINNET_PYTH_V8_TOB_POOL_CONFIG: PoolConfig = {
         },
     }),
     poolAssetsConfig: MAINNET_PYTH_V8_TOB_POOL_ASSETS_CONFIG,
+    poolAssetsHEConfig: [],
     lendingCode: LENDING_CODE,
 };
 
@@ -181,6 +207,7 @@ export const MAINNET_V8_TOB_POOL_CONFIG: PoolConfig = {
         evaaOracles: ORACLES_MAINNET,
     }),
     poolAssetsConfig: MAINNET_V8_TOB_POOL_ASSETS_CONFIG,
+    poolAssetsHEConfig: [],
     lendingCode: LENDING_CODE,
 };
 
@@ -212,6 +239,25 @@ export const MAINNET_MASTER_EVAA_REWARD_CONFIG: EvaaRewardsConfig = {
     asset: EVAA_MAINNET,
     availableReward: 0,
     publicKey: Buffer.from('b8eb0e312a9aa6394edceef21573f2d45e7d7a616a924e33190bd52fa31c8bb1', 'hex'), // adminAddress publicKey
+};
+
+export const MAINNET_CLASSIC_HE_POOL_CONFIG: PoolConfig = {
+    masterAddress: Address.parse('EQAI_O_VqUhqFQ-AW969xl1eXOi4euSWl1puxEroekJ5xpOt'),
+    masterVersion: 0,
+    masterConstants: MASTER_CONSTANTS,
+    collector: new FakeCollector(
+        Dictionary.empty<bigint, bigint>()
+            .set(ASSET_ID.TON, 1_300_000_000n)
+            .set(ASSET_ID.tsTON, 1_500_000_000n)
+            .set(ASSET_ID.TUSDT, 1_000_000_000n)
+            .set(ASSET_ID.TUSDe, 1_000_000_000n),
+    ),
+    poolAssetsConfig: [TON_MAINNET, TSTON_MAINNET, TUSDE_MAINNET, TUSDT_MAINNET],
+    poolAssetsHEConfig: [
+        { title: 'ton', assets: [TON_MAINNET, TSTON_MAINNET], heCategory: 1 },
+        { title: 'stable', assets: [TUSDT_MAINNET, TUSDE_MAINNET], heCategory: 2 },
+    ],
+    lendingCode: LENDING_CODE,
 };
 
 export const ALL_MAINNET_POOLS: PoolConfig[] = [
