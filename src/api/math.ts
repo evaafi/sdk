@@ -431,10 +431,7 @@ export function getAvailableToBorrowWithEMode(
         return borrowLimit - borrowAmount;
     };
 
-    let activeHeCategory = determineHeCategory(assetsConfig, principals, poolConfig);
-    if (activeHeCategory > 0 && !exceedsStandardBorrowLimit(principals, assetsConfig, assetsData, prices, masterConstants)) {
-        activeHeCategory = -1;
-    }
+    const activeHeCategory = determineHeCategory(assetsConfig, principals, poolConfig);
     if (activeHeCategory > 0) {
         return {
             availableToBorrow: calculateForHeCategory(activeHeCategory),
