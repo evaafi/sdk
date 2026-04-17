@@ -14,7 +14,7 @@ import {
     USDT_MAINNET,
     calculateHealthParams,
     determineHeCategory,
-    getAvailableToBorrowWithEMode,
+    getAvailableToBorrowWithHeMode,
     presentValue,
 } from '../src';
 
@@ -25,7 +25,7 @@ const POOL_CONFIG = TESTNET_CLASSIC_HE_POOL_CONFIG;
 const MAX_WITHDRAW_AMOUNT = 0xffffffffffffffffn;
 
 // Pool assets: TON (HE cat 1), tsTON (HE cat 1), USDT (HE cat 2), USDe (HE cat 2)
-// HE mode activates when ALL borrowed assets belong to the same HE category (> 0)
+// High Efficiency (HE) mode activates when ALL borrowed assets belong to the same HE category (> 0)
 // This gives higher collateral factors and liquidation thresholds
 
 const TON_CLIENT = new TonClient({
@@ -108,7 +108,7 @@ function printUserHealth(user: ReturnType<typeof TON_CLIENT.open<EvaaUser>>, mas
     }
 
     // Show available to borrow with HE
-    const { availableToBorrow, heCategory: borrowHeCategory } = getAvailableToBorrowWithEMode(
+    const { availableToBorrow, heCategory: borrowHeCategory } = getAvailableToBorrowWithHeMode(
         master.data!.assetsConfig,
         master.data!.assetsData,
         user.data.principals,
@@ -204,7 +204,7 @@ async function supplyTON() {
  *
  * For withdraw to create a borrow position (and activate HE mode):
  * 1. Supply collateral (e.g. TON, HE cat 1)
- * 2. Withdraw/borrow a correlated asset (e.g. tsTON, HE cat 1) → HE mode active
+ * 2. Withdraw/borrow a correlated asset (e.g. tsTON, HE cat 1) → High Efficiency (HE) mode active
  *    OR withdraw a non-correlated asset (e.g. USDT, HE cat 2) → standard mode
  *
  * With HE mode active, you get higher CF/LT, meaning you can borrow more.

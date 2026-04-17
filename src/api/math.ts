@@ -245,7 +245,7 @@ export function determineHeCategory(
     return heCategory > 0 ? heCategory : -1;
 }
 
-export function calculateRepayToExitEMode(
+export function calculateRepayToExitHeMode(
     assetsConfig: ExtendedAssetsConfig,
     assetsData: ExtendedAssetsData,
     principals: Dictionary<bigint, bigint>,
@@ -364,7 +364,7 @@ export function calculateRepayToExitEMode(
     };
 }
 
-export function getAvailableToBorrowWithEMode(
+export function getAvailableToBorrowWithHeMode(
     assetsConfig: ExtendedAssetsConfig,
     assetsData: ExtendedAssetsData,
     principals: Dictionary<bigint, bigint>,
@@ -439,10 +439,10 @@ export function getAvailableToBorrowWithEMode(
         };
     }
 
-    const availableToBorrowWithoutEmode = calculateForHeCategory(0);
+    const availableToBorrowWithoutHeMode = calculateForHeCategory(0);
     if (!checkNotInDebtAtAll(principals)) {
         return {
-            availableToBorrow: availableToBorrowWithoutEmode,
+            availableToBorrow: availableToBorrowWithoutHeMode,
             heCategory: 0,
         };
     }
@@ -468,7 +468,7 @@ export function getAvailableToBorrowWithEMode(
     }
 
     let bestHeCategory = 0;
-    let bestAvailableToBorrow = availableToBorrowWithoutEmode;
+    let bestAvailableToBorrow = availableToBorrowWithoutHeMode;
     for (const heCategory of availableHeCategories) {
         const availableToBorrow = calculateForHeCategory(heCategory);
         if (availableToBorrow > bestAvailableToBorrow) {
@@ -558,7 +558,7 @@ export function calculateMaximumWithdrawAmount(
             if (assetConfig.collateralFactor == 0n) {
                 maxAmountToReclaim = oldPresentValue.amount;
             } else if (price > 0) {
-                const { availableToBorrow: borrowable, heCategory } = getAvailableToBorrowWithEMode(
+                const { availableToBorrow: borrowable, heCategory } = getAvailableToBorrowWithHeMode(
                     assetsConfig,
                     assetsData,
                     principals,
@@ -593,7 +593,7 @@ export function calculateMaximumWithdrawAmount(
         const price = prices.get(assetId) as bigint;
 
         return (
-            (getAvailableToBorrowWithEMode(
+            (getAvailableToBorrowWithHeMode(
                 assetsConfig,
                 assetsData,
                 principals,

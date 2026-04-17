@@ -9,14 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
  - **High Efficiency (HE) mode** — pools can define HE asset groups via `poolAssetsHEConfig`, each with a `heCategory` number. `activeHeCategory` activates when all borrows belong to a single HE category **and** the total borrow exceeds the standard collateral limit. The HE borrow limit is calculated from supply assets within the same HE category using `heCollateralFactor` and `heLiquidationThreshold` instead of standard values, allowing higher LTV within the category.
  - `activeHeCategory` field in `UserData` — `-1` means HE is inactive, positive integer is the active category
  - `predictedHeCategory` field in `UserData` — HE category that would activate on next borrow (based on current supply), used to show available HE borrow limit in UI
- - `borrowLimitsWithEmode` field in `UserData` — per-asset max borrow amounts under HE limits
- - `availableToBorrowWithEmode` field in `UserData` — total available to borrow under HE limits
+ - `borrowLimitsWithHeMode` field in `UserData` — per-asset max borrow amounts under HE limits
+ - `availableToBorrowWithHeMode` field in `UserData` — total available to borrow under HE limits
  - New functions:
    - `determineHeCategory()` — derives active HE category from current borrows
    - `exceedsStandardBorrowLimit()` — checks whether total borrow exceeds standard collateral limit
-   - `getAvailableToBorrowWithEMode()` — available-to-borrow under HE limits; shows HE limit whenever all borrows are within a single HE category, regardless of whether standard limit is already exceeded
-   - `calculateRepayToExitEMode()` — how much to repay to drop back to standard mode
+   - `getAvailableToBorrowWithHeMode()` — available-to-borrow under HE limits; shows HE limit whenever all borrows are within a single HE category, regardless of whether standard limit is already exceeded
+   - `calculateRepayToExitHeMode()` — how much to repay to drop back to standard mode
  - New types: `PoolAssetHEConfig` (`title`, `assets`, `heCategory`)
+### Changed
+ - Breaking rename of the public High Efficiency API from legacy `EMode` names to canonical `HeMode` names in exports and `UserData` fields
 ### Fixed
  - `predictHealthFactor` now applies HE thresholds only when borrow exceeds the standard collateral limit
  - `ClassicCollector` now fetches prices from all sources in parallel via `Promise.any` instead of sequentially
