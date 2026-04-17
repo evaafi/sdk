@@ -30,13 +30,13 @@ async function main() {
 
     console.log('predictedHeCategory:', data.predictedHeCategory);
     console.log('activeHeCategory:', data.activeHeCategory);
-    console.log('availableToBorrowWithEmode:', data.availableToBorrowWithEmode?.toString());
+    console.log('availableToBorrowWithHeMode:', data.availableToBorrowWithHeMode?.toString());
 
     console.log('\nAll borrow limits:');
     for (const asset of MAINNET_CLASSIC_HE_POOL_CONFIG.poolAssetsConfig) {
-        const emode = data.borrowLimitsWithEmode?.get(asset.assetId);
+        const heMode = data.borrowLimitsWithHeMode?.get(asset.assetId);
         const normal = data.borrowLimits?.get(asset.assetId);
-        console.log(`  ${asset.name}: normal=${normal?.toString()} emode=${emode?.toString()}`);
+        console.log(`  ${asset.name}: normal=${normal?.toString()} heMode=${heMode?.toString()}`);
     }
 
     console.log('\nPrincipals:');

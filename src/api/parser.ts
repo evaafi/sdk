@@ -23,7 +23,7 @@ import {
     exceedsStandardBorrowLimit,
     getAssetLiquidityMinusReserves,
     getAvailableToBorrow,
-    getAvailableToBorrowWithEMode,
+    getAvailableToBorrowWithHeMode,
     presentValue,
 } from './math';
 import { OracleParser } from './parsers/AbstractOracleParser';
@@ -338,7 +338,7 @@ export function parseUserData(
 
     const withdrawalLimits = Dictionary.empty<bigint, bigint>();
     const borrowLimits = Dictionary.empty<bigint, bigint>();
-    const borrowLimitsWithEmode = Dictionary.empty<bigint, bigint>();
+    const borrowLimitsWithHeMode = Dictionary.empty<bigint, bigint>();
 
     let supplyBalance = 0n;
     let borrowBalance = 0n;
@@ -391,8 +391,8 @@ export function parseUserData(
         prices,
         masterConstants,
     );
-    const { availableToBorrow: availableToBorrowWithEmode, heCategory: predictedHeCategory } =
-        getAvailableToBorrowWithEMode(
+    const { availableToBorrow: availableToBorrowWithHeMode, heCategory: predictedHeCategory } =
+        getAvailableToBorrowWithHeMode(
             assetsConfig,
             assetsData,
             userLiteData.realPrincipals,
@@ -431,7 +431,7 @@ export function parseUserData(
 
         if (!prices.has(asset.assetId)) {
             borrowLimits.set(asset.assetId, 0n);
-            borrowLimitsWithEmode.set(asset.assetId, 0n);
+            borrowLimitsWithHeMode.set(asset.assetId, 0n);
             continue;
         }
 
@@ -446,25 +446,25 @@ export function parseUserData(
             ),
         );
 
-        borrowLimitsWithEmode.set(
+        borrowLimitsWithHeMode.set(
             asset.assetId,
             bigIntMax(
                 0n,
                 bigIntMin(
-                    (availableToBorrowWithEmode * 10n ** assetConfig.decimals) / prices.get(asset.assetId)!,
+                    (availableToBorrowWithHeMode * 10n ** assetConfig.decimals) / prices.get(asset.assetId)!,
                     assetLiquidityMinusReserves,
                 ),
             ),
         );
     }
 
-    const limitUsed = borrowBalance + availableToBorrowWithEmode;
+    const limitUsed = borrowBalance + availableToBorrowWithHeMode;
     const limitUsedPercent =
         limitUsed === 0n
             ? 0
             : Number(
                   BigInt(1e9) -
-                      (availableToBorrowWithEmode * BigInt(1e9)) / (borrowBalance + availableToBorrowWithEmode),
+                      (availableToBorrowWithHeMode * BigInt(1e9)) / (borrowBalance + availableToBorrowWithHeMode),
               ) / 1e7;
 
     let healthFactor = 1;
@@ -486,11 +486,11 @@ export function parseUserData(
         ...userLiteData,
         withdrawalLimits: withdrawalLimits,
         borrowLimits: borrowLimits,
-        borrowLimitsWithEmode: borrowLimitsWithEmode,
+        borrowLimitsWithHeMode: borrowLimitsWithHeMode,
         supplyBalance: supplyBalance,
         borrowBalance: borrowBalance,
         availableToBorrow: availableToBorrow,
-        availableToBorrowWithEmode: availableToBorrowWithEmode,
+        availableToBorrowWithHeMode: availableToBorrowWithHeMode,
         predictedHeCategory: predictedHeCategory,
         limitUsedPercent: limitUsedPercent,
         limitUsed: limitUsed,

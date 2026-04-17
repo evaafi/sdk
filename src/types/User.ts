@@ -62,12 +62,12 @@ export type UserLiteData = {
 export type UserDataActive = UserLiteData & {
     withdrawalLimits: Dictionary<bigint, bigint>;
     borrowLimits: Dictionary<bigint, bigint>;
-    borrowLimitsWithEmode: Dictionary<bigint, bigint>;
+    borrowLimitsWithHeMode: Dictionary<bigint, bigint>;
     repayLimits?: Dictionary<bigint, bigint>;
     supplyBalance: bigint;
     borrowBalance: bigint;
     availableToBorrow: bigint;
-    availableToBorrowWithEmode: bigint;
+    availableToBorrowWithHeMode: bigint;
     limitUsedPercent: number;
     limitUsed: bigint;
     healthFactor: number;

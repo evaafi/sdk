@@ -10,3 +10,4 @@ This section contains documentation for Core Concepts.
 -   [2.4. Subaccounts](./2.4. Subaccounts.md)
 -   [2.5. Price Validation And Medianization](./2.5. Price Validation And Medianization.md)
 -   [2.6. Jetton Vs Ton Asset Handling](./2.6. Jetton Vs Ton Asset Handling.md)
+-   [2.7. High Efficiency Mode](./2.7. High Efficiency Mode.md)
