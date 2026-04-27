@@ -109,7 +109,10 @@ export const MAINNET_POOL_CONFIG: PoolConfig = {
         },
     }),
     poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,
-    poolAssetsHEConfig: [],
+    poolAssetsHEConfig: [
+        { title: 'ton', assets: [TON_MAINNET, TSTON_MAINNET], heCategory: 1 },
+        { title: 'stable', assets: [USDT_MAINNET, USDE_MAINNET, TSUSDE_MAINNET], heCategory: 2 },
+    ],
     lendingCode: LENDING_CODE,
 };
 
@@ -137,7 +140,10 @@ export const MAINNET_LP_POOL_CONFIG: PoolConfig = {
         evaaOracles: ORACLES_LP,
     }),
     poolAssetsConfig: MAINNET_LP_POOL_ASSETS_CONFIG,
-    poolAssetsHEConfig: [],
+    poolAssetsHEConfig: [
+        { title: 'ton', assets: [TON_MAINNET, TON_STORM_MAINNET], heCategory: 1 },
+        { title: 'stable', assets: [USDT_MAINNET, USDT_STORM_MAINNET], heCategory: 2 },
+    ],
     lendingCode: LENDING_CODE,
 };
 

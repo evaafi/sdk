@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.9.6-a &mdash; 2026-04-27
+### Added
+ - HE categories enabled in `MAINNET_POOL_CONFIG`: category 1 (`TON`, `tsTON`), category 2 (`USDT`, `USDe`, `tsUSDe`)
+ - HE categories enabled in `MAINNET_LP_POOL_CONFIG`: category 1 (`TON`, `TON_STORM`), category 2 (`USDT`, `USDT_STORM`)
+
 ## 0.9.6 &mdash; 2026-04-16
 ### Added
  - **High Efficiency (HE) mode** — pools can define HE asset groups via `poolAssetsHEConfig`, each with a `heCategory` number. `activeHeCategory` activates when all borrows belong to a single HE category **and** the total borrow exceeds the standard collateral limit. The HE borrow limit is calculated from supply assets within the same HE category using `heCollateralFactor` and `heLiquidationThreshold` instead of standard values, allowing higher LTV within the category.

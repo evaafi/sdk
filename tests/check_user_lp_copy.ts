@@ -17,7 +17,7 @@ async function main() {
     const collector = MAINNET_CLASSIC_HE_POOL_CONFIG.collector as FakeCollector;
     const prices = await collector.getPrices();
 
-    const userAddress = Address.parse('UQAq-I1fRZcegpp2bDALewjsXfdYRnYqE7KMA8DIi98EQAvX');
+    const userAddress = Address.parse('UQB56dkNORVgBOyLEjxuydFkeQiaA1fW2kW7iULwm30iN2bc');
     const user = TON_CLIENT.open(evaa.openUserContract(userAddress));
 
     await user.getSync(evaa.data.assetsData, evaa.data.assetsConfig, prices.dict);
@@ -28,21 +28,18 @@ async function main() {
         return;
     }
 
-    console.log('predictedHeCategory:', data.predictedHeCategory);
-    console.log('activeHeCategory:', data.activeHeCategory);
-    console.log('availableToBorrowWithEmode:', data.availableToBorrowWithEmode?.toString());
+    const tston = MAINNET_CLASSIC_HE_POOL_CONFIG.poolAssetsConfig.find((a) => a.name === 'tsTON')!;
+    const tstonOnChainConfig = evaa.data.assetsConfig.get(tston.assetId) as any;
 
-    console.log('\nAll borrow limits:');
-    for (const asset of MAINNET_CLASSIC_HE_POOL_CONFIG.poolAssetsConfig) {
-        const emode = data.borrowLimitsWithEmode?.get(asset.assetId);
-        const normal = data.borrowLimits?.get(asset.assetId);
-        console.log(`  ${asset.name}: normal=${normal?.toString()} emode=${emode?.toString()}`);
-    }
-
-    console.log('\nPrincipals:');
-    for (const [id, p] of data.realPrincipals) {
-        const name = MAINNET_CLASSIC_HE_POOL_CONFIG.poolAssetsConfig.find((a) => a.assetId === id)?.name ?? id.toString().slice(0, 8);
-        console.log(`  ${name}: ${p.toString()}`);
+    console.log('=== useEModeAvailableForAsset debug (tsTON borrow, mainnet HE pool) ===');
+    console.log('pool:', 'MAINNET_CLASSIC_HE_POOL_CONFIG');
+    console.log('asset.tokenSymbol:', tston.name);
+    console.log('asset.heCategory (on-chain):', tstonOnChainConfig?.heCategory);
+    console.log('userData.activeHeCategory:', data.activeHeCategory);
+    console.log('userData.predictedHeCategory:', data.predictedHeCategory);
+    console.log('eModeGroups (poolAssetsHEConfig):');
+    for (const g of MAINNET_CLASSIC_HE_POOL_CONFIG.poolAssetsHEConfig) {
+        console.log(`  heCategory=${g.heCategory} title=${g.title} assets=[${g.assets.map((a) => a.name).join(', ')}]`);
     }
 }
 
