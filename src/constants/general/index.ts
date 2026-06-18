@@ -97,6 +97,7 @@ export const VALIDATION = {
     ERRORS: {
         INVALID_AMOUNT: 'Amount must be positive',
         INVALID_SUBACCOUNT_ID: 'Subaccount ID must be between 0 and 255',
+        INVALID_EXTEND_SUPPLY_PARAMETERS: 'subaccountId, customPayloadRecipient, returnRepayRemainingsFlag, customPayloadSaturationFlag must be provided',
         MISSING_JETTON_AMOUNT: 'Either amount, liquidationAmount, or supplyAmount must be provided',
         MISSING_RESPONSE_ADDRESS: 'responseAddress, userAddress, or liquidatorAddress must be provided',
         INVALID_ASSET_CONFIG: 'Invalid asset configuration provided',
