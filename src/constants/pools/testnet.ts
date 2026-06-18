@@ -8,8 +8,8 @@ import {
     ASSET_ID,
     EUSDT_TESTNET,
     JUSDC_TESTNET,
-    TON_MAINNET,
-    TON_TESTNET,
+    GRAM_MAINNET,
+    GRAM_TESTNET,
     TSTON_MAINNET,
     USDE_MAINNET,
     USDT_MAINNET,
@@ -28,9 +28,9 @@ import {
     TESTNET_PYTH_VERSION_TOB_AUDITED,
 } from '../general';
 
-export const TESTNET_POOL_ASSETS_CONFIG = [TON_TESTNET, JUSDC_TESTNET];
+export const TESTNET_POOL_ASSETS_CONFIG = [GRAM_TESTNET, JUSDC_TESTNET];
 
-export const TESTNET_POOL_ASSETS_CONFIG_TOB_AUDITED = [TON_TESTNET, JUSDC_TESTNET];
+export const TESTNET_POOL_ASSETS_CONFIG_TOB_AUDITED = [GRAM_TESTNET, JUSDC_TESTNET];
 
 export const TESTNET_PYTH_POOL_CONFIG_TOB_AUDITED: PoolConfig = {
     masterAddress: EVAA_MASTER_TESTNET_PYTH_TOB_AUDITED,
@@ -41,9 +41,9 @@ export const TESTNET_PYTH_POOL_CONFIG_TOB_AUDITED: PoolConfig = {
         pythOracle: {
             feedsMap: new Map<HexString, FeedMapItem>([
                 [
-                    FEED_ID.TON,
+                    FEED_ID.GRAM,
                     {
-                        assetId: ASSET_ID.TON,
+                        assetId: ASSET_ID.GRAM,
                         feedId: '0x0',
                     },
                 ],
@@ -77,12 +77,12 @@ export const TESTNET_CLASSIC_HE_POOL_CONFIG: PoolConfig = {
     masterVersion: 0,
     masterConstants: MASTER_CONSTANTS,
     collector: new ClassicCollector({
-        poolAssetsConfig: [TON_MAINNET, TSTON_MAINNET, USDT_MAINNET, USDE_MAINNET],
+        poolAssetsConfig: [GRAM_MAINNET, TSTON_MAINNET, USDT_MAINNET, USDE_MAINNET],
         minimalOracles: 1,
         evaaOracles: ORACLES_TESTNET,
     }),
     lendingCode: LENDING_CODE,
-    poolAssetsConfig: [TON_MAINNET, TSTON_MAINNET, USDT_MAINNET, USDE_MAINNET],
+    poolAssetsConfig: [GRAM_MAINNET, TSTON_MAINNET, USDT_MAINNET, USDE_MAINNET],
     poolAssetsHEConfig: [],
 };
 
@@ -91,7 +91,7 @@ export const TESTNET_MASTER_REWARD_CONFIG: EvaaRewardsConfig = {
     evaaMasterAddress: new Address(0, Buffer.alloc(32, 0)),
     rewardMasterCode: EVAA_REWARDS_MASTER_CODE_TESTNET,
     rewardUserCode: EVAA_REWARDS_USER_CODE_TESTNET,
-    asset: TON_TESTNET,
+    asset: GRAM_TESTNET,
     availableReward: 0,
     publicKey: Buffer.from('c38be45e033419b49cd22c97fbd23610fbc851a931208f8b4a1817dd11cb63ac', 'hex'), // adminAddress publicKey
 };

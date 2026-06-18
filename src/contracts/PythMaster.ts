@@ -2,10 +2,10 @@ import { HexString } from '@pythnetwork/hermes-client';
 import { Address, beginCell, Cell, ContractProvider, Dictionary, Sender, SendMode } from '@ton/core';
 import { PythOracleInfo, PythOracleParser } from '../api/parsers/PythOracleParser';
 import { composeFeedsCell, packPythUpdatesData } from '../api/prices';
-import { TON_MAINNET } from '../constants';
+import { GRAM_MAINNET } from '../constants';
 import { FEES, OPCODES } from '../constants/general';
 import { PoolAssetConfig } from '../types/Master';
-import { isTonAsset } from '../utils/utils';
+import { isGramAsset } from '../utils/utils';
 import {
     AbstractEvaaMaster,
     BaseMasterConfig,
@@ -183,7 +183,7 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
             .storeSlice(operationPayload.beginParse())
             .endCell();
 
-        if (!isTonAsset(parameters.supplyAsset)) {
+        if (!isGramAsset(parameters.supplyAsset)) {
             return this.createJettonTransferMessage(parameters, FEES.SUPPLY_WITHDRAW + FEES.JETTON_FWD, messageBody);
         } else {
             return beginCell()
@@ -202,7 +202,7 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
             return this.createSupplyWithdrawMessageNoPrices(parameters, operationPayload);
         }
 
-        if (!isTonAsset(parameters.supplyAsset)) {
+        if (!isGramAsset(parameters.supplyAsset)) {
             return this.createJettonPythMessage(
                 parameters, // as JettonParams & { queryID: number | bigint },
                 operationPayload,
@@ -251,7 +251,7 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
         parameters: PythWithdrawParameters,
     ): Promise<void> {
         const message = this.createSupplyWithdrawMessage({
-            supplyAsset: TON_MAINNET,
+            supplyAsset: GRAM_MAINNET,
             supplyAmount: 0n,
             queryID: parameters.queryID,
             withdrawAsset: parameters.asset,
@@ -286,7 +286,7 @@ export class EvaaMasterPyth extends AbstractEvaaMaster<PythMasterData> {
     createLiquidationMessage(parameters: PythLiquidationParameters): Cell {
         const operationPayload = this.buildLiquidationOperationPayload(parameters);
 
-        if (!isTonAsset(parameters.asset)) {
+        if (!isGramAsset(parameters.asset)) {
             return this.createJettonPythMessage(
                 parameters,
                 operationPayload,

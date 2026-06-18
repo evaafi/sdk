@@ -15,7 +15,7 @@ import {
     PT_tsUSDe_01Sep2025_MAINNET,
     PT_tsUSDe_18Dec2025_MAINNET,
     STTON_MAINNET,
-    TON_MAINNET,
+    GRAM_MAINNET,
     TON_STORM_MAINNET,
     TONUSDT_DEDUST_MAINNET,
     TONUSDT_STONFI_MAINNET,
@@ -57,7 +57,7 @@ import {
 
 // Pool assets configs
 export const MAINNET_POOL_ASSETS_CONFIG = [
-    TON_MAINNET,
+    GRAM_MAINNET,
     JUSDT_MAINNET,
     JUSDC_MAINNET,
     STTON_MAINNET,
@@ -76,7 +76,7 @@ export const MAINNET_STABLE_POOL_ASSETS_CONFIG = [
 ];
 
 export const MAINNET_LP_POOL_ASSETS_CONFIG = [
-    TON_MAINNET,
+    GRAM_MAINNET,
     USDT_MAINNET,
     TONUSDT_DEDUST_MAINNET,
     TON_STORM_MAINNET,
@@ -84,7 +84,7 @@ export const MAINNET_LP_POOL_ASSETS_CONFIG = [
     TONUSDT_STONFI_MAINNET,
 ];
 
-export const MAINNET_ALTS_POOL_ASSETS_CONFIG = [TON_MAINNET, USDT_MAINNET, CATI_MAINNET, NOT_MAINNET, DOGS_MAINNET];
+export const MAINNET_ALTS_POOL_ASSETS_CONFIG = [GRAM_MAINNET, USDT_MAINNET, CATI_MAINNET, NOT_MAINNET, DOGS_MAINNET];
 
 export const MAINNET_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_MASTER_MAINNET,
@@ -95,10 +95,10 @@ export const MAINNET_POOL_CONFIG: PoolConfig = {
         poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,
         pythOracle: {
             feedsMap: new Map<HexString, FeedMapItem>([
-                [FEED_ID.TON, { assetId: ASSET_ID.TON, feedId: "0x0" }],
+                [FEED_ID.GRAM, { assetId: ASSET_ID.GRAM, feedId: "0x0" }],
                 [FEED_ID.USDT, { assetId: ASSET_ID.USDT, feedId: "0x0" }],
-                [FEED_ID.tsTON, { assetId: ASSET_ID.tsTON, feedId: FEED_ID.TON }],
-                [FEED_ID.stTON, { assetId: ASSET_ID.stTON, feedId: FEED_ID.TON }],
+                [FEED_ID.tsTON, { assetId: ASSET_ID.tsTON, feedId: FEED_ID.GRAM }],
+                [FEED_ID.stTON, { assetId: ASSET_ID.stTON, feedId: FEED_ID.GRAM }],
                 [FEED_ID.USDe, { assetId: ASSET_ID.USDe, feedId: "0x0" }],
                 [FEED_ID.tsUSDe, { assetId: ASSET_ID.tsUSDe, feedId: FEED_ID.USDe }],
             ]),
@@ -110,7 +110,7 @@ export const MAINNET_POOL_CONFIG: PoolConfig = {
     }),
     poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,
     poolAssetsHEConfig: [
-        { title: 'ton', assets: [TON_MAINNET, TSTON_MAINNET], heCategory: 1 },
+        { title: 'ton', assets: [GRAM_MAINNET, TSTON_MAINNET], heCategory: 1 },
         { title: 'stable', assets: [USDT_MAINNET, USDE_MAINNET, TSUSDE_MAINNET], heCategory: 2 },
     ],
     lendingCode: LENDING_CODE,
@@ -141,7 +141,7 @@ export const MAINNET_LP_POOL_CONFIG: PoolConfig = {
     }),
     poolAssetsConfig: MAINNET_LP_POOL_ASSETS_CONFIG,
     poolAssetsHEConfig: [
-        { title: 'ton', assets: [TON_MAINNET, TON_STORM_MAINNET], heCategory: 1 },
+        { title: 'ton', assets: [GRAM_MAINNET, TON_STORM_MAINNET], heCategory: 1 },
         { title: 'stable', assets: [USDT_MAINNET, USDT_STORM_MAINNET], heCategory: 2 },
     ],
     lendingCode: LENDING_CODE,
@@ -158,7 +158,7 @@ export const MAINNET_LP_POOL_COPY_CONFIG: PoolConfig = {
     }),
     poolAssetsConfig: MAINNET_LP_POOL_ASSETS_CONFIG,
     poolAssetsHEConfig: [
-        { title: 'ton', assets: [TON_MAINNET, TON_STORM_MAINNET], heCategory: 1 },
+        { title: 'ton', assets: [GRAM_MAINNET, TON_STORM_MAINNET], heCategory: 1 },
         { title: 'stable', assets: [USDT_MAINNET, USDT_STORM_MAINNET], heCategory: 2 },
     ],
     lendingCode: LENDING_CODE,
@@ -178,7 +178,7 @@ export const MAINNET_ALTS_POOL_CONFIG: PoolConfig = {
     lendingCode: LENDING_CODE,
 };
 
-export const MAINNET_PYTH_V8_TOB_POOL_ASSETS_CONFIG = [TON_MAINNET, USDT_MAINNET, JUSDT_MAINNET];
+export const MAINNET_PYTH_V8_TOB_POOL_ASSETS_CONFIG = [GRAM_MAINNET, USDT_MAINNET, JUSDT_MAINNET];
 
 export const MAINNET_PYTH_V8_TOB_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_PYTH_TOB_MAINNET,
@@ -189,7 +189,7 @@ export const MAINNET_PYTH_V8_TOB_POOL_CONFIG: PoolConfig = {
         poolAssetsConfig: MAINNET_PYTH_V8_TOB_POOL_ASSETS_CONFIG,
         pythOracle: {
             feedsMap: new Map<HexString, FeedMapItem>([
-                [FEED_ID.TON, { assetId: ASSET_ID.TON, feedId: '0x0' }],
+                [FEED_ID.GRAM, { assetId: ASSET_ID.GRAM, feedId: '0x0' }],
                 [FEED_ID.USDT, { assetId: ASSET_ID.USDT, feedId: '0x0' }],
             ]),
             pythAddress: PYTH_ORACLE_MAINNET,
@@ -201,7 +201,7 @@ export const MAINNET_PYTH_V8_TOB_POOL_CONFIG: PoolConfig = {
     lendingCode: LENDING_CODE,
 };
 
-export const MAINNET_V8_TOB_POOL_ASSETS_CONFIG = [TON_MAINNET, USDT_MAINNET];
+export const MAINNET_V8_TOB_POOL_ASSETS_CONFIG = [GRAM_MAINNET, USDT_MAINNET];
 
 export const MAINNET_V8_TOB_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_TOB_MAINNET,
@@ -222,7 +222,7 @@ export const MAINNET_MASTER_TON_REWARD_CONFIG: EvaaRewardsConfig = {
     evaaMasterAddress: new Address(0, Buffer.alloc(32, 0)),
     rewardMasterCode: EVAA_REWARDS_MASTER_CODE_MAINNET,
     rewardUserCode: EVAA_REWARDS_USER_CODE_MAINNET,
-    asset: TON_MAINNET,
+    asset: GRAM_MAINNET,
     availableReward: 0,
     publicKey: Buffer.from('bfe9a30221db4dff4c17e55d985e0b13a8f597bbb28002f311dc4429dad1ca95', 'hex'), // adminAddress publicKey
 };
@@ -253,14 +253,14 @@ export const MAINNET_CLASSIC_HE_POOL_CONFIG: PoolConfig = {
     masterConstants: MASTER_CONSTANTS,
     collector: new FakeCollector(
         Dictionary.empty<bigint, bigint>()
-            .set(ASSET_ID.TON, 1_300_000_000n)
+            .set(ASSET_ID.GRAM, 1_300_000_000n)
             .set(ASSET_ID.tsTON, 1_500_000_000n)
             .set(ASSET_ID.TUSDT, 1_000_000_000n)
             .set(ASSET_ID.TUSDe, 1_000_000_000n),
     ),
-    poolAssetsConfig: [TON_MAINNET, TSTON_MAINNET, TUSDE_MAINNET, TUSDT_MAINNET],
+    poolAssetsConfig: [GRAM_MAINNET, TSTON_MAINNET, TUSDE_MAINNET, TUSDT_MAINNET],
     poolAssetsHEConfig: [
-        { title: 'ton', assets: [TON_MAINNET, TSTON_MAINNET], heCategory: 1 },
+        { title: 'ton', assets: [GRAM_MAINNET, TSTON_MAINNET], heCategory: 1 },
         { title: 'stable', assets: [TUSDT_MAINNET, TUSDE_MAINNET], heCategory: 2 },
     ],
     lendingCode: LENDING_CODE,

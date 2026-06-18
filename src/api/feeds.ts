@@ -3,7 +3,11 @@ import { Dictionary } from '@ton/ton';
 import { Buffer } from 'buffer';
 
 export const FEED_ID = {
-    TON: '0x8963217838ab4cf5cadc172203c1f0b763fbaa45f346d8ee50ba994bbcac3026',
+    // GRAM (gram.usd) Pyth feed. Replaces the retired TON/USD feed
+    // (0x8963217838ab4cf5cadc172203c1f0b763fbaa45f346d8ee50ba994bbcac3026).
+    GRAM: '0xe41cd8a90528974c7b97b506abb694e2cc5750b119f796a7001890c1a93a572d',
+    /** @deprecated TON/USD feed retired; the native asset is now priced via gram.usd. Use GRAM. */
+    TON: '0xe41cd8a90528974c7b97b506abb694e2cc5750b119f796a7001890c1a93a572d',
     USDT: '0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b',
     stTON: '0x9145e059026a4d5a46f3b96408f7e572e33b3257b9c2dbe8dba551c772762002',
     tsTON: '0x3d1784128eeab5961ec60648fe497d3901eebd211b7f51e4bb0db9f024977d25',

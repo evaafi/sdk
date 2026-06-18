@@ -57,7 +57,7 @@ function getUserJettonData(ownerAddress: Address, assetName: string, jettonWalle
 }
 export function getUserJettonWallet(ownerAddress: Address, poolAssetConfig: PoolAssetConfig) {
   const assetName = poolAssetConfig.name;
-  if (assetName == 'TON' || poolAssetConfig.assetId === UNDEFINED_ASSET.assetId) {
+  if (assetName == 'GRAM' || poolAssetConfig.assetId === UNDEFINED_ASSET.assetId) {
     throw new Error(`Cant getUserJettonWallet for ${poolAssetConfig.name} asset`)
   }
   let jettonWalletCode = poolAssetConfig.jettonWalletCode;

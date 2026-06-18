@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.9.7 &mdash; 2026-06-17
+### Changed
+ - Native asset renamed **TON &rarr; GRAM** (rebrand). The on-chain asset id is **unchanged** — it remains `sha256('TON')` for historical reasons. Use `ASSET_ID.GRAM`, `GRAM_MAINNET`, `GRAM_TESTNET`, `PoolAssetConfig.name === 'GRAM'`, and `isGramAsset` / `isGramAssetId`.
+ - Pyth price feed for the native asset switched from the TON/USD feed (`0x8963…3026`) to the dedicated **gram.usd** feed (`FEED_ID.GRAM = 0xe41cd8…a572d`). Derivative feeds (`tsTON`, `stTON`) now reference `FEED_ID.GRAM` as their base.
+### Deprecated
+ - `ASSET_ID.TON`, `FEED_ID.TON`, `TON_MAINNET`, `TON_TESTNET`, `isTonAsset`, `isTonAssetId` are kept as backward-compatible aliases of their `GRAM` equivalents and will be removed in a future release.
+
 ## 0.9.6-a &mdash; 2026-04-27
 ### Added
  - HE categories enabled in `MAINNET_POOL_CONFIG`: category 1 (`TON`, `tsTON`), category 2 (`USDT`, `USDe`, `tsUSDe`)

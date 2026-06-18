@@ -4,6 +4,11 @@ export const ASSET_ID = {
     EVAA: sha256Hash('EVAA'),
 
     // Main
+    // GRAM (formerly TON). The token id is sha256('TON') for historical reasons:
+    // the native asset was registered on-chain as 'TON' before the GRAM rebrand,
+    // so the id must stay sha256('TON') to keep matching existing on-chain state.
+    GRAM: sha256Hash('TON'),
+    /** @deprecated renamed to GRAM; kept for backward compatibility. Same id (sha256('TON')). */
     TON: sha256Hash('TON'),
     USDT: sha256Hash('USDT'),
     jUSDT: sha256Hash('jUSDT'),
