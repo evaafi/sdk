@@ -1,4 +1,4 @@
-import { Address, TonClient } from '@ton/ton';
+import { Address, Cell, TonClient } from '@ton/ton';
 import {
     ASSET_ID,
     ASSET_PRICE_SCALE,
@@ -11,8 +11,11 @@ import {
     EvaaMasterClassic,
     MAINNET_POOL_CONFIG,
     MAINNET_ALTS_POOL_CONFIG,
+    OPCODES,
+    USDT_MAINNET,
     PoolConfig,
 } from '../src';
+import { sha256Hash } from '../src/utils/sha256BigInt';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -23,8 +26,11 @@ const USER = Address.parseFriendly('UQDN5CpSs8HT2GO4IymOXPS5zTDzHtY-s8VTuUVAsCTw
 describe('GRAM rename — sanity checks', () => {
     // --- Pure, offline: proves the on-chain asset id did NOT change ---
     test('asset id is unchanged (GRAM === historical sha256(TON))', () => {
-        // The native asset id is the same value; only the key/name were renamed.
-        expect(ASSET_ID.GRAM).toEqual(ASSET_ID.TON); // deprecated alias === new key
+        // Ground-truth pin: the on-chain id MUST be sha256('TON') (historical). Comparing to
+        // ASSET_ID.TON alone is a tautology (same literal) — this catches the id silently
+        // drifting away from sha256('TON'), which is the core "SC interaction unchanged" guarantee.
+        expect(ASSET_ID.GRAM).toEqual(sha256Hash('TON'));
+        expect(ASSET_ID.TON).toEqual(ASSET_ID.GRAM); // deprecated alias resolves to the same id
         expect(typeof ASSET_ID.GRAM).toBe('bigint');
         expect(ASSET_ID.GRAM).toBeGreaterThan(0n);
 
@@ -37,10 +43,30 @@ describe('GRAM rename — sanity checks', () => {
         expect(isGramAssetId(ASSET_ID.GRAM)).toBe(true);
         expect(isTonAssetId(ASSET_ID.GRAM)).toBe(true);
         expect(isGramAsset(GRAM_MAINNET)).toBe(true);
+        expect(isGramAsset(USDT_MAINNET)).toBe(false); // a jetton must NOT be detected as native
 
         // Pyth feed swapped to gram.usd; deprecated alias points to the same value
         expect(FEED_ID.GRAM).toBe('0xe41cd8a90528974c7b97b506abb694e2cc5750b119f796a7001890c1a93a572d');
         expect(FEED_ID.TON).toBe(FEED_ID.GRAM);
+    });
+
+    // --- Offline, SC write-path: the rename must not change the bytes we send to the contract ---
+    // The most fragile coupling is the native-vs-jetton branch, keyed on asset.name === 'GRAM'
+    // (isGramAsset). A native supply must serialize as a plain operation payload starting with the
+    // SUPPLY_MASTER opcode; a jetton would instead be a jetton-transfer message.
+    test('SC write-path: native (GRAM) supply takes the native branch, not jetton', () => {
+        const master = new EvaaMasterClassic({ poolConfig: MAINNET_POOL_CONFIG });
+        const supply = master.createSupplyMessage({
+            asset: GRAM_MAINNET,
+            queryID: 0n,
+            includeUserCode: true,
+            amount: 1_000_000_000n,
+            userAddress: USER,
+            payload: Cell.EMPTY,
+        });
+
+        // Native branch => first 32 bits are the SUPPLY_MASTER opcode (not a jetton transfer op).
+        expect(supply.beginParse().loadUint(32)).toBe(OPCODES.SUPPLY_MASTER);
     });
 
     // --- Live, read-only: parse a real user's principals across two pools ---
@@ -57,6 +83,8 @@ describe('GRAM rename — sanity checks', () => {
     for (const { label, config } of POOLS) {
         test(`parse user principals — ${label} pool`, async () => {
             const nameById = new Map<bigint, string>(config.poolAssetsConfig.map((a) => [a.assetId, a.name]));
+            // native asset (id sha256('TON')) is now labeled GRAM in the pool config
+            expect(nameById.get(ASSET_ID.GRAM)).toBe('GRAM');
 
             const master = client.open(new EvaaMasterClassic({ poolConfig: config }));
             await master.getSync();
