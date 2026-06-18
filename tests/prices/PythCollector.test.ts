@@ -166,7 +166,7 @@ describe('PythOracle', () => {
 
             // Should include both tsTON feed and its referred TON feed
             expect(requiredFeeds).toContain('0x3d1784128eeab5961ec60648fe497d3901eebd211b7f51e4bb0db9f024977d25'); // tsTON
-            expect(requiredFeeds).toContain('0x8963217838ab4cf5cadc172203c1f0b763fbaa45f346d8ee50ba994bbcac3026'); // TON (referred)
+            expect(requiredFeeds).toContain(FEED_ID.GRAM); // GRAM (referred; gram.usd, formerly TON/USD)
             expect(requiredFeeds).toHaveLength(2);
         });
 
@@ -181,7 +181,7 @@ describe('PythOracle', () => {
 
             // Should contain unique feeds: TON, USDT, tsTON
             expect(requiredFeeds).toHaveLength(3);
-            expect(requiredFeeds).toContain('0x8963217838ab4cf5cadc172203c1f0b763fbaa45f346d8ee50ba994bbcac3026'); // TON
+            expect(requiredFeeds).toContain(FEED_ID.GRAM); // GRAM (gram.usd, formerly TON/USD)
             expect(requiredFeeds).toContain('0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b'); // USDT
             expect(requiredFeeds).toContain('0x3d1784128eeab5961ec60648fe497d3901eebd211b7f51e4bb0db9f024977d25'); // tsTON
         });

@@ -3,12 +3,16 @@ import { PoolAssetConfig } from '../../types/Master';
 import { ASSET_ID } from '../assets';
 import { JETTON_WALLET_STANDART_CODE_TESTNET, NULL_ADDRESS } from '../general';
 
-export const TON_TESTNET: PoolAssetConfig = {
-    name: 'TON',
-    assetId: ASSET_ID.TON,
+export const GRAM_TESTNET: PoolAssetConfig = {
+    name: 'GRAM',
+    // historical id: sha256('TON') — the native asset was registered as 'TON' before the GRAM rebrand
+    assetId: ASSET_ID.GRAM,
     jettonMasterAddress: NULL_ADDRESS, // fake
     jettonWalletCode: Cell.EMPTY,
 };
+
+/** @deprecated renamed to GRAM_TESTNET; kept for backward compatibility. */
+export const TON_TESTNET = GRAM_TESTNET;
 
 export const JUSDT_TESTNET: PoolAssetConfig = {
     name: 'jUSDT',

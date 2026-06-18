@@ -1,5 +1,5 @@
 import { beginCell, Builder, Cell, ContractProvider, Sender } from '@ton/core';
-import { isTonAsset, LiquidationParameters, TON_MAINNET } from '..';
+import { isGramAsset, LiquidationParameters, GRAM_MAINNET } from '..';
 import { ClassicOracleInfo, ClassicOracleParser } from '../api/parsers/ClassicOracleParser';
 import { FEES, OPCODES } from '../constants/general';
 import {
@@ -58,7 +58,7 @@ export class EvaaMasterClassic extends AbstractEvaaMaster<ClassicMasterData> {
     }
 
     createSupplyWithdrawMessage(parameters: ClassicSupplyWithdrawParameters): Cell {
-        const isTon = isTonAsset(parameters.supplyAsset);
+        const isTon = isGramAsset(parameters.supplyAsset);
 
         const operationPayload = this.buildSupplyWithdrawOperationPayload(parameters);
 
@@ -89,7 +89,7 @@ export class EvaaMasterClassic extends AbstractEvaaMaster<ClassicMasterData> {
     ): Promise<void> {
         // Compatibility layer using supply-withdraw with TON zero supply
         await this.sendSupplyWithdraw(provider, via, value, {
-            supplyAsset: TON_MAINNET,
+            supplyAsset: GRAM_MAINNET,
             supplyAmount: 0n,
             queryID: parameters.queryID,
             withdrawAsset: parameters.asset,
@@ -114,7 +114,7 @@ export class EvaaMasterClassic extends AbstractEvaaMaster<ClassicMasterData> {
     }
 
     createLiquidationMessage(parameters: ClassicLiquidationParameters): Cell {
-        const isTon = isTonAsset(parameters.asset);
+        const isTon = isGramAsset(parameters.asset);
         const operationPayload = this.buildLiquidationOperationPayload(parameters);
 
         if (!isTon) {

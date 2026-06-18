@@ -1,13 +1,18 @@
 import { ASSET_ID } from '../constants/assets';
 import { PoolAssetConfig } from '../types/Master';
 
-export function isTonAsset(asset: PoolAssetConfig) {
-    return asset.name === 'TON';
+export function isGramAsset(asset: PoolAssetConfig) {
+    return asset.name === 'GRAM';
 }
 
-export function isTonAssetId(assetId: bigint) {
-    return assetId === ASSET_ID.TON;
+export function isGramAssetId(assetId: bigint) {
+    return assetId === ASSET_ID.GRAM;
 }
+
+/** @deprecated renamed to isGramAsset; kept for backward compatibility. */
+export const isTonAsset = isGramAsset;
+/** @deprecated renamed to isGramAssetId; kept for backward compatibility. */
+export const isTonAssetId = isGramAssetId;
 
 export function delay(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));

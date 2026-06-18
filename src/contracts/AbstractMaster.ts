@@ -11,7 +11,7 @@ import {
     SendMode,
     storeStateInit,
 } from '@ton/core';
-import { isTonAsset, isValidSubaccountId } from '..';
+import { isGramAsset, isValidSubaccountId } from '..';
 import { parseMasterData } from '../api/parser';
 import { OracleParser } from '../api/parsers/AbstractOracleParser';
 import { ClassicOracleInfo } from '../api/parsers/ClassicOracleParser';
@@ -325,7 +325,7 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
     protected buildSupplyWithdrawOperationPayload(
         parameters: PythSupplyWithdrawParameters | ClassicSupplyWithdrawParameters,
     ): Cell {
-        const isTon = isTonAsset(parameters.supplyAsset);
+        const isTon = isGramAsset(parameters.supplyAsset);
 
         const supplyData = beginCell();
         if (isTon) {
@@ -365,7 +365,7 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
         AbstractEvaaMaster.validateSupplyParameters(parameters);
 
         const subaccountId = parameters.subaccountId ?? 0;
-        const isTon = isTonAsset(parameters.asset);
+        const isTon = isGramAsset(parameters.asset);
 
         const operationPayload = beginCell()
             .storeUint(OPCODES.SUPPLY_MASTER, 32)
@@ -454,7 +454,7 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
             .storeUint(parameters.collateralAsset, 256)
             .storeUint(parameters.minCollateralAmount, 64)
             .storeInt(parameters.includeUserCode ? -1 : 0, 2)
-            .storeUint(isTonAsset(parameters.asset) ? parameters.liquidationAmount : 0, 64);
+            .storeUint(isGramAsset(parameters.asset) ? parameters.liquidationAmount : 0, 64);
     }
 
     abstract sendLiquidation(
@@ -540,7 +540,7 @@ export abstract class AbstractEvaaMaster<T extends MasterData<MasterConfig<Oracl
     }
 
     async sendTx(provider: ContractProvider, via: Sender, value: bigint, message: Cell, asset: PoolAssetConfig) {
-        if (!isTonAsset(asset)) {
+        if (!isGramAsset(asset)) {
             if (!via.address) throw new Error('Via address is required for jetton supply');
             const jettonWallet = provider.open(JettonWallet.createFromAddress(getUserJettonWallet(via.address, asset)));
             await jettonWallet.sendTransfer(via, value, message);

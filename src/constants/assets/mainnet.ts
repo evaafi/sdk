@@ -10,12 +10,16 @@ export const UNDEFINED_ASSET: PoolAssetConfig = {
     jettonWalletCode: Cell.EMPTY,
 };
 
-export const TON_MAINNET: PoolAssetConfig = {
-    name: 'TON',
-    assetId: ASSET_ID.TON,
+export const GRAM_MAINNET: PoolAssetConfig = {
+    name: 'GRAM',
+    // historical id: sha256('TON') — the native asset was registered as 'TON' before the GRAM rebrand
+    assetId: ASSET_ID.GRAM,
     jettonMasterAddress: NULL_ADDRESS, // fake
     jettonWalletCode: Cell.EMPTY,
 };
+
+/** @deprecated renamed to GRAM_MAINNET; kept for backward compatibility. */
+export const TON_MAINNET = GRAM_MAINNET;
 
 export const JUSDT_MAINNET: PoolAssetConfig = {
     name: 'jUSDT',
