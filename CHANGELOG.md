@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.9.7 &mdash; 2026-06-17
+## 1.0.0 &mdash; 2026-06-18
 ### Changed
  - Native asset renamed **TON &rarr; GRAM** (rebrand). The on-chain asset id is **unchanged** — it remains `sha256('TON')` for historical reasons. Use `ASSET_ID.GRAM`, `GRAM_MAINNET`, `GRAM_TESTNET`, `PoolAssetConfig.name === 'GRAM'`, and `isGramAsset` / `isGramAssetId`.
  - Pyth price feed for the native asset switched from the TON/USD feed (`0x8963…3026`) to the dedicated **gram.usd** feed (`FEED_ID.GRAM = 0xe41cd8…a572d`). Derivative feeds (`tsTON`, `stTON`) now reference `FEED_ID.GRAM` as their base.
