@@ -7,18 +7,20 @@ import {
     ClassicPricesOffset,
     DefaultPriceSourcesConfig,
     generatePriceSources,
-    MAINNET_POOL_ASSETS_CONFIG,
+    MAINNET_LP_POOL_ASSETS_CONFIG,
     PriceSourcesConfig,
     RawPriceData,
     STTON_MAINNET,
     TON_MAINNET,
+    unpackOraclesData,
+    unpackPrices,
     USDT_MAINNET,
 } from '../../src';
 import { ORACLES_MAINNET } from '../../src/constants/general';
 import { DefaultFetchConfig } from '../../src/utils/utils';
 
 const PRICE_COLLTECTOR_CONFIG = {
-    poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,
+    poolAssetsConfig: MAINNET_LP_POOL_ASSETS_CONFIG,
     minimalOracles: 3,
     evaaOracles: ORACLES_MAINNET,
 };
@@ -189,5 +191,96 @@ describe('PriceCollector tests', () => {
             TON_MAINNET.assetId - ClassicPricesOffset[ClassicPricesMode.SPOT],
             USDT_MAINNET.assetId - ClassicPricesOffset[ClassicPricesMode.SPOT],
         ]);
+    });
+
+    test('test oracles prune getPricesForWithdraw, collateralToDebt true', async () => {
+        expect.assertions(3);
+
+        const pc = new ClassicCollector(PRICE_COLLTECTOR_CONFIG);
+
+        const principals = Dictionary.empty<bigint, bigint>();
+        principals.set(TON_MAINNET.assetId, 5n);
+        principals.set(USDT_MAINNET.assetId, -5n);
+
+        const prices = await pc.getPricesForWithdraw(principals, USDT_MAINNET, true, DefaultFetchConfig);
+        const { assetsDataCell, oraclesDataCell } = unpackPrices(prices.dataCell);
+
+        expect(prices.dict.values().length).toEqual(2);
+        expect(prices.dataCell.hash()).not.toEqual(Cell.EMPTY.hash());
+        expect(unpackOraclesData(oraclesDataCell)?.length).toEqual(3);
+    });
+
+    test('test oracles prune getPricesForWithdraw, collateralToDebt false', async () => {
+        expect.assertions(3);
+
+        const pc = new ClassicCollector(PRICE_COLLTECTOR_CONFIG);
+
+        const principals = Dictionary.empty<bigint, bigint>();
+        principals.set(TON_MAINNET.assetId, 5n);
+        principals.set(USDT_MAINNET.assetId, 5n);
+
+        const prices = await pc.getPricesForWithdraw(principals, USDT_MAINNET, true, DefaultFetchConfig);
+        const { oraclesDataCell } = unpackPrices(prices.dataCell);
+
+        expect(prices.dict.values().length).toEqual(2);
+        expect(prices.dataCell.hash()).not.toEqual(Cell.EMPTY.hash());
+        expect(unpackOraclesData(oraclesDataCell)?.length).toEqual(3);
+    });
+
+    test('test oracles prune getPrices', async () => {
+        expect.assertions(3);
+
+        const pc = new ClassicCollector(PRICE_COLLTECTOR_CONFIG);
+
+        const principals = Dictionary.empty<bigint, bigint>();
+        principals.set(TON_MAINNET.assetId, 5n);
+        principals.set(USDT_MAINNET.assetId, 5n);
+
+        const prices = await pc.getPrices();
+        const { oraclesDataCell } = unpackPrices(prices.dataCell);
+
+        expect(prices.dict.values().length).toEqual(PRICE_COLLTECTOR_CONFIG.poolAssetsConfig.length);
+        expect(prices.dataCell.hash()).not.toEqual(Cell.EMPTY.hash());
+        expect(unpackOraclesData(oraclesDataCell)?.length).toEqual(3);
+    });
+
+    test('test oracles prune getPricesForLiquidate', async () => {
+        expect.assertions(3);
+
+        const pc = new ClassicCollector(PRICE_COLLTECTOR_CONFIG);
+
+        const principals = Dictionary.empty<bigint, bigint>();
+        principals.set(TON_MAINNET.assetId, -5n);
+        principals.set(USDT_MAINNET.assetId, 5n);
+
+        const prices = await pc.getPricesForLiquidate(principals, DefaultFetchConfig);
+        const { oraclesDataCell } = unpackPrices(prices.dataCell);
+
+        expect(prices.dict.values().length).toEqual(2);
+        expect(prices.dataCell.hash()).not.toEqual(Cell.EMPTY.hash());
+        expect(unpackOraclesData(oraclesDataCell)?.length).toEqual(3);
+    });
+
+    test('test oracles prune getPricesForSupplyWithdraw', async () => {
+        expect.assertions(3);
+
+        const pc = new ClassicCollector(PRICE_COLLTECTOR_CONFIG);
+
+        const principals = Dictionary.empty<bigint, bigint>();
+        principals.set(TON_MAINNET.assetId, -5n);
+        principals.set(USDT_MAINNET.assetId, 5n);
+
+        const prices = await pc.getPricesForSupplyWithdraw(
+            principals,
+            TON_MAINNET,
+            USDT_MAINNET,
+            true,
+            DefaultFetchConfig,
+        );
+        const { oraclesDataCell } = unpackPrices(prices.dataCell);
+
+        expect(prices.dict.values().length).toEqual(2);
+        expect(prices.dataCell.hash()).not.toEqual(Cell.EMPTY.hash());
+        expect(unpackOraclesData(oraclesDataCell)?.length).toEqual(3);
     });
 });
