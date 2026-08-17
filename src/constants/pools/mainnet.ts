@@ -90,23 +90,12 @@ export const MAINNET_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_MASTER_MAINNET,
     masterVersion: MAINNET_VERSION,
     masterConstants: MASTER_CONSTANTS,
-    collector: new PythCollector({
-        pythConfig: DefaultPythPriceSourcesConfig,
+    // evaaOracles must exactly match the on-chain oracle set (currently 4 oracles,
+    // threshold 3) — a proof from an oracle missing in the contract config is rejected.
+    collector: new ClassicCollector({
         poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,
-        pythOracle: {
-            feedsMap: new Map<HexString, FeedMapItem>([
-                [FEED_ID.GRAM, { assetId: ASSET_ID.GRAM, feedId: "0x0" }],
-                [FEED_ID.USDT, { assetId: ASSET_ID.USDT, feedId: "0x0" }],
-                [FEED_ID.tsTON, { assetId: ASSET_ID.tsTON, feedId: FEED_ID.GRAM }],
-                [FEED_ID.stTON, { assetId: ASSET_ID.stTON, feedId: FEED_ID.GRAM }],
-                [FEED_ID.USDe, { assetId: ASSET_ID.USDe, feedId: "0x0" }],
-                [FEED_ID.tsUSDe, { assetId: ASSET_ID.tsUSDe, feedId: FEED_ID.USDe }],
-            ]),
-            pythAddress: PYTH_ORACLE_MAINNET,
-            allowedRefTokens: Dictionary.empty<bigint, bigint>()
-                .set(ASSET_ID.jUSDT, ASSET_ID.USDT)
-                .set(ASSET_ID.jUSDC, ASSET_ID.USDT)
-        },
+        minimalOracles: 3,
+        evaaOracles: ORACLES_MAINNET,
     }),
     poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,
     poolAssetsHEConfig: [
