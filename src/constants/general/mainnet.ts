@@ -3,7 +3,8 @@ import { ExtendedEvaaOracle } from '../../types/Master';
 
 /* MAIN POOL */
 export const EVAA_MASTER_MAINNET = Address.parse('EQC8rUZqR_pWV1BylWUlPNBzyiTYVoBEmQkMIQDZXICfnuRr');
-export const MAINNET_VERSION = 10;
+// v11: main pool migrated from Pyth to classic (NFT) oracles
+export const MAINNET_VERSION = 11;
 
 /* LP POOL */
 export const EVAA_LP_MAINNET = Address.parse('EQBIlZX2URWkXCSg3QF2MJZU-wC5XkBoLww-hdWk2G37Jc6N');
