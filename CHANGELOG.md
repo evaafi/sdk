@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 1.0.1 &mdash; 2026-08-17
+### Changed
+ - **Main pool migrated from Pyth to classic (NFT) oracles.** The on-chain master was upgraded to code version **11** (`v11-classic-oracles`); `MAINNET_VERSION` bumped 10 &rarr; 11 accordingly.
+ - `MAINNET_POOL_CONFIG.collector` is now a `ClassicCollector` (`minimalOracles: 3`, `evaaOracles: ORACLES_MAINNET`) — matches the on-chain oracle config: 4 oracles, threshold 3.
+ - **Migration for main pool integrators:** open the main pool via `EvaaMasterClassic` (instead of `EvaaMasterPyth`) and pass `priceData` (`ClassicPrices.dataCell`) in withdraw/liquidation/supply-withdraw parameters instead of the `pyth: {...}` params. Transactions go directly to the master contract (no Pyth proxy). jUSDT/jUSDC prices are signed by the oracles directly (no ref-token mapping needed).
+
 ## 1.0.0 &mdash; 2026-06-18
 ### Changed
  - Native asset renamed **TON &rarr; GRAM** (rebrand). The on-chain asset id is **unchanged** — it remains `sha256('TON')` for historical reasons. Use `ASSET_ID.GRAM`, `GRAM_MAINNET`, `GRAM_TESTNET`, `PoolAssetConfig.name === 'GRAM'`, and `isGramAsset` / `isGramAssetId`.

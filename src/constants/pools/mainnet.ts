@@ -90,9 +90,8 @@ export const MAINNET_POOL_CONFIG: PoolConfig = {
     masterAddress: EVAA_MASTER_MAINNET,
     masterVersion: MAINNET_VERSION,
     masterConstants: MASTER_CONSTANTS,
-    // 3/3 phase: evaaOracles must exactly match the on-chain oracle set — if one of the
-    // four ORACLES_MAINNET is not in the contract config, its proof gets rejected on-chain,
-    // so trim the list to the live oracles before release.
+    // evaaOracles must exactly match the on-chain oracle set (currently 4 oracles,
+    // threshold 3) — a proof from an oracle missing in the contract config is rejected.
     collector: new ClassicCollector({
         poolAssetsConfig: MAINNET_POOL_ASSETS_CONFIG,
         minimalOracles: 3,
