@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 1.0.3 &mdash; 2026-08-31
+### Fixed
+ - `ClassicCollector`: when more oracles than `minimalOracles` respond, the collector picked the newest ones by timestamp only. If a picked oracle doesn't sign one of the requested assets (e.g. `NOT` is currently signed by 3 of the 4 mainnet oracles), packing its merkle proof threw `Trying to generate merkle proof for a missing key`, failing the whole `getPrices*` call — reproducible on the ALTS pool on every request that included `NOT`. Oracle selection now prefers oracles covering **every** requested asset (still newest-first) and falls back to the old behaviour when there aren't enough of them.
+ - `ClassicCollector`: as a safety net, only assets present in every selected oracle's price dict are packed into the price cell — an asset that can't be proven by all selected oracles is dropped from the result (same semantics as assets with no median price) instead of aborting the call.
+
 ## 1.0.2 &mdash; 2026-08-30
 ### Fixed
  - `ORACLES_MAINNET`: rotated signing keys for oracle **id 0** (`0xd3a8…8e5d`, pubkey `b404…2eb9` &rarr; `c657…81ad`) and oracle **id 1** (`0x2c21…e191`, pubkey `9ad1…7078` &rarr; `84df…ea24`). With the old keys `verifyPricesSign` rejected batches from these two oracles, leaving only 2 of 4 valid and `ClassicCollector` (`minimalOracles: 3`) failing with `Prices are outdated` / `Not enough price data`.
