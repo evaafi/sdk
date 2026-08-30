@@ -42,12 +42,12 @@ export const ORACLES_MAINNET: ExtendedEvaaOracle[] = [
     },
     {
         id: 1,
-        address: '0x2c21cabdaa89739de16bde7bc44e86401fac334a3c7e55305fe5e7563043e191',
+        address: '0x2eb258ce7b5d02466ab8a178ad8b0ba6ffa7b58ef21de3dc3b6dd359a1e16af0',
         pubkey: Buffer.from('84dfbc6e1a9363fbee5ef4a1546c3c29334d1f5a1b9f012beccc357bc282ea24', 'hex'),
     },
     {
         id: 2,
-        address: '0x2eb258ce7b5d02466ab8a178ad8b0ba6ffa7b58ef21de3dc3b6dd359a1e16af0',
+        address: '0x2c21cabdaa89739de16bde7bc44e86401fac334a3c7e55305fe5e7563043e191',
         pubkey: Buffer.from('e503e02e8a9226b34e7c9deb463cbf7f19bce589362eb448a69a8ee7b2fca631', 'hex'),
     },
     {
