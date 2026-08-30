@@ -148,11 +148,22 @@ export class ClassicCollector extends AbstractCollector {
             throw new Error('Not enough price data');
         }
         if (pricesFiltered.length > this.#minimalOracles) {
-            const sortedByTimestamp = pricesFiltered.slice().sort((a, b) => b.timestamp - a.timestamp);
+            // prefer oracles covering every requested asset: an oracle missing one
+            // (e.g. a newly listed asset) would make its merkle proof unpackable
+            const fullCoverage = pricesFiltered.filter((price) =>
+                assets.every((asset) => price.dict.has(asset.assetId)),
+            );
+            const candidates = fullCoverage.length >= this.#minimalOracles ? fullCoverage : pricesFiltered;
+            const sortedByTimestamp = candidates.slice().sort((a, b) => b.timestamp - a.timestamp);
             const newerPrices = sortedByTimestamp.slice(0, this.#minimalOracles);
             pricesFiltered = newerPrices.sort((a, b) => a.oracleId - b.oracleId);
         }
-        const medianData = assets.map((asset) => ({
+        // every packed asset must be present in every packed oracle's dict,
+        // otherwise proof generation (and on-chain verification) fails
+        const packableAssets = assets.filter((asset) =>
+            pricesFiltered.every((price) => price.dict.has(asset.assetId)),
+        );
+        const medianData = packableAssets.map((asset) => ({
             assetId: asset.assetId,
             medianPrice: getMedianPrice(pricesFiltered, asset.assetId),
         }));
