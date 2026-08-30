@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## 1.0.2 &mdash; 2026-08-30
+### Fixed
+ - `ORACLES_MAINNET`: rotated signing keys for oracle **id 0** (`0xd3a8…8e5d`, pubkey `b404…2eb9` &rarr; `c657…81ad`) and oracle **id 1** (`0x2c21…e191`, pubkey `9ad1…7078` &rarr; `84df…ea24`). With the old keys `verifyPricesSign` rejected batches from these two oracles, leaving only 2 of 4 valid and `ClassicCollector` (`minimalOracles: 3`) failing with `Prices are outdated` / `Not enough price data`.
+
 ## 1.0.1 &mdash; 2026-08-17
 ### Changed
  - **Main pool migrated from Pyth to classic oracles.** The on-chain master was upgraded to code version **11** (`v11-classic-oracles`); `MAINNET_VERSION` bumped 10 &rarr; 11 accordingly.
